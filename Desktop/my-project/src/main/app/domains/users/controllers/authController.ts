@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import passport from '@/main/app/infrastructure/security/passport';
+import passport from '../../../infrastructure/security/passport';
 import jwt from 'jsonwebtoken';
 import { createUser, findUserByUsername } from '../services/userService';
 import { UserRole } from '../models/User';

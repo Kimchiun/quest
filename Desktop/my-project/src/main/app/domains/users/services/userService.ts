@@ -1,5 +1,5 @@
 import { User, UserRole } from '../models/User';
-import pgClient from '@/main/app/infrastructure/database/pgClient';
+import pgClient from '../../../infrastructure/database/pgClient';
 import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;

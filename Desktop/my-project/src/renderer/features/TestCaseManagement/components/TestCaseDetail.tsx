@@ -3,11 +3,28 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/renderer/store';
 import { fetchTestCaseDetail, fetchTestCases, clearDetail, TestCase } from '../store/testCaseSlice';
 import axios from 'axios';
+import Container from '@/renderer/shared/components/Container';
+import Typography from '@/renderer/shared/components/Typography';
+import Button from '@/renderer/shared/components/Button';
+import Form, { FormField } from '@/renderer/shared/components/Form';
 
 interface Props {
   id: number;
   onClose: () => void;
 }
+
+const priorities = ['High', 'Medium', 'Low'];
+const statuses = ['Active', 'Archived'];
+
+const fields: FormField[] = [
+  { name: 'title', label: '제목', type: 'text', required: true },
+  { name: 'prereq', label: '전제조건', type: 'textarea' },
+  { name: 'steps', label: '스텝(줄바꿈 구분)', type: 'textarea', required: true },
+  { name: 'expected', label: '기대결과', type: 'textarea', required: true },
+  { name: 'priority', label: '우선순위', type: 'select', options: priorities.map(p => ({ label: p, value: p })), required: true },
+  { name: 'tags', label: '태그(,로 구분)', type: 'text' },
+  { name: 'status', label: '상태', type: 'select', options: statuses.map(s => ({ label: s, value: s })), required: true },
+];
 
 const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
   const dispatch = useDispatch();
@@ -23,15 +40,20 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (detail) setForm(detail);
+    if (detail) setForm({
+      ...detail,
+      steps: Array.isArray(detail.steps) ? detail.steps.join('\n') : detail.steps || '',
+      tags: Array.isArray(detail.tags) ? detail.tags.join(',') : detail.tags || '',
+    });
   }, [detail]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  };
-
-  const handleSave = async () => {
-    await axios.put(`/api/testcases/${id}`, { ...form, updatedBy: 'tester' });
+  const handleSave = async (values: any) => {
+    await axios.put(`/api/testcases/${id}`, {
+      ...values,
+      steps: values.steps.split('\n'),
+      tags: values.tags.split(',').map((t: string) => t.trim()),
+      updatedBy: 'tester',
+    });
     setEdit(false);
     dispatch(fetchTestCaseDetail(id) as any);
     dispatch(fetchTestCases() as any);
@@ -39,51 +61,57 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
 
   if (!detail) return <div>로딩...</div>;
 
+  // steps, tags를 항상 string[]로 변환
+  const stepsArr = Array.isArray(detail.steps)
+    ? detail.steps
+    : typeof detail.steps === 'string'
+      ? detail.steps.split('\n')
+      : [];
+  const tagsArr = Array.isArray(detail.tags)
+    ? detail.tags
+    : typeof detail.tags === 'string'
+      ? detail.tags.split(',')
+      : [];
+
   return (
-    <div style={{ border: '1px solid #aaa', padding: 16, background: '#fafbfc' }}>
-      <button onClick={onClose} style={{ float: 'right' }}>닫기</button>
-      <h3>테스트케이스 상세</h3>
+    <Container maxWidth="600px" padding="32px" background="#fff" radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)', margin: '32px auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Typography variant="h3">테스트케이스 상세</Typography>
+        <Button variant="secondary" onClick={onClose}>닫기</Button>
+      </div>
       {edit ? (
-        <div>
-          <input name="title" value={form.title || ''} onChange={handleChange} placeholder="제목" />
-          <textarea name="prereq" value={form.prereq || ''} onChange={handleChange} placeholder="전제조건" />
-          <textarea name="steps" value={(form.steps || []).join('\n')} onChange={e => setForm(f => ({ ...f, steps: e.target.value.split('\n') }))} placeholder="스텝(줄바꿈 구분)" />
-          <textarea name="expected" value={form.expected || ''} onChange={handleChange} placeholder="기대결과" />
-          <select name="priority" value={form.priority || ''} onChange={handleChange}>
-            <option value="">우선순위</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-          <input name="tags" value={(form.tags || []).join(',')} onChange={e => setForm(f => ({ ...f, tags: e.target.value.split(',') }))} placeholder="태그(,로 구분)" />
-          <select name="status" value={form.status || ''} onChange={handleChange}>
-            <option value="Active">Active</option>
-            <option value="Archived">Archived</option>
-          </select>
-          <button onClick={handleSave}>저장</button>
-        </div>
+        <Form
+          fields={fields}
+          initialValues={form}
+          onSubmit={handleSave}
+          layout="vertical"
+          variant="default"
+          submitLabel="저장"
+        />
       ) : (
-        <div>
-          <div><b>제목:</b> {detail.title}</div>
-          <div><b>전제조건:</b> {detail.prereq}</div>
-          <div><b>스텝:</b> <pre>{detail.steps.join('\n')}</pre></div>
-          <div><b>기대결과:</b> {detail.expected}</div>
-          <div><b>우선순위:</b> {detail.priority}</div>
-          <div><b>태그:</b> {detail.tags.join(', ')}</div>
-          <div><b>상태:</b> {detail.status}</div>
-          <div><b>작성자:</b> {detail.createdBy}</div>
-          <div><b>생성일:</b> {new Date(detail.createdAt).toLocaleString()}</div>
-          <div><b>수정일:</b> {new Date(detail.updatedAt).toLocaleString()}</div>
-          <button onClick={() => setEdit(true)}>수정</button>
+        <div style={{ marginBottom: 24 }}>
+          <Typography variant="h4">{detail.title}</Typography>
+          <Typography variant="body"><b>전제조건:</b> {detail.prereq}</Typography>
+          <Typography variant="body"><b>스텝:</b> <pre style={{ margin: 0 }}>{stepsArr.join('\n')}</pre></Typography>
+          <Typography variant="body"><b>기대결과:</b> {detail.expected}</Typography>
+          <Typography variant="body"><b>우선순위:</b> {detail.priority}</Typography>
+          <Typography variant="body"><b>태그:</b> {tagsArr.join(', ')}</Typography>
+          <Typography variant="body"><b>상태:</b> {detail.status}</Typography>
+          <Typography variant="body"><b>작성자:</b> {detail.createdBy}</Typography>
+          <Typography variant="body"><b>생성일:</b> {new Date(detail.createdAt).toLocaleString()}</Typography>
+          <Typography variant="body"><b>수정일:</b> {new Date(detail.updatedAt).toLocaleString()}</Typography>
+          <Button style={{ marginTop: 16 }} onClick={() => setEdit(true)}>수정</Button>
         </div>
       )}
-      <h4>버전 이력</h4>
-      <ul>
-        {versions.map(v => (
-          <li key={v.id}>v{v.version} - {v.createdBy} ({new Date(v.createdAt).toLocaleString()})</li>
-        ))}
-      </ul>
-    </div>
+      <div>
+        <Typography variant="h5" style={{ marginTop: 24, marginBottom: 8 }}>버전 이력</Typography>
+        <ul style={{ paddingLeft: 16 }}>
+          {versions.map(v => (
+            <li key={v.id}>v{v.version} - {v.createdBy} ({new Date(v.createdAt).toLocaleString()})</li>
+          ))}
+        </ul>
+      </div>
+    </Container>
   );
 };
 
