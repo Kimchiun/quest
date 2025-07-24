@@ -1,5 +1,5 @@
 import { Execution } from '../models/Execution';
-import pgClient from '@/main/app/infrastructure/database/pgClient';
+import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
 
 const pool = pgClient;
 

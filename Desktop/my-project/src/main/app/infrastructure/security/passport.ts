@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 // import { Strategy as SamlStrategy } from 'passport-saml'; // 템플릿
 // import { Strategy as OAuth2Strategy } from 'passport-oauth2'; // 템플릿
-import { findUserByUsername, validatePassword } from '@/main/app/domains/users/services/userService';
+import { createUser, findUserByUsername, validatePassword } from '../../domains/users/services/userService';
 import { User } from '@/main/app/domains/users/models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';

@@ -16,7 +16,7 @@ const TestCaseCard: React.FC<{ testcase: any }> = ({ testcase }) => {
     collect: monitor => ({ isDragging: monitor.isDragging() }),
   }), [testcase]);
   return (
-    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1, border: '1px solid #aaa', margin: 4, padding: 4, background: '#fff' }}>
+    <div ref={drag as unknown as React.Ref<HTMLDivElement>} style={{ opacity: isDragging ? 0.5 : 1, border: '1px solid #aaa', margin: 4, padding: 4, background: '#fff' }}>
       {testcase.title}
     </div>
   );
@@ -29,7 +29,7 @@ const SuiteColumn: React.FC<{ suite: any; cases: any[]; onDrop: (testcaseId: num
     collect: monitor => ({ isOver: monitor.isOver() }),
   }), [suite]);
   return (
-    <div ref={drop} style={{ minWidth: 220, minHeight: 200, margin: 8, padding: 8, background: isOver ? '#e0f7fa' : '#f4f4f4', border: '2px solid #90caf9' }}>
+    <div ref={drop as unknown as React.Ref<HTMLDivElement>} style={{ minWidth: 220, minHeight: 200, margin: 8, padding: 8, background: isOver ? '#e0f7fa' : '#f4f4f4', border: '2px solid #90caf9' }}>
       <b>{suite.name}</b>
       <div style={{ fontSize: 12, color: '#888' }}>실행자: {suite.executor || '-'}, 환경: {suite.environment || '-'}, 마감: {suite.dueDate || '-'}</div>
       <div style={{ marginTop: 8 }}>
@@ -52,7 +52,7 @@ const ReleaseBoard: React.FC = () => {
     if (suites.length > 0) {
       suites.forEach(async s => {
         const res = await axios.get(`/api/releases/suites/${s.id}/cases`);
-        setSuiteCases(prev => ({ ...prev, [s.id]: res.data }));
+        setSuiteCases(prev => ({ ...prev, [s.id]: res.data as number[] } as { [suiteId: number]: number[] }));
       });
     }
   }, [suites]);
@@ -60,7 +60,7 @@ const ReleaseBoard: React.FC = () => {
   const handleDrop = async (suiteId: number, testcaseId: number) => {
     await axios.post(`/api/releases/suites/${suiteId}/cases/${testcaseId}`);
     const res = await axios.get(`/api/releases/suites/${suiteId}/cases`);
-    setSuiteCases(prev => ({ ...prev, [suiteId]: res.data }));
+    setSuiteCases(prev => ({ ...prev, [suiteId]: res.data as number[] } as { [suiteId: number]: number[] }));
   };
 
   return (
