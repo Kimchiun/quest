@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Execution } from '@/main/app/domains/executions/models/Execution';
-import axios from 'axios';
+import api from '../../../utils/axios';
 
 export interface ExecutionState {
     executions: Execution[];
@@ -19,7 +19,7 @@ const initialState: ExecutionState = {
 export const fetchExecutions = createAsyncThunk(
     'executions/fetch',
     async (testcaseId: number) => {
-        const res = await axios.get(`/api/executions/testcase/${testcaseId}`);
+        const res = await api.get(`/api/executions/testcase/${testcaseId}`);
         return res.data as Execution[];
     }
 );
@@ -28,7 +28,7 @@ export const addExecution = createAsyncThunk(
     'executions/add',
     async (data: Omit<Execution, 'id' | 'createdAt' | 'updatedAt'>, { rejectWithValue }) => {
         try {
-            const res = await axios.post('/api/executions', data);
+            const res = await api.post('/api/executions', data);
             return res.data as Execution;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.error || err.message);
@@ -40,7 +40,7 @@ export const updateExecution = createAsyncThunk(
     'executions/update',
     async ({ id, update }: { id: number; update: Partial<Omit<Execution, 'id' | 'createdAt'>> }, { rejectWithValue }) => {
         try {
-            const res = await axios.put(`/api/executions/${id}`, update);
+            const res = await api.put(`/api/executions/${id}`, update);
             return res.data as Execution;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.error || err.message);
@@ -52,7 +52,7 @@ export const deleteExecution = createAsyncThunk(
     'executions/delete',
     async (id: number, { rejectWithValue }) => {
         try {
-            await axios.delete(`/api/executions/${id}`);
+            await api.delete(`/api/executions/${id}`);
             return id;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.error || err.message);
@@ -66,8 +66,8 @@ export const syncOfflineExecutions = createAsyncThunk(
         try {
             const results: Execution[] = [];
             for (const exec of executions) {
-                const res = await axios.post('/api/executions', exec);
-                results.push(res.data);
+                const res = await api.post('/api/executions', exec);
+                results.push(res.data as Execution);
             }
             return results;
         } catch (err: any) {

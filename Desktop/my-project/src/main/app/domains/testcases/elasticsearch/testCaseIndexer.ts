@@ -1,4 +1,4 @@
-import esClient from '@/main/app/infrastructure/elasticsearch/esClient';
+import esClient from '../../../infrastructure/elasticsearch/esClient';
 import { TestCase } from '../models/TestCase';
 
 const INDEX = 'testcases';

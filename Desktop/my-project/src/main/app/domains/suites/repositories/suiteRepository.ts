@@ -1,4 +1,4 @@
-import pgClient, { ensurePgConnected } from '@/main/app/infrastructure/database/pgClient';
+import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
 import { Suite, SuiteCase } from '../models/Suite';
 
 export async function createSuite(data: Omit<Suite, 'id' | 'createdAt'>): Promise<Suite> {
