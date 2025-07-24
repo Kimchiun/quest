@@ -1,4 +1,4 @@
-import { openDB } from 'idb';
+import { openDB, IDBPDatabase } from 'idb';
 import { Execution } from '@/main/app/domains/executions/models/Execution';
 
 const DB_NAME = 'itms-offline';
@@ -6,7 +6,7 @@ const STORE_NAME = 'executions';
 
 async function getDb() {
     return openDB(DB_NAME, 1, {
-        upgrade(db) {
+        upgrade(db: IDBPDatabase<any>) {
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'localId', autoIncrement: true });
             }

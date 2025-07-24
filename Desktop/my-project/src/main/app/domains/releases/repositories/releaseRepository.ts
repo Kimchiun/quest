@@ -1,6 +1,6 @@
-import pgClient, { ensurePgConnected } from '@/main/app/infrastructure/database/pgClient';
+import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
 import { Release } from '../models/Release';
-import { Suite } from '@/main/app/domains/suites/models/Suite';
+import { Suite } from '../../suites/models/Suite';
 
 export async function createRelease(data: Omit<Release, 'id' | 'createdAt'>): Promise<Release> {
   await ensurePgConnected();

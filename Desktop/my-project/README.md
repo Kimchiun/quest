@@ -166,3 +166,114 @@ This project is licensed under the MIT License.
 ---
 
 > ITMS Desktop — The next-generation intelligent test management solution for QA teams. 
+
+## 디자인 시스템
+
+### 1. 디자인 토큰 구조 및 관리
+- 모든 색상, 폰트, 간격 등은 `src/renderer/shared/tokens.json`에서 관리합니다.
+- 이 파일은 Figma Tokens(Design Tokens Plugin)에서 내보낸 JSON과 호환됩니다.
+- Figma에서 토큰을 관리하고, 플러그인으로 export → tokens.json에 덮어쓰기 방식으로 동기화합니다.
+- 토큰 구조 예시:
+```json
+{
+  "color": { "primary": "#2563eb", ... },
+  "font": { "family": "...", ... },
+  ...
+}
+```
+
+### 2. 컴포넌트 및 Storybook
+- Button, Input, Icon, Container, Grid, Typography 등 공통 UI 컴포넌트는 `src/renderer/shared/components/`에 위치합니다.
+- 각 컴포넌트는 디자인 토큰 기반으로 스타일링되며, Storybook(`npx storybook dev`)에서 문서화/테스트할 수 있습니다.
+- Storybook에서 컴포넌트별 다양한 상태/스타일을 시각적으로 확인하세요.
+
+### 3. Figma Tokens 플러그인 연동 가이드
+- Figma에서 [Figma Tokens 플러그인](https://www.figma.com/community/plugin/843461159747178978/Design-Tokens) 설치
+- 디자인 토큰을 Figma에서 관리 → 플러그인에서 JSON export
+- 프로젝트의 `src/renderer/shared/tokens.json`에 덮어쓰기
+- 코드에서 자동으로 theme에 반영됨
+- 토큰 구조가 변경될 경우, 컴포넌트 스타일/Storybook에서 즉시 확인 가능
+
+### 4. Chromatic(시각적 회귀 테스트) 연동
+- Chromatic은 Storybook 기반 UI 스냅샷 테스트/리뷰 서비스입니다.
+- 사용법:
+  1. `npm install --save-dev chromatic`
+  2. [Chromatic 계정](https://www.chromatic.com/) 생성 후 프로젝트 연결
+  3. `npx chromatic --project-token=<YOUR_TOKEN>` 으로 스토리북 배포 및 스냅샷 생성
+  4. PR/커밋마다 UI 변경점 자동 리뷰 가능
+- 자세한 연동법은 [Chromatic 공식 문서](https://www.chromatic.com/docs/) 참고
+
+### 5. 글로벌 스타일/테마 적용
+- 글로벌 스타일은 `src/renderer/shared/GlobalStyle.ts`에서 관리하며, App.tsx에서 ThemeProvider와 함께 적용됩니다.
+- 폰트, 배경, selection, 리셋 등 모든 페이지에 일관 적용
+
+### 6. 디자인 시스템 확장/운영 팁
+- 새로운 UI 요소는 반드시 디자인 토큰 기반으로 구현
+- Storybook에 스토리 추가 → 시각적/자동 테스트 활용
+- Figma-코드 동기화 주기적으로 수행
+- 토큰/컴포넌트/가이드 변경 시 README 최신화 
+
+### 7. Figma Tokens 자동 동기화 스크립트 사용법
+- Figma에서 토큰을 JSON으로 export한 후 아래 명령어로 tokens.json에 자동 반영:
+  ```bash
+  node scripts/sync-figma-tokens.js <figma_export.json>
+  ```
+- 유효하지 않은 JSON이면 에러가 발생하며, 정상 동기화 시 tokens.json이 갱신됩니다.
+
+### 8. Chromatic 자동화 스크립트 및 사용법
+- `.env.chromatic` 파일에 Chromatic 프로젝트 토큰을 저장:
+  ```env
+  CHROMATIC_PROJECT_TOKEN=your_token_here
+  ```
+- package.json에 다음 스크립트 추가:
+  ```json
+  "chromatic:publish": "chromatic --project-token $CHROMATIC_PROJECT_TOKEN"
+  ```
+- 실행:
+  ```bash
+  CHROMATIC_PROJECT_TOKEN=your_token_here npm run chromatic:publish
+  ```
+- PR/커밋마다 자동화된 UI 스냅샷 테스트 및 리뷰 가능
+
+### 9. 전체 워크플로우 예시
+1. **Figma에서 디자인/토큰 관리**
+2. **Figma Tokens 플러그인으로 JSON export**
+3. **토큰 동기화:**
+   ```bash
+   node scripts/sync-figma-tokens.js <figma_export.json>
+   ```
+4. **코드/컴포넌트 개발 및 Storybook 확인**
+5. **Chromatic으로 시각적 테스트/리뷰:**
+   ```bash
+   npm run chromatic:publish
+   ```
+6. **UI/토큰 변경 시 위 과정 반복, README 최신화** 
+
+## 브랜드 자산 100% 적용 가이드
+
+### 1. 실제 브랜드 파일 교체 및 자동 반영
+- Figma에서 공식 브랜드 로고/심볼/아이콘을 export하여 아래 위치에 파일을 교체하세요:
+  - 로고: `src/renderer/assets/brand/logo.svg`
+  - 심볼: `src/renderer/assets/brand/symbol.svg`
+  - Electron 앱 아이콘: `src/main/electron/assets/icon.ico` (256x256 이상)
+  - Favicon: `public/favicon.ico` (16x16, 32x32)
+- SVG, ICO, PNG 등 다양한 포맷 지원(필요시 변환)
+- 파일만 교체하면 앱, Storybook, Electron, 웹뷰 등 전체에 자동 반영됨
+
+### 2. OS별 빌드/실행 및 아이콘 노출 테스트
+- Windows: `npm run build && npm run start` 또는 electron-builder로 exe 생성 후 실행
+- Mac: `npm run build && npm run start` 또는 electron-builder로 dmg 생성 후 실행
+- Linux: `npm run build && npm run start` 또는 electron-builder로 AppImage 생성 후 실행
+- 각 OS에서 앱 실행 시 타이틀바/작업표시줄/앱 아이콘이 정상 노출되는지 확인
+- 아이콘이 보이지 않으면 ico/png/svg 파일 포맷/크기 확인 및 교체
+
+### 3. Storybook/Chromatic에서 브랜드 아이콘 스냅샷 자동화
+- Storybook에서 Icon 컴포넌트의 'logo', 'symbol' 스토리 확인
+- Chromatic 연동 시 브랜드 아이콘 스토리도 자동 스냅샷 테스트/리뷰 대상에 포함됨
+- PR/커밋마다 UI 변경점 자동 리뷰 가능
+
+### 4. 운영/배포 체크리스트
+- [ ] 브랜드 자산(logo.svg, symbol.svg, icon.ico, favicon.ico) 교체 완료
+- [ ] OS별 빌드/실행 후 아이콘 정상 노출 확인
+- [ ] Storybook/Chromatic에서 브랜드 아이콘 스냅샷 테스트 통과
+- [ ] README 최신화 및 운영 가이드 공유 

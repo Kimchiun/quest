@@ -1,4 +1,4 @@
-import pgClient, { ensurePgConnected } from '@/main/app/infrastructure/database/pgClient';
+import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
 import { TestCase, TestCaseVersion } from '../models/TestCase';
 
 export async function createTestCase(tc: Omit<TestCase, 'id' | 'createdAt' | 'updatedAt'>): Promise<TestCase> {

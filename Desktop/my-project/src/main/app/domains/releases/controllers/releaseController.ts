@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createRelease, listReleases, getReleaseById, updateRelease, deleteRelease, listSuitesByRelease } from '../repositories/releaseRepository';
-import { createSuite, updateSuite, deleteSuite, listSuites, assignCaseToSuite, removeCaseFromSuite, listCasesInSuite, suiteCaseCount } from '@/main/app/domains/suites/repositories/suiteRepository';
+import { createSuite, updateSuite, deleteSuite, listSuites, assignCaseToSuite, removeCaseFromSuite, listCasesInSuite, suiteCaseCount } from '../../suites/repositories/suiteRepository';
 
 const router = Router();
 
