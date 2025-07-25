@@ -4,6 +4,9 @@ import Form, { FormField } from '../../shared/components/Form';
 import Button from '../../shared/components/Button';
 import Typography from '../../shared/components/Typography';
 import Icon from '../../shared/components/Icon';
+import { useDispatch } from 'react-redux';
+import axios from 'axios';
+import { setUser } from '../../store';
 
 const fields: FormField[] = [
   { name: 'username', label: '아이디', type: 'text', required: true, placeholder: '아이디를 입력하세요' },
@@ -11,6 +14,26 @@ const fields: FormField[] = [
 ];
 
 const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) => {
+  const dispatch = useDispatch();
+  const handleLogin = async (values: any) => {
+    try {
+      let res: any;
+      try {
+        res = await axios.post('/api/users/login', values);
+      } catch {
+        res = await axios.post('/api/login', values);
+      }
+      const user = res.data.user || res.data;
+      if (user && user.role) {
+        dispatch(setUser(user));
+        if (onLogin) onLogin(user);
+      } else {
+        alert('로그인 실패: 사용자 정보 없음');
+      }
+    } catch (e: any) {
+      alert('로그인 실패: ' + (e?.response?.data?.message || e.message));
+    }
+  };
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <Container maxWidth="400px" padding="40px 32px" background="#fff" radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
@@ -21,7 +44,7 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
         </div>
         <Form
           fields={fields}
-          onSubmit={onLogin || ((v) => alert(JSON.stringify(v)))}
+          onSubmit={handleLogin}
           layout="vertical"
           variant="default"
           submitLabel="로그인"
