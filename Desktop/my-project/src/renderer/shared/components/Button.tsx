@@ -11,6 +11,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   ariaLabel?: string;
   role?: string;
   'aria-pressed'?: boolean;
+  loading?: boolean;
 }
 
 const variantStyle = (variant: ButtonVariant, theme: Theme) => {
@@ -74,12 +75,28 @@ const StyledButton = styled.button<{ $variant: ButtonVariant; $size: ButtonSize 
   }
 `;
 
+const Spinner = styled.span`
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid #fff;
+  border-top: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.5em;
+  vertical-align: middle;
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+`;
+
 const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'md',
   ariaLabel,
   role = 'button',
+  loading = false,
   ...rest
 }) => {
   return (
@@ -88,11 +105,13 @@ const Button: React.FC<ButtonProps> = ({
       $size={size}
       aria-label={ariaLabel}
       role={role}
-      aria-disabled={rest.disabled}
+      aria-disabled={rest.disabled || loading}
       aria-pressed={rest['aria-pressed']}
       tabIndex={rest.tabIndex ?? 0}
+      disabled={rest.disabled || loading}
       {...rest}
     >
+      {loading && <Spinner aria-label="로딩 중" />}
       {children}
     </StyledButton>
   );

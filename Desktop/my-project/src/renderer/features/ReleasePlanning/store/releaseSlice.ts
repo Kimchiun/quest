@@ -43,6 +43,19 @@ export const fetchSuites = createAsyncThunk('suites/fetch', async (releaseId: nu
   return res.data as Suite[];
 });
 
+export const createRelease = createAsyncThunk('releases/create', async (data: Omit<Release, 'id' | 'createdAt'>) => {
+  const res = await axios.post('/api/releases', data);
+  return res.data as Release;
+});
+export const updateRelease = createAsyncThunk('releases/update', async ({ id, data }: { id: number; data: Partial<Omit<Release, 'id' | 'createdAt'>> }) => {
+  const res = await axios.put(`/api/releases/${id}`, data);
+  return res.data as Release;
+});
+export const deleteRelease = createAsyncThunk('releases/delete', async (id: number) => {
+  await axios.delete(`/api/releases/${id}`);
+  return id;
+});
+
 const releaseSlice = createSlice({
   name: 'release',
   initialState,
@@ -54,7 +67,18 @@ const releaseSlice = createSlice({
       .addCase(fetchReleases.rejected, (state, action) => { state.loading = false; state.error = action.error.message || '릴리즈 불러오기 실패'; })
       .addCase(fetchSuites.pending, state => { state.loading = true; state.error = null; })
       .addCase(fetchSuites.fulfilled, (state, action) => { state.loading = false; state.suites = action.payload; })
-      .addCase(fetchSuites.rejected, (state, action) => { state.loading = false; state.error = action.error.message || '스위트 불러오기 실패'; });
+      .addCase(fetchSuites.rejected, (state, action) => { state.loading = false; state.error = action.error.message || '스위트 불러오기 실패'; })
+      // 릴리즈 생성
+      .addCase(createRelease.fulfilled, (state, action) => { state.releases.push(action.payload); })
+      // 릴리즈 수정
+      .addCase(updateRelease.fulfilled, (state, action) => {
+        const idx = state.releases.findIndex(r => r.id === action.payload.id);
+        if (idx !== -1) state.releases[idx] = action.payload;
+      })
+      // 릴리즈 삭제
+      .addCase(deleteRelease.fulfilled, (state, action) => {
+        state.releases = state.releases.filter(r => r.id !== action.payload);
+      });
   },
 });
 
