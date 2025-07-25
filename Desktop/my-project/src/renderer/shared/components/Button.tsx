@@ -2,78 +2,100 @@ import React from 'react';
 import styled, { css } from 'styled-components';
 import { Theme } from '../theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  ariaLabel?: string;
+  role?: string;
+  'aria-pressed'?: boolean;
 }
 
-const getVariantStyle = (variant: ButtonVariant, theme: Theme) => {
+const variantStyle = (variant: ButtonVariant, theme: Theme) => {
   switch (variant) {
-    case 'secondary':
-      return css`
-        background: ${theme.color.surface};
-        color: ${theme.color.secondary};
-        border: 1px solid ${theme.color.border};
-        &:hover:not(:disabled) { background: ${theme.color.background}; }
-      `;
-    case 'danger':
-      return css`
-        background: ${theme.color.danger};
-        color: #fff;
-        &:hover:not(:disabled) { background: #dc2626; }
-      `;
     case 'primary':
-    default:
       return css`
         background: ${theme.color.primary};
         color: #fff;
         &:hover:not(:disabled) { background: ${theme.color.primaryHover}; }
       `;
-  }
-};
-
-const getSizeStyle = (size: ButtonSize, theme: Theme) => {
-  switch (size) {
-    case 'sm':
+    case 'secondary':
       return css`
-        font-size: ${theme.font.sizeSm};
-        padding: ${theme.spacing.xs} ${theme.spacing.sm};
+        background: ${theme.color.secondary};
+        color: #fff;
+        &:hover:not(:disabled) { background: #475569; }
       `;
-    case 'lg':
+    case 'danger':
       return css`
-        font-size: ${theme.font.sizeLg};
-        padding: ${theme.spacing.md} ${theme.spacing.xl};
+        background: ${theme.color.danger};
+        color: #fff;
+        &:hover:not(:disabled) { background: #b91c1c; }
       `;
-    case 'md':
+    case 'success':
+      return css`
+        background: ${theme.color.success};
+        color: #fff;
+        &:hover:not(:disabled) { background: #166534; }
+      `;
     default:
-      return css`
-        font-size: ${theme.font.sizeBase};
-        padding: ${theme.spacing.sm} ${theme.spacing.lg};
-      `;
+      return '';
   }
 };
 
-const StyledButton = styled.button<ButtonProps>`
-  border-radius: ${({ theme }) => theme.radius.md};
+const sizeStyle = (size: ButtonSize, theme: Theme) => {
+  switch (size) {
+    case 'sm': return css`font-size: 14px; padding: 6px 14px;`;
+    case 'lg': return css`font-size: 18px; padding: 12px 28px;`;
+    case 'md':
+    default: return css`font-size: 16px; padding: 10px 20px;`;
+  }
+};
+
+const StyledButton = styled.button<{ $variant: ButtonVariant; $size: ButtonSize }>`
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.sm};
   font-family: ${({ theme }) => theme.font.family};
   font-weight: ${({ theme }) => theme.font.weightBold};
-  border: none;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border 0.2s;
-  ${({ variant = 'primary', theme }) => getVariantStyle(variant, theme)}
-  ${({ size = 'md', theme }) => getSizeStyle(size, theme)}
+  transition: background 0.15s;
+  ${props => variantStyle(props.$variant, props.theme)}
+  ${props => sizeStyle(props.$size, props.theme)}
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.color.primary};
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    z-index: 1;
+  }
 `;
 
-const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', ...rest }) => (
-  <StyledButton variant={variant} size={size} {...rest}>{children}</StyledButton>
-);
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  ariaLabel,
+  role = 'button',
+  ...rest
+}) => {
+  return (
+    <StyledButton
+      $variant={variant}
+      $size={size}
+      aria-label={ariaLabel}
+      role={role}
+      aria-disabled={rest.disabled}
+      aria-pressed={rest['aria-pressed']}
+      tabIndex={rest.tabIndex ?? 0}
+      {...rest}
+    >
+      {children}
+    </StyledButton>
+  );
+};
 
 export default Button; 

@@ -3,10 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/renderer/store';
 import { fetchTestCaseDetail, fetchTestCases, clearDetail, TestCase } from '../store/testCaseSlice';
 import axios from 'axios';
-import Container from '@/renderer/shared/components/Container';
-import Typography from '@/renderer/shared/components/Typography';
-import Button from '@/renderer/shared/components/Button';
-import Form, { FormField } from '@/renderer/shared/components/Form';
+import Container from '../../../shared/components/Container';
+import Typography from '../../../shared/components/Typography';
+import Button from '../../../shared/components/Button';
+import Form, { FormField } from '../../../shared/components/Form';
 
 interface Props {
   id: number;
@@ -31,7 +31,7 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
   const detail = useSelector((state: RootState) => state.testcases.detail);
   const [versions, setVersions] = useState<any[]>([]);
   const [edit, setEdit] = useState(false);
-  const [form, setForm] = useState<Partial<TestCase>>({});
+  const [form, setForm] = useState<Record<string, any>>({});
 
   useEffect(() => {
     dispatch(fetchTestCaseDetail(id) as any);
@@ -42,16 +42,16 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
   useEffect(() => {
     if (detail) setForm({
       ...detail,
-      steps: Array.isArray(detail.steps) ? detail.steps.join('\n') : detail.steps || '',
-      tags: Array.isArray(detail.tags) ? detail.tags.join(',') : detail.tags || '',
+      steps: Array.isArray(detail.steps) ? detail.steps.join('\n') : '',
+      tags: Array.isArray(detail.tags) ? detail.tags.join(',') : '',
     });
   }, [detail]);
 
   const handleSave = async (values: any) => {
     await axios.put(`/api/testcases/${id}`, {
       ...values,
-      steps: values.steps.split('\n'),
-      tags: values.tags.split(',').map((t: string) => t.trim()),
+      steps: typeof values.steps === 'string' ? values.steps.split('\n') : [],
+      tags: typeof values.tags === 'string' ? values.tags.split(',').map((t: string) => t.trim()) : [],
       updatedBy: 'tester',
     });
     setEdit(false);
@@ -61,17 +61,9 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
 
   if (!detail) return <div>로딩...</div>;
 
-  // steps, tags를 항상 string[]로 변환
-  const stepsArr = Array.isArray(detail.steps)
-    ? detail.steps
-    : typeof detail.steps === 'string'
-      ? detail.steps.split('\n')
-      : [];
-  const tagsArr = Array.isArray(detail.tags)
-    ? detail.tags
-    : typeof detail.tags === 'string'
-      ? detail.tags.split(',')
-      : [];
+  // steps, tags는 string[]로만 표시
+  const stepsArr: string[] = Array.isArray(detail.steps) ? detail.steps : [];
+  const tagsArr: string[] = Array.isArray(detail.tags) ? detail.tags : [];
 
   return (
     <Container maxWidth="600px" padding="32px" background="#fff" radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)', margin: '32px auto' }}>

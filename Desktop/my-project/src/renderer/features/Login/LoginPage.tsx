@@ -1,9 +1,9 @@
 import React from 'react';
-import Container from '@/renderer/shared/components/Container';
-import Form, { FormField } from '@/renderer/shared/components/Form';
-import Button from '@/renderer/shared/components/Button';
-import Typography from '@/renderer/shared/components/Typography';
-import Icon from '@/renderer/shared/components/Icon';
+import Container from '../../shared/components/Container';
+import Form, { FormField } from '../../shared/components/Form';
+import Button from '../../shared/components/Button';
+import Typography from '../../shared/components/Typography';
+import Icon from '../../shared/components/Icon';
 
 const fields: FormField[] = [
   { name: 'username', label: '아이디', type: 'text', required: true, placeholder: '아이디를 입력하세요' },

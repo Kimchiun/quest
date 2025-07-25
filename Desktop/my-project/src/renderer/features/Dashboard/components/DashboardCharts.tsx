@@ -1,8 +1,10 @@
 import React from 'react';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { Chart, ArcElement, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
-import Typography from '@/renderer/shared/components/Typography';
-import Grid from '@/renderer/shared/components/Grid';
+import Typography from '../../../shared/components/Typography';
+import Grid from '../../../shared/components/Grid';
+import Card from '../../../shared/components/Card';
+import { FaChartPie, FaBug, FaUserCheck } from 'react-icons/fa';
 
 Chart.register(
   ArcElement,
@@ -64,23 +66,38 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
   };
   return (
     <Grid columns={3} gap="32px">
-      <div>
-        <Typography variant="h4" style={{ marginBottom: 12 }}>진행률</Typography>
-        <Doughnut data={progressData} />
-        <Typography variant="body" align="center" style={{ marginTop: 8 }}>
-          <b>{Math.round(stats.progressRate * 100)}%</b> 완료
-        </Typography>
-      </div>
-      <div>
-        <Typography variant="h4" style={{ marginBottom: 12 }}>결함 밀도</Typography>
-        <Bar data={defectData} options={{ indexAxis: 'y', plugins: { legend: { display: false } } }} />
-        <Typography variant="body" align="center" style={{ marginTop: 8 }}>
-          <b>{(stats.defectDensity * 100).toFixed(2)}%</b> defects per case
-        </Typography>
-      </div>
-      <div>
-        <Typography variant="h4" style={{ marginBottom: 12 }}>사용자별 작업량</Typography>
-        <Bar data={workloadData} options={{ plugins: { legend: { display: false } } }} />
+      <Card
+        icon={<FaUserCheck size={24} color="#4caf50" />}
+        value={Math.round(stats.progressRate * 100) + '%'}
+        label="진행률 차트"
+        color="#4caf50"
+        description="상태별 진행률 분포"
+        ariaLabel="진행률 차트"
+        style={{ minHeight: 340 }}
+      >
+        <Doughnut data={progressData} aria-label="진행률 도넛 차트" />
+      </Card>
+      <Card
+        icon={<FaBug size={24} color="#2196f3" />}
+        value={(stats.defectDensity * 100).toFixed(2) + '%'}
+        label="결함 밀도 차트"
+        color="#2196f3"
+        description="케이스당 결함 비율"
+        ariaLabel="결함 밀도 차트"
+        style={{ minHeight: 340 }}
+      >
+        <Bar data={defectData} options={{ indexAxis: 'y', plugins: { legend: { display: false } } }} aria-label="결함 밀도 바 차트" />
+      </Card>
+      <Card
+        icon={<FaChartPie size={24} color="#9c27b0" />}
+        value={Object.values(stats.workload).reduce((a, b) => a + b, 0)}
+        label="사용자별 작업량"
+        color="#9c27b0"
+        description="테스터별 테스트케이스 처리량"
+        ariaLabel="사용자별 작업량 차트"
+        style={{ minHeight: 340 }}
+      >
+        <Bar data={workloadData} options={{ plugins: { legend: { display: false } } }} aria-label="사용자별 작업량 바 차트" />
         <table style={{ width: '100%', marginTop: 8, fontSize: 14, borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -97,7 +114,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </Grid>
   );
 };
