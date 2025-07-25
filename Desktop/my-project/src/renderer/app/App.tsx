@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
@@ -69,21 +69,23 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
   );
 };
 
-const App: React.FC = () => {
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
+const AppInner: React.FC = () => {
   const isLoggedIn = useSelector((state: RootState) => state.users.isLoggedIn);
-  const dispatch = useDispatch();
   return (
-    <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <SkipLinkStyle />
-        <Router>
-          <AppRoutes isLoggedIn={isLoggedIn} onLogin={() => {}} />
-        </Router>
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+      <SkipLinkStyle />
+      <Router>
+        <AppRoutes isLoggedIn={isLoggedIn} onLogin={() => {}} />
+      </Router>
+    </ThemeProvider>
   );
 };
+
+const App: React.FC = () => (
+  <Provider store={store}>
+    <AppInner />
+  </Provider>
+);
 
 export default App; 

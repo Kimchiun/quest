@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import api from '../../../utils/axios';
 
 export interface Release {
   id: number;
@@ -35,24 +35,24 @@ const initialState: ReleaseState = {
 };
 
 export const fetchReleases = createAsyncThunk('releases/fetch', async () => {
-  const res = await axios.get('/api/releases');
+  const res = await api.get('/api/releases');
   return res.data as Release[];
 });
 export const fetchSuites = createAsyncThunk('suites/fetch', async (releaseId: number) => {
-  const res = await axios.get(`/api/releases/${releaseId}/suites`);
+  const res = await api.get(`/api/releases/${releaseId}/suites`);
   return res.data as Suite[];
 });
 
 export const createRelease = createAsyncThunk('releases/create', async (data: Omit<Release, 'id' | 'createdAt'>) => {
-  const res = await axios.post('/api/releases', data);
+  const res = await api.post('/api/releases', data);
   return res.data as Release;
 });
 export const updateRelease = createAsyncThunk('releases/update', async ({ id, data }: { id: number; data: Partial<Omit<Release, 'id' | 'createdAt'>> }) => {
-  const res = await axios.put(`/api/releases/${id}`, data);
+  const res = await api.put(`/api/releases/${id}`, data);
   return res.data as Release;
 });
 export const deleteRelease = createAsyncThunk('releases/delete', async (id: number) => {
-  await axios.delete(`/api/releases/${id}`);
+  await api.delete(`/api/releases/${id}`);
   return id;
 });
 
