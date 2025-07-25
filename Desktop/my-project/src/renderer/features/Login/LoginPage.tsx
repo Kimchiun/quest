@@ -5,7 +5,7 @@ import Button from '../../shared/components/Button';
 import Typography from '../../shared/components/Typography';
 import Icon from '../../shared/components/Icon';
 import { useDispatch } from 'react-redux';
-import axios from 'axios';
+import api from '../../utils/axios';
 import { setUser } from '../../store';
 
 const fields: FormField[] = [
@@ -19,9 +19,9 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
     try {
       let res: any;
       try {
-        res = await axios.post('/api/users/login', values);
-      } catch {
-        res = await axios.post('/api/login', values);
+        res = await api.post('/api/auth/login', values);
+      } catch (e) {
+        throw e;
       }
       const user = res.data.user || res.data;
       if (user && user.role) {
