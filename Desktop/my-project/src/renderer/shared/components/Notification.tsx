@@ -1,66 +1,41 @@
-import React, { useEffect } from 'react';
-import styled, { css } from 'styled-components';
-import { Theme } from '../theme';
-
-export type NotificationType = 'success' | 'error' | 'info' | 'warning';
+import React from 'react';
+import styled from 'styled-components';
 
 interface NotificationProps {
-  type?: NotificationType;
-  message: string;
-  onClose?: () => void;
-  duration?: number; // ms
+  type?: 'info' | 'success' | 'error' | 'warning';
+  children: React.ReactNode;
+  style?: React.CSSProperties;
 }
 
-const typeStyle = (type: NotificationType, theme: Theme) => {
+const getColor = (type: string) => {
   switch (type) {
-    case 'success': return css`background: ${theme.color.success}; color: #fff;`;
-    case 'error': return css`background: ${theme.color.danger}; color: #fff;`;
-    case 'warning': return css`background: #facc15; color: #222;`;
+    case 'success': return '#15803d';
+    case 'error': return '#ef4444';
+    case 'warning': return '#f59e42';
     case 'info':
-    default: return css`background: ${theme.color.primary}; color: #fff;`;
+    default: return '#2563eb';
   }
 };
 
-const NotiBox = styled.div<{ type: NotificationType; theme: Theme }>`
-  min-width: 240px;
-  max-width: 400px;
-  padding: ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.radius.sm};
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1rem;
-  ${({ type, theme }) => typeStyle(type, theme)}
-  position: relative;
+const StyledNotification = styled.div<{ $type: string }>`
+  padding: 12px 20px;
+  border-radius: 6px;
+  background: ${({ $type }) => getColor($type)}22;
+  color: ${({ $type }) => getColor($type)};
+  font-size: 16px;
+  font-weight: 500;
+  margin: 8px 0;
 `;
 
-const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1.2rem;
-  position: absolute;
-  top: 8px; right: 8px;
-  cursor: pointer;
-  opacity: 0.7;
-  &:hover { opacity: 1; }
-`;
-
-const Notification: React.FC<NotificationProps> = ({ type = 'info', message, onClose, duration }) => {
-  useEffect(() => {
-    if (duration && onClose) {
-      const timer = setTimeout(onClose, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [duration, onClose]);
-
-  return (
-    <NotiBox type={type}>
-      <span>{message}</span>
-      {onClose && <CloseBtn aria-label="닫기" onClick={onClose}>&times;</CloseBtn>}
-    </NotiBox>
-  );
-};
+const Notification: React.FC<NotificationProps> = ({ type = 'info', children, style }) => (
+  <StyledNotification
+    $type={type}
+    role="status"
+    aria-live="polite"
+    style={style}
+  >
+    {children}
+  </StyledNotification>
+);
 
 export default Notification; 

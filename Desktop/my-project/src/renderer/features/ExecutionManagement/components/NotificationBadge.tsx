@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { RootState } from '@/renderer/store';
 import { markAsRead, markAllAsRead } from '../store/notificationSlice';
-import Notification from '@/renderer/shared/components/Notification';
+import Notification from '../../../shared/components/Notification';
 
 const NotificationBadge: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -37,11 +37,7 @@ const NotificationBadge: React.FC = () => {
             {notifications.map((n: any) => (
               <li key={n.id} style={{ padding: 8, background: n.read ? '#f5f5f5' : '#e3f2fd', borderBottom: '1px solid #eee', cursor: 'pointer' }}
                   onClick={() => handleMarkAsRead(n.id)}>
-                <Notification
-                  type={n.type || 'info'}
-                  message={n.message}
-                  onClose={() => handleMarkAsRead(n.id)}
-                />
+                <Notification type={n.type}>{n.message}</Notification>
                 <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{new Date(n.createdAt).toLocaleString()}</div>
               </li>
             ))}

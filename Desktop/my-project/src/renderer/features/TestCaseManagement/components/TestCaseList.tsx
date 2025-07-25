@@ -4,12 +4,12 @@ import { RootState } from '@/renderer/store';
 import { fetchTestCases, searchTestCases, setSearchParams, TestCase } from '../store/testCaseSlice';
 import TestCaseDetail from './TestCaseDetail';
 import axios from 'axios';
-import Table, { TableColumn } from '@/renderer/shared/components/Table';
-import Button from '@/renderer/shared/components/Button';
-import Form, { FormField } from '@/renderer/shared/components/Form';
-import Container from '@/renderer/shared/components/Container';
-import Typography from '@/renderer/shared/components/Typography';
-import Grid from '@/renderer/shared/components/Grid';
+import Table, { TableColumn } from '../../../shared/components/Table';
+import Button from '../../../shared/components/Button';
+import Form, { FormField } from '../../../shared/components/Form';
+import Container from '../../../shared/components/Container';
+import Typography from '../../../shared/components/Typography';
+import Grid from '../../../shared/components/Grid';
 
 const priorities = ['High', 'Medium', 'Low'];
 const statuses = ['Active', 'Archived'];

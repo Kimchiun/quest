@@ -277,3 +277,35 @@ This project is licensed under the MIT License.
 - [ ] OS별 빌드/실행 후 아이콘 정상 노출 확인
 - [ ] Storybook/Chromatic에서 브랜드 아이콘 스냅샷 테스트 통과
 - [ ] README 최신화 및 운영 가이드 공유 
+
+## 접근성(Accessibility, WCAG 2.1 AA) 가이드
+
+### 1. 색상 대비/폰트 크기
+- 모든 텍스트/버튼/배경 색상은 WCAG 2.1 AA(4.5:1 이상) 기준을 충족합니다.
+- 폰트 크기: 본문/버튼 16px 이상, 보조 텍스트 14px 이상
+- 디자인 토큰(`src/renderer/shared/tokens.json`)에서 관리
+
+### 2. 키보드 네비게이션/포커스
+- Tab 순서 논리적, 모든 버튼/폼/링크 tabIndex 0
+- :focus-visible 스타일(명확한 outline) 적용
+- 스킵 네비게이션(본문 바로가기) 지원: Tab → Enter로 main 영역 이동
+
+### 3. ARIA/스크린리더 호환
+- 모든 Input/Form/Modal에 label, aria-label, aria-required 등 적용
+- 주요 영역에 role(main, nav, dialog 등), aria-label, aria-modal 등 적용
+- 알림/에러 메시지(Notification)에 aria-live="polite" role="status" 적용
+
+### 4. 자동화/테스트
+- Cypress + cypress-axe로 접근성 자동화 테스트(`cypress/e2e/a11y.cy.js`)
+- 키보드 네비게이션 E2E 테스트(`cypress/e2e/keyboard-nav.cy.js`)
+- `npm run cypress:open` 또는 `npx cypress run`으로 실행
+
+### 5. 운영 체크리스트
+- 신규 UI/컴포넌트 추가 시 색상 대비, 포커스, ARIA 속성, 키보드 접근성 반드시 확인
+- Storybook/Chromatic에서 시각적/접근성 상태 확인
+- CI 파이프라인에 접근성 테스트 통합 권장
+- 실사용자 피드백/스크린리더 테스트 주기적 수행
+
+---
+
+**이 프로젝트는 WCAG 2.1 AA 접근성 표준을 실질적으로 준수하며, 자동화 테스트와 운영 가이드까지 포함합니다.** 
