@@ -192,3 +192,59 @@ describe('Folder API', () => {
     });
   });
 }); 
+
+describe('POST /api/folders/:id/move', () => {
+  it('should prevent moving a folder into itself', async () => {
+    // 1. 폴더 생성
+    const folder = await request(app)
+      .post('/api/folders')
+      .send({ name: 'SelfMove', createdBy: 'testuser' })
+      .expect(201);
+    // 2. 자기 자신으로 이동 시도
+    const res = await request(app)
+      .post(`/api/folders/${folder.body.id}/move`)
+      .send({ targetParentId: folder.body.id, updatedBy: 'testuser' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/순환|circular|self/i);
+  });
+
+  it('should prevent moving a folder into its descendant', async () => {
+    // 1. 부모-자식 폴더 생성
+    const parent = await request(app)
+      .post('/api/folders')
+      .send({ name: 'Parent', createdBy: 'testuser' })
+      .expect(201);
+    const child = await request(app)
+      .post('/api/folders')
+      .send({ name: 'Child', parentId: parent.body.id, createdBy: 'testuser' })
+      .expect(201);
+    // 2. 부모를 자식의 하위로 이동 시도
+    const res = await request(app)
+      .post(`/api/folders/${parent.body.id}/move`)
+      .send({ targetParentId: child.body.id, updatedBy: 'testuser' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/순환|circular|descendant/i);
+  });
+});
+
+describe('POST /api/folders/:id/testcases/:testCaseId', () => {
+  it('should prevent adding the same test case to the same folder twice', async () => {
+    // 1. 폴더, 테스트케이스 생성
+    const folder = await request(app)
+      .post('/api/folders')
+      .send({ name: 'DupFolder', createdBy: 'testuser' })
+      .expect(201);
+    const testcase = { id: 9999 }; // 실제 환경에 맞게 생성/fixture 필요
+    // 2. 최초 추가
+    await request(app)
+      .post(`/api/folders/${folder.body.id}/testcases/${testcase.id}`)
+      .send({ updatedBy: 'testuser' });
+    // 3. 중복 추가 시도
+    const res = await request(app)
+      .post(`/api/folders/${folder.body.id}/testcases/${testcase.id}`)
+      .send({ updatedBy: 'testuser' });
+    expect([400, 409]).toContain(res.status);
+  });
+});
+
+// 권한/동시성 테스트는 실제 인증/락 구현에 따라 추가 가능 
