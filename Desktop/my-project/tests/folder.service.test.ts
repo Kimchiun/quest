@@ -1,63 +1,68 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+import * as folderService from '../src/main/app/domains/folders/services/folderService';
+import * as testCaseRepository from '../src/main/app/domains/testcases/repositories/testCaseRepository';
+import * as folderRepository from '../src/main/app/domains/folders/repositories/folderRepository';
+import pgClient from '../src/main/app/infrastructure/database/pgClient';
 
-// Mock the modules
-jest.mock('../src/main/app/domains/folders/repositories/folderRepository');
-jest.mock('../src/main/app/domains/folders/services/folderService');
+jest.setTimeout(180000); // 3분 타임아웃
 
-describe('Folder Service Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+// 실제 DB를 사용하는 fixture 함수
+async function createTestFolder(name = 'TestFolder', parentId?: number) {
+  const folder = await folderRepository.createFolder({ name, description: '', parentId, createdBy: 'testuser' });
+  return folder.id;
+}
+async function createTestCase(title = 'TestCase') {
+  const testCase = await testCaseRepository.createTestCase({
+    title,
+    prereq: '',
+    steps: [],
+    expected: '',
+    priority: 'Medium',
+    tags: [],
+    status: 'Active',
+    createdBy: 'testuser'
+  });
+  return testCase.id;
+}
+
+// 테스트 후 DB 정리
+async function cleanup() {
+  await pgClient.query('TRUNCATE case_folders RESTART IDENTITY CASCADE');
+  await pgClient.query('TRUNCATE folders RESTART IDENTITY CASCADE');
+  await pgClient.query('TRUNCATE testcases RESTART IDENTITY CASCADE');
+}
+
+describe('Folder Service Tests (Integration)', () => {
+  beforeEach(async () => {
+    await cleanup();
+  });
+  afterAll(async () => {
+    await cleanup();
+    await pgClient.end();
   });
 
-  describe('createFolder', () => {
-    it('should create a folder successfully', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
+  describe('moveFolder (Edge Cases)', () => {
+    it('should throw error when moving a folder into itself', async () => {
+      const folderId = await createTestFolder('TestFolderSelf');
+      await expect(folderService.moveFolder(folderId, { targetParentId: folderId, updatedBy: 'testuser' }))
+        .rejects.toThrow(/순환|circular|self/i);
+    });
+
+    it('should throw error when moving a folder into its descendant', async () => {
+      const parentId = await createTestFolder('TestFolderParent');
+      const childId = await createTestFolder('TestFolderChild', parentId);
+      await expect(folderService.moveFolder(parentId, { targetParentId: childId, updatedBy: 'testuser' }))
+        .rejects.toThrow(/순환|circular|descendant/i);
     });
   });
 
-  describe('getFolderTree', () => {
-    it('should return folder tree structure', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('updateFolder', () => {
-    it('should update folder successfully', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-
-    it('should prevent circular reference when updating parent', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('deleteFolder', () => {
-    it('should delete folder successfully', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-
-    it('should prevent deletion of root folder', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('moveTestCase', () => {
-    it('should move test case successfully', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('getTestCasesInFolder', () => {
-    it('should return test cases in folder', async () => {
-      // This is a placeholder test - actual implementation would test the service
-      expect(true).toBe(true);
+  describe('addTestCaseToFolder (Edge Cases)', () => {
+    it('should throw error when adding the same test case twice', async () => {
+      const folderId = await createTestFolder('TestFolderDup');
+      const testCaseId = await createTestCase('TestCaseDup');
+      await folderService.addTestCaseToFolder(testCaseId, folderId);
+      await expect(folderService.addTestCaseToFolder(testCaseId, folderId))
+        .rejects.toThrow(/중복|duplicate|already|포함/i);
     });
   });
 }); 

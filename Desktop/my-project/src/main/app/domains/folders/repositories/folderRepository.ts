@@ -106,10 +106,13 @@ export async function getTestCasesInFolder(folderId: number): Promise<number[]> 
 }
 
 export async function addTestCaseToFolder(testCaseId: number, folderId: number): Promise<void> {
-    await pgClient.query(
-        'INSERT INTO case_folders (testcase_id, folder_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    const result = await pgClient.query(
+        'INSERT INTO case_folders (testcase_id, folder_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id',
         [testCaseId, folderId]
     );
+    if (result.rowCount === 0) {
+        throw new Error('이미 해당 폴더에 포함된 테스트케이스입니다.');
+    }
 }
 
 export async function removeTestCaseFromFolder(testCaseId: number, folderId: number): Promise<void> {
