@@ -1,57 +1,41 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Theme } from '../theme';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  id?: string;
-  ariaLabel?: string;
-  ariaDescribedby?: string;
-  required?: boolean;
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
+  fullWidth?: boolean;
 }
 
-const StyledInput = styled.input`
-  width: 100%;
+const StyledInput = styled.input<InputProps>`
+  width: ${props => props.fullWidth ? '100%' : 'auto'};
   padding: 8px 12px;
-  font-size: 16px;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-family: ${({ theme }) => theme.font.family};
-  color: ${({ theme }) => theme.color.text};
-  background: ${({ theme }) => theme.color.surface};
-  transition: border 0.15s;
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.primary};
-    outline-offset: 2px;
-    border-color: ${({ theme }) => theme.color.primary};
-    z-index: 1;
+  border: 1px solid ${props => props.error ? '#dc2626' : '#d1d5db'};
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
+
   &:disabled {
-    background: ${({ theme }) => theme.color.background};
-    opacity: 0.6;
+    background-color: #f9fafb;
+    color: #6b7280;
     cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: #9ca3af;
   }
 `;
 
-const Input: React.FC<InputProps> = ({ label, id, ariaLabel, ariaDescribedby, required, ...rest }) => {
-  const inputId = id || React.useId();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && (
-        <label htmlFor={inputId} style={{ fontSize: 14, fontWeight: 500, color: '#22223b' }}>
-          {label} {required && <span aria-hidden="true" style={{ color: '#ef4444' }}>*</span>}
-        </label>
-      )}
-      <StyledInput
-        id={inputId}
-        aria-label={ariaLabel || label}
-        aria-describedby={ariaDescribedby}
-        aria-required={required}
-        required={required}
-        {...rest}
-      />
-    </div>
-  );
+const Input: React.FC<InputProps> = ({ error, fullWidth = true, ...props }) => {
+  return <StyledInput error={error} fullWidth={fullWidth} {...props} />;
 };
 
 export default Input; 

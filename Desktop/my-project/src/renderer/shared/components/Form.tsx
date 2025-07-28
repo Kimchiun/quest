@@ -154,7 +154,7 @@ const Form: React.FC<FormProps> = ({ fields, initialValues = {}, onSubmit, layou
                 value={values[field.name] ?? ''}
                 onChange={handleChange}
                 placeholder={field.placeholder}
-                ariaLabel={field.label}
+                aria-label={field.label}
                 aria-required={field.required}
                 required={field.required}
               />
@@ -162,7 +162,7 @@ const Form: React.FC<FormProps> = ({ fields, initialValues = {}, onSubmit, layou
           </FieldWrapper>
         );
       })}
-      <Button type="submit" ariaLabel={submitLabel}>{submitLabel}</Button>
+      <Button type="submit" aria-label={submitLabel}>{submitLabel}</Button>
     </StyledForm>
   );
 };

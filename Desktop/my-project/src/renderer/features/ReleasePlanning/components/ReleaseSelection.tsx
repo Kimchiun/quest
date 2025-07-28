@@ -1,211 +1,154 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/renderer/store';
-import { fetchReleases, createRelease, updateRelease, deleteRelease } from '../store/releaseSlice';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../../shared/components/Button';
-import Container from '../../../shared/components/Container';
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
 import Typography from '../../../shared/components/Typography';
+import Container from '../../../shared/components/Container';
+import Grid from '../../../shared/components/Grid';
+import Button from '../../../shared/components/Button';
 import Input from '../../../shared/components/Input';
 
-// TODO: 실제 권한 체크 유틸로 대체
-const useRole = () => {
-  const role = useSelector((state: RootState) => state.users.me?.role || 'QA');
-  return role;
-};
+const PageContainer = styled.div`
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+`;
 
-interface ReleaseFormProps {
-  initial?: Partial<{ name: string; description?: string; startDate?: string; endDate?: string }>;
-  onSubmit: (values: any) => void;
-  onCancel: () => void;
-  loading?: boolean;
-}
-const ReleaseForm: React.FC<ReleaseFormProps> = ({ initial = {}, onSubmit, onCancel, loading }) => {
-  const [form, setForm] = useState({
-    name: initial.name || '',
-    description: initial.description || '',
-    startDate: initial.startDate || '',
-    endDate: initial.endDate || '',
-  });
-  const [error, setError] = useState('');
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim()) return setError('이름은 필수입니다.');
-    setError('');
-    onSubmit(form);
-  };
-  return (
-    <form onSubmit={handleSubmit} style={{ minWidth: 320 }}>
-      <div style={{ marginBottom: 12 }}>
-        <label>이름 *</label>
-        <Input name="name" value={form.name} onChange={handleChange} required />
-      </div>
-      <div style={{ marginBottom: 12 }}>
-        <label>설명</label>
-        <Input name="description" value={form.description} onChange={handleChange} />
-      </div>
-      <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
-        <div style={{ flex: 1 }}>
-          <label>시작일</label>
-          <Input name="startDate" type="date" value={form.startDate} onChange={handleChange} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label>종료일</label>
-          <Input name="endDate" type="date" value={form.endDate} onChange={handleChange} />
-        </div>
-      </div>
-      {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-        <Button type="button" variant="secondary" onClick={onCancel}>취소</Button>
-        <Button type="submit" variant="primary" loading={loading}>저장</Button>
-      </div>
-    </form>
-  );
-};
+const ReleaseCard = styled.div`
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-const PAGE_SIZE = 10;
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+`;
+
+const ReleaseTitle = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+`;
+
+const ReleaseInfo = styled.div`
+  font-size: 14px;
+  color: #64748b;
+`;
 
 const ReleaseSelection: React.FC = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { releases, loading, error } = useSelector((state: RootState) => state.releases);
-  const role = useRole();
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [showEdit, setShowEdit] = useState<number | null>(null);
-  const [showDelete, setShowDelete] = useState<number | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+  const [releases, setReleases] = useState<any[]>([]);
+  const [selectedRelease, setSelectedRelease] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => { dispatch(fetchReleases() as any); }, [dispatch]);
+  useEffect(() => {
+    fetchReleases();
+  }, []);
 
-  const filtered = useMemo(() =>
-    releases.filter(r => {
-      const nameMatch = r.name.toLowerCase().includes(search.toLowerCase());
-      const startOk = !dateRange.start || (r.startDate && r.startDate >= dateRange.start);
-      const endOk = !dateRange.end || (r.endDate && r.endDate <= dateRange.end);
-      return nameMatch && startOk && endOk;
-    }),
-    [releases, search, dateRange]
-  );
-  const paged = useMemo(() =>
-    filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page]
-  );
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
-
-  const handleSelect = (id: number) => {
-    navigate(`/dashboard/${id}`);
-  };
-
-  // 생성
-  const handleCreate = async (values: any) => {
-    setFormLoading(true);
+  const fetchReleases = async () => {
+    setLoading(true);
     try {
-      await dispatch(createRelease(values) as any).unwrap();
-      setShowCreate(false);
+      const response = await fetch('http://localhost:3000/api/releases');
+      if (response.ok) {
+        const data = await response.json();
+        setReleases(data);
+      }
+    } catch (error) {
+      console.error('릴리즈 로드 실패:', error);
     } finally {
-      setFormLoading(false);
+      setLoading(false);
     }
   };
-  // 수정
-  const handleEdit = async (values: any) => {
-    if (!showEdit) return;
-    setFormLoading(true);
-    try {
-      await dispatch(updateRelease({ id: showEdit, data: values }) as any).unwrap();
-      setShowEdit(null);
-    } finally {
-      setFormLoading(false);
-    }
+
+  const handleReleaseSelect = (release: any) => {
+    setSelectedRelease(release);
   };
-  // 삭제
-  const handleDelete = async () => {
-    if (!showDelete) return;
-    setFormLoading(true);
+
+  const handleCreateRelease = async (formData: any) => {
     try {
-      await dispatch(deleteRelease(showDelete) as any).unwrap();
-      setShowDelete(null);
-    } finally {
-      setFormLoading(false);
+      const response = await fetch('http://localhost:3000/api/releases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        await fetchReleases();
+      }
+    } catch (error) {
+      console.error('릴리즈 생성 실패:', error);
     }
   };
 
   return (
-    <Container maxWidth="700px" padding="32px" background="#fff" radius="md" style={{ margin: '32px auto', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
-      <Typography variant="h2" style={{ marginBottom: 24 }}>릴리즈/스프린트 선택</Typography>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="릴리즈명 검색" style={{ flex: 1 }} />
-        <Input type="date" value={dateRange.start} onChange={e => setDateRange(d => ({ ...d, start: e.target.value }))} style={{ width: 140 }} />
-        <span style={{ alignSelf: 'center' }}>~</span>
-        <Input type="date" value={dateRange.end} onChange={e => setDateRange(d => ({ ...d, end: e.target.value }))} style={{ width: 140 }} />
-        {['Admin', 'QA'].includes(role) && (
-          <Button onClick={() => setShowCreate(true)} variant="primary">신규 생성</Button>
-        )}
-      </div>
-      <div style={{ minHeight: 200 }}>
-        {loading ? <div>로딩 중...</div> : error ? <div style={{ color: 'red' }}>{error}</div> : (
-          filtered.length === 0 ? <div>릴리즈가 없습니다.</div> : (
-            <>
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {paged.map(r => (
-                  <li key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #eee', cursor: 'pointer' }}>
-                    <span onClick={() => handleSelect(r.id)} style={{ fontWeight: 500 }}>{r.name}</span>
-                    <span>
-                      {['Admin', 'QA'].includes(role) && (
-                        <>
-                          <Button size="sm" variant="secondary" onClick={() => setShowEdit(r.id)} style={{ marginRight: 8 }}>수정</Button>
-                          <Button size="sm" variant="danger" onClick={() => setShowDelete(r.id)}>삭제</Button>
-                        </>
-                      )}
-                    </span>
-                  </li>
+    <PageContainer>
+      <Container
+        $maxWidth="1200px"
+        $padding="24px"
+        $background="white"
+        $radius="8px"
+        style={{ margin: '0 auto', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}
+      >
+        <Grid
+          $columns={1}
+          $gap="16px"
+        >
+          <Typography $variant="h2" style={{ marginBottom: '24px' }}>
+            릴리즈 계획
+          </Typography>
+
+          {loading ? (
+            <Typography $variant="body">로딩 중...</Typography>
+          ) : (
+            <Grid
+              $columns={2}
+              $gap="16px"
+            >
+              <div>
+                <Typography $variant="h4" style={{ marginBottom: '16px' }}>
+                  릴리즈 목록
+                </Typography>
+                {releases.map((release) => (
+                  <ReleaseCard
+                    key={release.id}
+                    onClick={() => handleReleaseSelect(release)}
+                    style={{
+                      borderColor: selectedRelease?.id === release.id ? '#2563eb' : '#e2e8f0'
+                    }}
+                  >
+                    <ReleaseTitle>{release.name}</ReleaseTitle>
+                    <ReleaseInfo>
+                      시작일: {release.startDate} | 종료일: {release.endDate}
+                    </ReleaseInfo>
+                  </ReleaseCard>
                 ))}
-              </ul>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-                <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>이전</Button>
-                <span style={{ alignSelf: 'center' }}>{page} / {totalPages}</span>
-                <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>다음</Button>
               </div>
-            </>
-          )
-        )}
-      </div>
-      {/* 생성 모달 */}
-      {showCreate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', padding: 32, borderRadius: 8, minWidth: 360 }}>
-            <Typography variant="h3" style={{ marginBottom: 16 }}>릴리즈 생성</Typography>
-            <ReleaseForm onSubmit={handleCreate} onCancel={() => setShowCreate(false)} loading={formLoading} />
-          </div>
-        </div>
-      )}
-      {/* 수정 모달 */}
-      {showEdit && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', padding: 32, borderRadius: 8, minWidth: 360 }}>
-            <Typography variant="h3" style={{ marginBottom: 16 }}>릴리즈 수정</Typography>
-            <ReleaseForm initial={releases.find(r => r.id === showEdit)} onSubmit={handleEdit} onCancel={() => setShowEdit(null)} loading={formLoading} />
-          </div>
-        </div>
-      )}
-      {/* 삭제 모달 */}
-      {showDelete && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', padding: 32, borderRadius: 8, minWidth: 320 }}>
-            <Typography variant="h4" style={{ marginBottom: 16 }}>정말 삭제하시겠습니까?</Typography>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <Button variant="secondary" onClick={() => setShowDelete(null)}>취소</Button>
-              <Button variant="danger" onClick={handleDelete} loading={formLoading}>삭제</Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </Container>
+
+              <div>
+                <Typography $variant="h4" style={{ marginBottom: '16px' }}>
+                  선택된 릴리즈
+                </Typography>
+                {selectedRelease ? (
+                  <ReleaseCard>
+                    <ReleaseTitle>{selectedRelease.name}</ReleaseTitle>
+                    <ReleaseInfo>
+                      <div>시작일: {selectedRelease.startDate}</div>
+                      <div>종료일: {selectedRelease.endDate}</div>
+                      <div>상태: {selectedRelease.status}</div>
+                    </ReleaseInfo>
+                  </ReleaseCard>
+                ) : (
+                  <Typography $variant="body" style={{ color: '#64748b' }}>
+                    릴리즈를 선택해주세요
+                  </Typography>
+                )}
+              </div>
+            </Grid>
+          )}
+        </Grid>
+      </Container>
+    </PageContainer>
   );
 };
 

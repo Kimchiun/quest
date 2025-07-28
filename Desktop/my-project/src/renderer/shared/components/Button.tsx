@@ -1,6 +1,5 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
-import { Theme } from '../theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -8,110 +7,103 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  ariaLabel?: string;
-  role?: string;
-  'aria-pressed'?: boolean;
-  loading?: boolean;
+  fullWidth?: boolean;
 }
 
-const variantStyle = (variant: ButtonVariant, theme: Theme) => {
-  switch (variant) {
-    case 'primary':
-      return css`
-        background: ${theme.color.primary};
-        color: #fff;
-        &:hover:not(:disabled) { background: ${theme.color.primaryHover}; }
-      `;
-    case 'secondary':
-      return css`
-        background: ${theme.color.secondary};
-        color: #fff;
-        &:hover:not(:disabled) { background: #475569; }
-      `;
-    case 'danger':
-      return css`
-        background: ${theme.color.danger};
-        color: #fff;
-        &:hover:not(:disabled) { background: #b91c1c; }
-      `;
-    case 'success':
-      return css`
-        background: ${theme.color.success};
-        color: #fff;
-        &:hover:not(:disabled) { background: #166534; }
-      `;
-    default:
-      return '';
-  }
-};
-
-const sizeStyle = (size: ButtonSize, theme: Theme) => {
-  switch (size) {
-    case 'sm': return css`font-size: 14px; padding: 6px 14px;`;
-    case 'lg': return css`font-size: 18px; padding: 12px 28px;`;
-    case 'md':
-    default: return css`font-size: 16px; padding: 10px 20px;`;
-  }
-};
-
-const StyledButton = styled.button<{ $variant: ButtonVariant; $size: ButtonSize }>`
+const StyledButton = styled.button<ButtonProps>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: none;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-family: ${({ theme }) => theme.font.family};
-  font-weight: ${({ theme }) => theme.font.weightBold};
+  border-radius: 6px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
-  ${props => variantStyle(props.$variant, props.theme)}
-  ${props => sizeStyle(props.$size, props.theme)}
+  transition: all 0.2s ease;
+  width: ${props => props.fullWidth ? '100%' : 'auto'};
+
+  ${({ size }) => {
+    switch (size) {
+      case 'sm':
+        return css`
+          padding: 6px 12px;
+          font-size: 12px;
+        `;
+      case 'lg':
+        return css`
+          padding: 12px 24px;
+          font-size: 16px;
+        `;
+      default:
+        return css`
+          padding: 8px 16px;
+          font-size: 14px;
+        `;
+    }
+  }}
+
+  ${({ variant }) => {
+    switch (variant) {
+      case 'secondary':
+        return css`
+          background-color: #f3f4f6;
+          color: #374151;
+          &:hover {
+            background-color: #e5e7eb;
+          }
+        `;
+      case 'danger':
+        return css`
+          background-color: #dc2626;
+          color: #ffffff;
+          &:hover {
+            background-color: #b91c1c;
+          }
+        `;
+      case 'success':
+        return css`
+          background-color: #10b981;
+          color: #ffffff;
+          &:hover {
+            background-color: #059669;
+          }
+        `;
+      default:
+        return css`
+          background-color: #2563eb;
+          color: #ffffff;
+          &:hover {
+            background-color: #1d4ed8;
+          }
+        `;
+    }
+  }}
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+
   &:focus-visible {
-    outline: 3px solid ${({ theme }) => theme.color.primary};
+    outline: 2px solid #2563eb;
     outline-offset: 2px;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
-    z-index: 1;
   }
 `;
 
-const Spinner = styled.span`
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border: 2px solid #fff;
-  border-top: 2px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 0.5em;
-  vertical-align: middle;
-  @keyframes spin {
-    100% { transform: rotate(360deg); }
-  }
-`;
-
-const Button: React.FC<ButtonProps> = ({
-  children,
-  variant = 'primary',
-  size = 'md',
-  ariaLabel,
-  role = 'button',
-  loading = false,
-  ...rest
+const Button: React.FC<ButtonProps> = ({ 
+  variant = 'primary', 
+  size = 'md', 
+  fullWidth = false, 
+  children, 
+  ...props 
 }) => {
   return (
-    <StyledButton
-      $variant={variant}
-      $size={size}
-      aria-label={ariaLabel}
-      role={role}
-      aria-disabled={rest.disabled || loading}
-      aria-pressed={rest['aria-pressed']}
-      tabIndex={rest.tabIndex ?? 0}
-      disabled={rest.disabled || loading}
-      {...rest}
+    <StyledButton 
+      variant={variant} 
+      size={size} 
+      fullWidth={fullWidth} 
+      {...props}
     >
-      {loading && <Spinner aria-label="로딩 중" />}
       {children}
     </StyledButton>
   );

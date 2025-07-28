@@ -63,13 +63,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ releases, selectedReleaseId, onSelectRelease, onNavigate }) => (
   <SidebarRoot>
-    <Typography variant="h3" style={{ color: '#38bdf8', margin: '0 0 24px 32px' }}>ITMS</Typography>
+    <Typography $variant="h3" style={{ color: '#38bdf8', margin: '0 0 24px 32px' }}>ITMS</Typography>
     <Nav>
       <NavLink onClick={() => onNavigate?.('/dashboard')} active={false}>대시보드</NavLink>
       <NavLink onClick={() => onNavigate?.('/testcases')} active={false}>테스트케이스</NavLink>
       {/* 필요시 추가 메뉴 */}
     </Nav>
-    <Typography variant="h4" style={{ color: '#bae6fd', margin: '0 0 8px 32px', fontSize: '1.1rem' }}>릴리즈</Typography>
+    <Typography $variant="h4" style={{ color: '#bae6fd', margin: '0 0 8px 32px', fontSize: '1.1rem' }}>릴리즈</Typography>
     <ReleaseList>
       {releases.map(r => (
         <ReleaseItem key={r.id} active={r.id === selectedReleaseId}>

@@ -5,6 +5,7 @@ import { store, RootState } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
 import ReleaseBoard from '../features/ReleasePlanning/components/ReleaseBoard';
 import DashboardContainer from '../features/Dashboard/components/DashboardContainer';
+import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from '../shared/theme';
@@ -46,6 +47,8 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
       <nav style={{ padding: 16, borderBottom: '1px solid #eee', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} aria-label="주요 메뉴">
         <div>
           <Link to="/dashboard" style={{ marginRight: 16 }}>Dashboard</Link>
+          <Link to="/testcases" style={{ marginRight: 16 }}>테스트케이스</Link>
+          <Link to="/folders" style={{ marginRight: 16 }}>폴더 관리</Link>
           <Link to="/releases" style={{ marginRight: 16 }}>릴리즈 관리</Link>
           {/* 다른 메뉴 추가 가능 */}
         </div>
@@ -61,6 +64,7 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
           <Route path="/dashboard/:releaseId" element={isLoggedIn ? <DashboardContainer /> : <Navigate to="/login" replace />} />
           <Route path="/releases" element={isLoggedIn ? <ReleaseSelection /> : <Navigate to="/login" replace />} />
           <Route path="/testcases" element={isLoggedIn ? <TestCaseList /> : <Navigate to="/login" replace />} />
+          <Route path="/folders" element={isLoggedIn ? <FolderManagementPage /> : <Navigate to="/login" replace />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           {/* 다른 라우트 추가 가능 */}
         </Routes>

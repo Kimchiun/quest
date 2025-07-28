@@ -1,15 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/renderer/store';
+import { RootState } from '../../../store';
 import { fetchTestCases, searchTestCases, setSearchParams, TestCase } from '../store/testCaseSlice';
-import TestCaseDetail from './TestCaseDetail';
-import axios from 'axios';
-import Table, { TableColumn } from '../../../shared/components/Table';
+import Container from '../../../shared/components/Container';
+import Grid from '../../../shared/components/Grid';
+import Typography from '../../../shared/components/Typography';
 import Button from '../../../shared/components/Button';
 import Form, { FormField } from '../../../shared/components/Form';
-import Container from '../../../shared/components/Container';
-import Typography from '../../../shared/components/Typography';
-import Grid from '../../../shared/components/Grid';
+import Table, { TableColumn } from '../../../shared/components/Table';
+import TestCaseDetail from './TestCaseDetail';
+import api from '../../../utils/axios';
 
 const priorities = ['High', 'Medium', 'Low'];
 const statuses = ['Active', 'Archived'];
@@ -23,7 +23,7 @@ const TestCaseList: React.FC = () => {
 
   const handleDelete = React.useCallback(async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    await axios.delete(`/api/testcases/${id}`);
+    await api.delete(`/api/testcases/${id}`);
     dispatch(fetchTestCases() as any);
   }, [dispatch]);
 
@@ -66,23 +66,33 @@ const TestCaseList: React.FC = () => {
   ];
 
   return (
-    <Container maxWidth="1000px" padding="32px" background="#fff" radius="md" style={{ margin: '32px auto' }}>
-      <Typography variant="h2" style={{ marginBottom: 24 }}>테스트케이스 목록</Typography>
-      <Grid columns={2} gap="24px" style={{ marginBottom: 24 }}>
+    <Container
+      $maxWidth="1200px"
+      $padding="24px"
+      $background="white"
+      $radius="8px"
+      style={{ margin: '0 auto' }}
+    >
+      <Typography $variant="h2" style={{ marginBottom: 24 }}>테스트케이스 목록</Typography>
+      <Grid
+        $columns={1}
+        $gap="16px"
+        style={{ marginBottom: 16 }}
+      >
         <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="caption" style={{ marginBottom: 4 }}>제목 검색</Typography>
+            <Typography $variant="caption" style={{ marginBottom: 4 }}>제목 검색</Typography>
             <input name="title" type="text" defaultValue={searchParams.title || ''} style={{ minWidth: 160, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="caption" style={{ marginBottom: 4 }}>우선순위</Typography>
+            <Typography $variant="caption" style={{ marginBottom: 4 }}>우선순위</Typography>
             <select name="priority" defaultValue={searchParams.priority || ''} style={{ minWidth: 120, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }}>
               <option value="">전체</option>
               {priorities.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="caption" style={{ marginBottom: 4 }}>상태</Typography>
+            <Typography $variant="caption" style={{ marginBottom: 4 }}>상태</Typography>
             <select name="status" defaultValue={searchParams.status || ''} style={{ minWidth: 120, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }}>
               <option value="">전체</option>
               {statuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -99,7 +109,7 @@ const TestCaseList: React.FC = () => {
           fields={createFields}
           initialValues={createForm}
           onSubmit={async (values) => {
-            await axios.post('/api/testcases', {
+            await api.post('/api/testcases', {
               ...values,
               steps: values.steps.split('\n'),
               tags: values.tags.split(',').map((t: string) => t.trim()),
@@ -115,8 +125,8 @@ const TestCaseList: React.FC = () => {
           style={{ marginBottom: 24 }}
         />
       )}
-      {loading && <Typography variant="body">로딩 중...</Typography>}
-      {error && <Typography variant="body" color="red">{error}</Typography>}
+      {loading && <Typography $variant="body">로딩 중...</Typography>}
+      {error && <Typography $variant="body" style={{ color: 'red' }}>{error}</Typography>}
       <Table<TestCase>
         columns={columns}
         data={list}
@@ -125,7 +135,7 @@ const TestCaseList: React.FC = () => {
         size="md"
         style={{ marginTop: 8 }}
       />
-      {list.length === 0 && !loading && <Typography variant="body">데이터 없음</Typography>}
+      {list.length === 0 && !loading && <Typography $variant="body">데이터 없음</Typography>}
       {selectedId && <TestCaseDetail id={selectedId} onClose={() => setSelectedId(null)} />}
     </Container>
   );

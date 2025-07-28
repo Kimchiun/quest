@@ -36,11 +36,13 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
   };
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-      <Container maxWidth="400px" padding="40px 32px" background="#fff" radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
+      <Container $maxWidth="400px" $padding="40px 32px" $background="#fff" $radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
           <Icon name="logo" size={48} />
-          <Typography variant="h2" style={{ marginTop: 16, marginBottom: 8 }}>Quest 로그인</Typography>
-          <Typography variant="body" color="#6b7280">테스트 관리 시스템에 오신 것을 환영합니다.</Typography>
+          <Typography $variant="h2" style={{ marginTop: 16, marginBottom: 8 }}>Quest 로그인</Typography>
+          <Typography $variant="body" style={{ color: '#6b7280' }}>
+            테스트 관리 시스템에 오신 것을 환영합니다.
+          </Typography>
         </div>
         <Form
           fields={fields}

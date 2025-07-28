@@ -1,133 +1,96 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/renderer/store';
-import { fetchDashboardStats } from '../store/dashboardSlice';
-import DashboardCharts from './DashboardCharts';
-import Container from '../../../shared/components/Container';
+import React from 'react';
+import styled from 'styled-components';
 import Typography from '../../../shared/components/Typography';
-import Grid from '../../../shared/components/Grid';
-import Card, { type CardProps } from '../../../shared/components/Card';
-import { FaCheckCircle, FaListAlt, FaBug, FaChartPie } from 'react-icons/fa';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 
-const CARD_TYPE = 'dashboard-card';
+const Container = styled.div`
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+`;
 
-const DraggableCard = ({ id, index, moveCard, ...props }: any) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [, drop] = useDrop({
-    accept: CARD_TYPE,
-    hover(item: any) {
-      if (!ref.current) return;
-      if (item.index === index) return;
-      moveCard(item.index, index);
-      item.index = index;
-    },
-  });
-  const [{ isDragging }, drag] = useDrag({
-    type: CARD_TYPE,
-    item: { id, index },
-    collect: monitor => ({ isDragging: monitor.isDragging() }),
-  });
-  drag(drop(ref));
-  return (
-    <div ref={ref} style={{ opacity: isDragging ? 0.5 : 1, cursor: 'move' }}>
-      <Card {...props} />
-    </div>
-  );
-};
+const ProgressBar = styled.div<{ progress: number }>`
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0;
 
-const defaultOrder = ['progress', 'total', 'defect', 'density'];
+  &::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: ${props => props.progress}%;
+    background: #2563eb;
+    transition: width 0.3s ease;
+  }
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+`;
+
+const StatItem = styled.div`
+  text-align: center;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
 
 const DashboardContainer: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const stats = useSelector((state: RootState) => state.dashboard.stats);
-  const loading = useSelector((state: RootState) => state.dashboard.loading);
-  const error = useSelector((state: RootState) => state.dashboard.error);
-
-  const [cardOrder, setCardOrder] = useState<string[]>(() => {
-    const saved = localStorage.getItem('dashboardCardOrder');
-    return saved ? JSON.parse(saved) : defaultOrder;
-  });
-
-  // 실시간 fetch, 데이터 변경 시만 리렌더
-  useEffect(() => {
-    let prevStats: any = null;
-    const fetchAndUpdate = async () => {
-      await dispatch(fetchDashboardStats());
-    };
-    fetchAndUpdate();
-    const interval = setInterval(async () => {
-      await fetchAndUpdate();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
-  const moveCard = useCallback((from: number, to: number) => {
-    setCardOrder(prev => {
-      const arr = [...prev];
-      const [moved] = arr.splice(from, 1);
-      arr.splice(to, 0, moved);
-      localStorage.setItem('dashboardCardOrder', JSON.stringify(arr));
-      return arr;
-    });
-  }, []);
-
-  // 카드 데이터 useMemo로 메모이제이션
-  const cardData: Partial<Record<string, CardProps>> = useMemo(() => stats ? {
-    progress: {
-      icon: <FaCheckCircle size={28} color="#15803d" />,
-      value: Math.round(stats.progressRate * 100) + '%',
-      label: '진행률',
-      color: '#15803d',
-      description: '전체 테스트 완료 비율',
-    },
-    total: {
-      icon: <FaListAlt size={28} color="#2563eb" />,
-      value: stats.totalCases,
-      label: '전체 케이스',
-      color: '#2563eb',
-      description: '등록된 테스트케이스 수',
-    },
-    defect: {
-      icon: <FaBug size={28} color="#ef4444" />,
-      value: stats.defectCount,
-      label: '결함 수',
-      color: '#ef4444',
-      description: '누적 결함(버그) 건수',
-    },
-    density: {
-      icon: <FaChartPie size={28} color="#f59e42" />,
-      value: (stats.defectDensity * 100).toFixed(2) + '%',
-      label: '결함 밀도',
-      color: '#f59e42',
-      description: '케이스당 결함 비율',
-    },
-  } : {}, [stats]);
+  const progress = 75; // 예시 데이터
 
   return (
-    <Container maxWidth="1200px" padding="32px" background="#fff" radius="md" style={{ margin: '32px auto' }}>
-      <Typography variant="h2" style={{ marginBottom: 24 }}>대시보드</Typography>
-      <DndProvider backend={HTML5Backend}>
-        {stats && (
-          <Grid columns={4} gap="24px" style={{ marginBottom: 32 }}>
-            {cardOrder.map((key, idx) => (
-              <DraggableCard
-                key={key}
-                id={key}
-                index={idx}
-                moveCard={moveCard}
-                {...cardData[key]}
-              />
-            ))}
-          </Grid>
-        )}
-      </DndProvider>
-      <Grid columns={1} gap="32px">
-        {loading && <Typography variant="body">로딩 중...</Typography>}
-        {error && <Typography variant="body" color="red">{error}</Typography>}
-        {stats && <DashboardCharts stats={stats} />}
-      </Grid>
+    <Container>
+      <Typography $variant="h4" style={{ marginBottom: '16px' }}>
+        테스트 진행률
+      </Typography>
+      
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <Typography $variant="body">전체 진행률</Typography>
+          <Typography $variant="body">{progress}%</Typography>
+        </div>
+        <ProgressBar progress={progress} />
+      </div>
+
+      <StatsGrid>
+        <StatItem>
+          <StatValue>12</StatValue>
+          <StatLabel>진행 중</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatValue>34</StatValue>
+          <StatLabel>완료</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatValue>5</StatValue>
+          <StatLabel>실패</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatValue>8</StatValue>
+          <StatLabel>대기</StatLabel>
+        </StatItem>
+      </StatsGrid>
     </Container>
   );
 };

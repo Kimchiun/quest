@@ -66,9 +66,15 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
   const tagsArr: string[] = Array.isArray(detail.tags) ? detail.tags : [];
 
   return (
-    <Container maxWidth="600px" padding="32px" background="#fff" radius="md" style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)', margin: '32px auto' }}>
+    <Container
+      $maxWidth="800px"
+      $padding="32px"
+      $background="white"
+      $radius="8px"
+      style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.08)', margin: '32px auto' }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography variant="h3">테스트케이스 상세</Typography>
+        <Typography $variant="h3">테스트케이스 상세</Typography>
         <Button variant="secondary" onClick={onClose}>닫기</Button>
       </div>
       {edit ? (
@@ -82,21 +88,21 @@ const TestCaseDetail: React.FC<Props> = ({ id, onClose }) => {
         />
       ) : (
         <div style={{ marginBottom: 24 }}>
-          <Typography variant="h4">{detail.title}</Typography>
-          <Typography variant="body"><b>전제조건:</b> {detail.prereq}</Typography>
-          <Typography variant="body"><b>스텝:</b> <pre style={{ margin: 0 }}>{stepsArr.join('\n')}</pre></Typography>
-          <Typography variant="body"><b>기대결과:</b> {detail.expected}</Typography>
-          <Typography variant="body"><b>우선순위:</b> {detail.priority}</Typography>
-          <Typography variant="body"><b>태그:</b> {tagsArr.join(', ')}</Typography>
-          <Typography variant="body"><b>상태:</b> {detail.status}</Typography>
-          <Typography variant="body"><b>작성자:</b> {detail.createdBy}</Typography>
-          <Typography variant="body"><b>생성일:</b> {new Date(detail.createdAt).toLocaleString()}</Typography>
-          <Typography variant="body"><b>수정일:</b> {new Date(detail.updatedAt).toLocaleString()}</Typography>
+          <Typography $variant="h4">{detail.title}</Typography>
+          <Typography $variant="body"><b>전제조건:</b> {detail.prereq}</Typography>
+          <Typography $variant="body"><b>스텝:</b> <pre style={{ margin: 0 }}>{stepsArr.join('\n')}</pre></Typography>
+          <Typography $variant="body"><b>기대결과:</b> {detail.expected}</Typography>
+          <Typography $variant="body"><b>우선순위:</b> {detail.priority}</Typography>
+          <Typography $variant="body"><b>태그:</b> {tagsArr.join(', ')}</Typography>
+          <Typography $variant="body"><b>상태:</b> {detail.status}</Typography>
+          <Typography $variant="body"><b>작성자:</b> {detail.createdBy}</Typography>
+          <Typography $variant="body"><b>생성일:</b> {new Date(detail.createdAt).toLocaleString()}</Typography>
+          <Typography $variant="body"><b>수정일:</b> {new Date(detail.updatedAt).toLocaleString()}</Typography>
           <Button style={{ marginTop: 16 }} onClick={() => setEdit(true)}>수정</Button>
         </div>
       )}
       <div>
-        <Typography variant="h5" style={{ marginTop: 24, marginBottom: 8 }}>버전 이력</Typography>
+        <Typography $variant="h5" style={{ marginTop: 24, marginBottom: 8 }}>버전 이력</Typography>
         <ul style={{ paddingLeft: 16 }}>
           {versions.map(v => (
             <li key={v.id}>v{v.version} - {v.createdBy} ({new Date(v.createdAt).toLocaleString()})</li>

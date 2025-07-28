@@ -8,11 +8,17 @@ import executionController from './domains/executions/controllers/executionContr
 import integrationController from './domains/executions/controllers/integrationController';
 import dashboardController from './controllers/dashboardController';
 import commentController from './domains/comments/controllers/commentController';
+import folderController from './domains/folders/controllers/folderController';
 
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:4000', 'http://127.0.0.1:4000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(passport.initialize());
 
 app.use('/api/auth', authController);
@@ -22,6 +28,7 @@ app.use('/api/executions', executionController);
 app.use('/api/integrations', integrationController);
 app.use('/api/dashboard', dashboardController);
 app.use('/api/comments', commentController);
+app.use('/api/folders', folderController);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });

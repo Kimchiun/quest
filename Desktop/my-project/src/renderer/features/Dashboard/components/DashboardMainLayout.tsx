@@ -56,7 +56,11 @@ const DashboardMainLayout: React.FC = () => {
         <Header left={<span>릴리즈: {dummyReleases.find(r => r.id === selectedRelease)?.name}</span>} right={<span>사용자</span>} />
       }
     >
-      <WidgetContainer widgets={widgets} columns={4} gap="24px" onReorder={handleReorder} />
+      <WidgetContainer $columns={4} $gap="24px" onReorder={handleReorder}>
+        {widgets.map((widget, idx) => (
+          <div key={idx}>{widget}</div>
+        ))}
+      </WidgetContainer>
       {/* TODO: 차트/세부 위젯 등 추가 */}
     </Layout>
   );

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
-import { Theme } from '../theme';
 
 export type ModalSize = 'sm' | 'md' | 'lg';
 export type ModalVariant = 'default' | 'danger' | 'success';
@@ -28,16 +27,16 @@ const Overlay = styled.div`
 
 const ModalBox = styled.div<{ size: ModalSize; variant: ModalVariant }>`
   background: #fff;
-  border-radius: ${({ theme }) => theme.radius.md};
+  border-radius: 8px;
   box-shadow: 0 4px 32px rgba(0,0,0,0.12);
   padding: 32px 24px 24px 24px;
   min-width: ${({ size }) => size === 'sm' ? '320px' : size === 'lg' ? '640px' : '440px'};
   max-width: 90vw;
   outline: none;
-  ${({ variant, theme }) =>
-    variant === 'danger' && css`border: 2px solid ${theme.color.danger};`}
-  ${({ variant, theme }) =>
-    variant === 'success' && css`border: 2px solid ${theme.color.success};`}
+  ${({ variant }) =>
+    variant === 'danger' && css`border: 2px solid #dc2626;`}
+  ${({ variant }) =>
+    variant === 'success' && css`border: 2px solid #10b981;`}
 `;
 
 const ModalTitle = styled.h2`
@@ -67,7 +66,16 @@ const Footer = styled.div`
   text-align: right;
 `;
 
-const Modal: React.FC<ModalProps> = ({ open, onClose, title, size = 'md', variant = 'default', children, footer, hideClose }) => {
+const Modal: React.FC<ModalProps> = ({ 
+  open, 
+  onClose, 
+  title, 
+  size = 'md', 
+  variant = 'default', 
+  children, 
+  footer, 
+  hideClose 
+}) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const titleId = React.useId();
 
@@ -81,7 +89,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, size = 'md', varian
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-  // 포커스 트랩(최소화: 최초 진입 시 모달로 포커스 이동)
+  // 포커스 트랩
   useEffect(() => {
     if (open && modalRef.current) {
       modalRef.current.focus();
@@ -98,11 +106,15 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, size = 'md', varian
         variant={variant}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
+        aria-labelledby={titleId}
         tabIndex={-1}
       >
-        {!hideClose && <CloseBtn aria-label="닫기" onClick={onClose}>&times;</CloseBtn>}
         {title && <ModalTitle id={titleId}>{title}</ModalTitle>}
+        {!hideClose && (
+          <CloseBtn onClick={onClose} aria-label="닫기">
+            ×
+          </CloseBtn>
+        )}
         <div>{children}</div>
         {footer && <Footer>{footer}</Footer>}
       </ModalBox>
