@@ -298,7 +298,7 @@ const AdvancedFilter: React.FC<AdvancedFilterProps> = ({ onSearch, onClear }) =>
   const loadPresets = async () => {
     try {
       const response = await axios.get('/api/testcases/search/presets');
-      setPresets(response.data);
+      setPresets(response.data as unknown as SearchPreset[]);
     } catch (error) {
       console.error('Failed to load presets:', error);
     }

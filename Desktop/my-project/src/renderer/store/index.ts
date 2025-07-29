@@ -7,6 +7,7 @@ import commentReducer from '../features/ExecutionManagement/store/commentSlice';
 import notificationReducer from '../features/ExecutionManagement/store/notificationSlice';
 import selectionReducer from '../features/TestCaseManagement/store/selectionSlice';
 import dashboardLayoutReducer from './dashboardLayoutSlice';
+import animationReducer from './animationSlice';
 import { undoRedoMiddleware } from './undoRedoMiddleware';
 
 export type UserRole = 'ADMIN' | 'QA' | 'DEV' | 'PM';
@@ -39,6 +40,7 @@ export const store = configureStore({
     notifications: notificationReducer,
     selection: selectionReducer,
     dashboardLayout: dashboardLayoutReducer,
+    animation: animationReducer,
     users: userSlice.reducer
   },
   middleware: (getDefaultMiddleware) =>

@@ -232,8 +232,9 @@ const IntegratedItemList: React.FC = () => {
       // 키워드 검색
       if (filters.keyword) {
         const keyword = filters.keyword.toLowerCase();
-        const matchesKeyword = item.title.toLowerCase().includes(keyword) ||
-          (item.originalItem.description?.toLowerCase().includes(keyword) ?? false);
+        const defectDescription = item.type === 'defect' ? 
+          (item.originalItem as Defect).description?.toLowerCase().includes(keyword) ?? false : false;
+        const matchesKeyword = item.title.toLowerCase().includes(keyword) || defectDescription;
         if (!matchesKeyword) return false;
       }
 

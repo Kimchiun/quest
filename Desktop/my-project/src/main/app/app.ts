@@ -9,6 +9,7 @@ import integrationController from './domains/executions/controllers/integrationC
 import dashboardController from './controllers/dashboardController';
 import commentController from './domains/comments/controllers/commentController';
 import folderController from './domains/folders/controllers/folderController';
+import defectController from './domains/defects/controllers/defectController';
 import { bulkMove, bulkCopy, bulkDelete, bulkUpdateStatus } from './controllers/bulkController';
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/integrations', integrationController);
 app.use('/api/dashboard', dashboardController);
 app.use('/api/comments', commentController);
 app.use('/api/folders', folderController);
+app.use('/api/defects', defectController);
 
 // 일괄 작업 API 라우트
 app.post('/api/bulk/move', bulkMove);

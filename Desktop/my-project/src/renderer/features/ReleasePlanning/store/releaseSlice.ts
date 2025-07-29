@@ -1,6 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../utils/axios';
 
+// showToast 임시 선언 (실제 구현은 공통 유틸로 분리 권장)
+function showToast(message: string, type: 'error' | 'info' | 'success' = 'error') {
+  alert(`[${type}] ${message}`);
+}
+
 export interface Release {
   id: number;
   name: string;
@@ -34,26 +39,51 @@ const initialState: ReleaseState = {
   error: null,
 };
 
-export const fetchReleases = createAsyncThunk('releases/fetch', async () => {
-  const res = await api.get('/api/releases');
-  return res.data as Release[];
+export const fetchReleases = createAsyncThunk('releases/fetch', async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get('/api/releases');
+    return res.data as Release[];
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '릴리즈 불러오기 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
-export const fetchSuites = createAsyncThunk('suites/fetch', async (releaseId: number) => {
-  const res = await api.get(`/api/releases/${releaseId}/suites`);
-  return res.data as Suite[];
+export const fetchSuites = createAsyncThunk('suites/fetch', async (releaseId: number, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/api/releases/${releaseId}/suites`);
+    return res.data as Suite[];
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '스위트 불러오기 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
 
-export const createRelease = createAsyncThunk('releases/create', async (data: Omit<Release, 'id' | 'createdAt'>) => {
-  const res = await api.post('/api/releases', data);
-  return res.data as Release;
+export const createRelease = createAsyncThunk('releases/create', async (data: Omit<Release, 'id' | 'createdAt'>, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/api/releases', data);
+    return res.data as Release;
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '릴리즈 생성 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
-export const updateRelease = createAsyncThunk('releases/update', async ({ id, data }: { id: number; data: Partial<Omit<Release, 'id' | 'createdAt'>> }) => {
-  const res = await api.put(`/api/releases/${id}`, data);
-  return res.data as Release;
+export const updateRelease = createAsyncThunk('releases/update', async ({ id, data }: { id: number; data: Partial<Omit<Release, 'id' | 'createdAt'>> }, { rejectWithValue }) => {
+  try {
+    const res = await api.put(`/api/releases/${id}`, data);
+    return res.data as Release;
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '릴리즈 수정 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
-export const deleteRelease = createAsyncThunk('releases/delete', async (id: number) => {
-  await api.delete(`/api/releases/${id}`);
-  return id;
+export const deleteRelease = createAsyncThunk('releases/delete', async (id: number, { rejectWithValue }) => {
+  try {
+    await api.delete(`/api/releases/${id}`);
+    return id;
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '릴리즈 삭제 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
 
 const releaseSlice = createSlice({

@@ -3,9 +3,11 @@ import styled from 'styled-components';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import { toggleLeftPanel, toggleRightPanel } from '../../../store/dashboardLayoutSlice';
+import { PageTransition } from '../../../shared/components/Animation';
+import { useLoadingAnimation } from '../../../shared/components/Animation/useAnimation';
 import LeftPanel from './LeftPanel';
 import CenterPanel from './CenterPanel';
-import RightPanel from './RightPanel';
+import RightContextPanel from './RightContextPanel';
 
 interface LayoutContainerProps {
   layout: {
@@ -28,7 +30,7 @@ const LayoutContainer = styled.div<LayoutContainerProps>`
     const rightWidth = rightPanel.isCollapsed ? '60px' : `${rightPanel.width}px`;
     return `${leftWidth} 1fr ${rightWidth}`;
   }};
-  height: 100vh;
+  height: 100%;
   transition: grid-template-columns 0.3s ease;
   overflow: hidden;
 `;
@@ -100,47 +102,51 @@ const DashboardLayout: React.FC = () => {
     [layout.rightPanel.isCollapsed]
   );
 
+  const showSkeleton = useLoadingAnimation(false); // 실제 로딩 상태로 변경 필요
+
   return (
-    <LayoutContainer 
-      layout={layoutConfig}
-      data-testid="dashboard-layout"
-    >
-      <PanelContainer 
-        isCollapsed={layout.leftPanel.isCollapsed}
-        data-testid="left-panel"
-        className={layout.leftPanel.isCollapsed ? 'collapsed' : ''}
+    <PageTransition location="dashboard" classNames="fade">
+      <LayoutContainer 
+        layout={layoutConfig}
+        data-testid="dashboard-layout"
       >
-        <LeftPanel />
-        <ToggleButton 
-          position="left" 
-          onClick={handleToggleLeftPanel}
-          aria-label={layout.leftPanel.isCollapsed ? '좌측 패널 확장' : '좌측 패널 축소'}
-          data-testid="left-toggle-button"
+        <PanelContainer 
+          isCollapsed={layout.leftPanel.isCollapsed}
+          data-testid="left-panel"
+          className={layout.leftPanel.isCollapsed ? 'collapsed' : ''}
         >
-          {leftToggleText}
-        </ToggleButton>
-      </PanelContainer>
-      
-      <div data-testid="center-panel">
-        <CenterPanel />
-      </div>
-      
-      <PanelContainer 
-        isCollapsed={layout.rightPanel.isCollapsed}
-        data-testid="right-panel"
-        className={layout.rightPanel.isCollapsed ? 'collapsed' : ''}
-      >
-        <RightPanel />
-        <ToggleButton 
-          position="right" 
-          onClick={handleToggleRightPanel}
-          aria-label={layout.rightPanel.isCollapsed ? '우측 패널 확장' : '우측 패널 축소'}
-          data-testid="right-toggle-button"
+          <LeftPanel />
+          <ToggleButton 
+            position="left" 
+            onClick={handleToggleLeftPanel}
+            aria-label={layout.leftPanel.isCollapsed ? '좌측 패널 확장' : '좌측 패널 축소'}
+            data-testid="left-toggle-button"
+          >
+            {leftToggleText}
+          </ToggleButton>
+        </PanelContainer>
+        
+        <div data-testid="center-panel">
+          <CenterPanel />
+        </div>
+        
+        <PanelContainer 
+          isCollapsed={layout.rightPanel.isCollapsed}
+          data-testid="right-panel"
+          className={layout.rightPanel.isCollapsed ? 'collapsed' : ''}
         >
-          {rightToggleText}
-        </ToggleButton>
-      </PanelContainer>
-    </LayoutContainer>
+          <RightContextPanel />
+          <ToggleButton 
+            position="right" 
+            onClick={handleToggleRightPanel}
+            aria-label={layout.rightPanel.isCollapsed ? '우측 패널 확장' : '우측 패널 축소'}
+            data-testid="right-toggle-button"
+          >
+            {rightToggleText}
+          </ToggleButton>
+        </PanelContainer>
+      </LayoutContainer>
+    </PageTransition>
   );
 };
 

@@ -298,7 +298,7 @@ const ItemDetailView: React.FC = () => {
     setError(null);
     try {
       const response = await axios.get(`/api/testcases/${selectedTestCaseId}`);
-      setTestCaseDetail(response.data as TestCaseDetail);
+      setTestCaseDetail(response.data as unknown as TestCaseDetail);
       setDefectDetail(null);
     } catch (err) {
       setError('테스트케이스 상세 정보를 불러올 수 없습니다.');
@@ -315,7 +315,7 @@ const ItemDetailView: React.FC = () => {
     setError(null);
     try {
       const response = await axios.get(`/api/defects/${selectedDefectId}`);
-      setDefectDetail(response.data as DefectDetail);
+      setDefectDetail(response.data as unknown as DefectDetail);
       setTestCaseDetail(null);
     } catch (err) {
       setError('결함 상세 정보를 불러올 수 없습니다.');

@@ -13,6 +13,12 @@ import GlobalStyle from '../shared/GlobalStyle';
 import Icon from '../shared/components/Icon';
 import LoginPage from '../features/Login/LoginPage';
 import ReleaseSelection from '../features/ReleasePlanning/components/ReleaseSelection';
+import UserFlowManager from '../features/UserFlow/components/UserFlowManager';
+import AccessibilityManager from '../features/Accessibility/components/AccessibilityManager';
+import FeedbackCollector from '../features/Feedback/components/FeedbackCollector';
+import { LayoutProvider } from '../shared/components/Layout/LayoutContext';
+import GlobalLayout from '../shared/components/Layout/GlobalLayout';
+import ResponsiveLayout from '../shared/components/Layout/ResponsiveLayout';
 
 const SkipLinkStyle = createGlobalStyle`
   .skip-link {
@@ -57,10 +63,17 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
   }
 
   return (
-    <>
-      <a href="#main-content" className="skip-link">본문 바로가기</a>
-      <DashboardLayout />
-    </>
+    <LayoutProvider>
+      <GlobalLayout>
+        <ResponsiveLayout>
+          <a href="#main-content" className="skip-link">본문 바로가기</a>
+          <DashboardLayout />
+          <UserFlowManager />
+          <AccessibilityManager />
+          <FeedbackCollector />
+        </ResponsiveLayout>
+      </GlobalLayout>
+    </LayoutProvider>
   );
 };
 

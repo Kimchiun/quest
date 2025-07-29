@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import api from '../../../utils/axios';
+
+// showToast 임시 선언 (실제 구현은 공통 유틸로 분리 권장)
+function showToast(message: string, type: 'error' | 'info' | 'success' = 'error') {
+  alert(`[${type}] ${message}`);
+}
 
 export interface TestCase {
   id: number;
@@ -72,55 +77,90 @@ const initialState: TestCaseState = {
   presets: [],
 };
 
-export const fetchTestCases = createAsyncThunk('testcases/fetch', async () => {
-  const res = await axios.get('/api/testcases');
-  return res.data as TestCase[];
+export const fetchTestCases = createAsyncThunk('testcases/fetch', async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get('/api/testcases');
+    return res.data as TestCase[];
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '테스트케이스 불러오기 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
 
-export const fetchTestCaseDetail = createAsyncThunk('testcases/fetchDetail', async (id: number) => {
-  const res = await axios.get(`/api/testcases/${id}`);
-  return res.data as TestCase;
+export const fetchTestCaseDetail = createAsyncThunk('testcases/fetchDetail', async (id: number, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/api/testcases/${id}`);
+    return res.data as TestCase;
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '상세 불러오기 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
 
-export const searchTestCases = createAsyncThunk('testcases/search', async (query: any) => {
-  const res = await axios.post('/api/testcases/search', query);
-  return res.data as TestCase[];
+export const searchTestCases = createAsyncThunk('testcases/search', async (query: any, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/api/testcases/search', query);
+    return res.data as TestCase[];
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || error.message || '검색 실패', 'error');
+    return rejectWithValue(error.message);
+  }
 });
 
 // 고급 검색
 export const advancedSearchTestCases = createAsyncThunk(
   'testcases/advancedSearch',
-  async ({ filters, page = 0, size = 20 }: { filters: AdvancedSearchFilter; page?: number; size?: number }) => {
-    const res = await axios.post('/api/testcases/search/advanced', { filters, page, size });
-    return res.data as SearchResult;
+  async ({ filters, page = 0, size = 20 }: { filters: AdvancedSearchFilter; page?: number; size?: number }, { rejectWithValue }) => {
+    try {
+      const res = await api.post('/api/testcases/search/advanced', { filters, page, size });
+      return res.data as SearchResult;
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || error.message || '고급 검색 실패', 'error');
+      return rejectWithValue(error.message);
+    }
   }
 );
 
 // 검색 프리셋 저장
 export const saveSearchPreset = createAsyncThunk(
   'testcases/savePreset',
-  async (preset: Omit<SearchPreset, 'id' | 'createdAt'>) => {
-    const res = await axios.post('/api/testcases/search/presets', preset);
-    return res.data as SearchPreset;
+  async (preset: Omit<SearchPreset, 'id' | 'createdAt'>, { rejectWithValue }) => {
+    try {
+      const res = await api.post('/api/testcases/search/presets', preset);
+      return res.data as SearchPreset;
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || error.message || '프리셋 저장 실패', 'error');
+      return rejectWithValue(error.message);
+    }
   }
 );
 
 // 검색 프리셋 목록 조회
 export const fetchSearchPresets = createAsyncThunk(
   'testcases/fetchPresets',
-  async (createdBy?: string) => {
-    const params = createdBy ? { createdBy } : {};
-    const res = await axios.get('/api/testcases/search/presets', { params });
-    return res.data as SearchPreset[];
+  async (createdBy?: string, { rejectWithValue }) => {
+    try {
+      const params = createdBy ? { createdBy } : {};
+      const res = await api.get('/api/testcases/search/presets', { params });
+      return res.data as SearchPreset[];
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || error.message || '프리셋 목록 불러오기 실패', 'error');
+      return rejectWithValue(error.message);
+    }
   }
 );
 
 // 검색 프리셋 삭제
 export const deleteSearchPreset = createAsyncThunk(
   'testcases/deletePreset',
-  async (presetId: string) => {
-    await axios.delete(`/api/testcases/search/presets/${presetId}`);
-    return presetId;
+  async (presetId: string, { rejectWithValue }) => {
+    try {
+      await api.delete(`/api/testcases/search/presets/${presetId}`);
+      return presetId;
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || error.message || '프리셋 삭제 실패', 'error');
+      return rejectWithValue(error.message);
+    }
   }
 );
 

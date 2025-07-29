@@ -125,7 +125,7 @@ export async function advancedSearch(
   
   const result = await esClient.search({
     index: INDEX,
-    body: query
+    ...query
   });
 
   const testCases = result.hits.hits.map((hit: any) => hit._source as TestCase);
@@ -181,7 +181,7 @@ export async function getSearchPresets(createdBy?: string): Promise<SearchPreset
 
   const result = await esClient.search({
     index: 'search_presets',
-    body: query
+    ...query
   });
 
   return result.hits.hits.map((hit: any) => hit._source as SearchPreset);

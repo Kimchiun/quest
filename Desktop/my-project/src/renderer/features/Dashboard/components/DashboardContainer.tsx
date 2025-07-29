@@ -1,96 +1,123 @@
 import React from 'react';
 import styled from 'styled-components';
-import Typography from '../../../shared/components/Typography';
+import { SectionContainer, SectionHeader } from '../../../shared/components/Layout/MainContentArea';
+import ProgressWidget from '../../../shared/components/Dashboard/ProgressWidget';
 
 const Container = styled.div`
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+`;
+
+const DetailCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
-const ProgressBar = styled.div<{ progress: number }>`
-  width: 100%;
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  overflow: hidden;
-  margin: 8px 0;
-
-  &::after {
-    content: '';
-    display: block;
-    height: 100%;
-    width: ${props => props.progress}%;
-    background: #2563eb;
-    transition: width 0.3s ease;
-  }
+const DetailTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
 `;
 
-const StatsGrid = styled.div`
+const DetailGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-top: 16px;
+  gap: 12px;
 `;
 
-const StatItem = styled.div`
+const DetailItem = styled.div`
   text-align: center;
   padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 8px;
 `;
 
-const StatValue = styled.div`
-  font-size: 24px;
+const DetailValue = styled.div`
+  font-size: 20px;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 4px;
 `;
 
-const StatLabel = styled.div`
+const DetailLabel = styled.div`
   font-size: 12px;
   color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
 `;
 
 const DashboardContainer: React.FC = () => {
-  const progress = 75; // 예시 데이터
+  const testProgressData = {
+    completed: 34,
+    total: 59,
+    label: '테스트 완료',
+    color: '#10b981'
+  };
+
+  const defectProgressData = {
+    completed: 12,
+    total: 23,
+    label: '결함 해결',
+    color: '#ef4444'
+  };
+
+  const testStats = [
+    { value: 12, label: '진행 중', color: '#3b82f6' },
+    { value: 34, label: '완료', color: '#10b981' },
+    { value: 5, label: '실패', color: '#ef4444' },
+    { value: 8, label: '대기', color: '#f59e0b' }
+  ];
+
+  const defectStats = [
+    { value: 8, label: 'Critical', color: '#dc2626' },
+    { value: 12, label: 'Major', color: '#ea580c' },
+    { value: 15, label: 'Minor', color: '#d97706' },
+    { value: 5, label: '해결됨', color: '#059669' }
+  ];
 
   return (
     <Container>
-      <Typography $variant="h4" style={{ marginBottom: '16px' }}>
-        테스트 진행률
-      </Typography>
-      
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <Typography $variant="body">전체 진행률</Typography>
-          <Typography $variant="body">{progress}%</Typography>
-        </div>
-        <ProgressBar progress={progress} />
-      </div>
+      <DetailCard>
+        <DetailTitle>테스트 진행 상황</DetailTitle>
+        <ProgressWidget
+          data={testProgressData}
+          variant="bar"
+          size="small"
+        />
+        <DetailGrid>
+          {testStats.map((stat, index) => (
+            <DetailItem key={index}>
+              <DetailValue style={{ color: stat.color }}>
+                {stat.value}
+              </DetailValue>
+              <DetailLabel>{stat.label}</DetailLabel>
+            </DetailItem>
+          ))}
+        </DetailGrid>
+      </DetailCard>
 
-      <StatsGrid>
-        <StatItem>
-          <StatValue>12</StatValue>
-          <StatLabel>진행 중</StatLabel>
-        </StatItem>
-        <StatItem>
-          <StatValue>34</StatValue>
-          <StatLabel>완료</StatLabel>
-        </StatItem>
-        <StatItem>
-          <StatValue>5</StatValue>
-          <StatLabel>실패</StatLabel>
-        </StatItem>
-        <StatItem>
-          <StatValue>8</StatValue>
-          <StatLabel>대기</StatLabel>
-        </StatItem>
-      </StatsGrid>
+      <DetailCard>
+        <DetailTitle>결함 현황</DetailTitle>
+        <ProgressWidget
+          data={defectProgressData}
+          variant="bar"
+          size="small"
+        />
+        <DetailGrid>
+          {defectStats.map((stat, index) => (
+            <DetailItem key={index}>
+              <DetailValue style={{ color: stat.color }}>
+                {stat.value}
+              </DetailValue>
+              <DetailLabel>{stat.label}</DetailLabel>
+            </DetailItem>
+          ))}
+        </DetailGrid>
+      </DetailCard>
     </Container>
   );
 };
