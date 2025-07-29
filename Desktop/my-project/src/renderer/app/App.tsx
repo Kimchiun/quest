@@ -4,7 +4,7 @@ import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
 import ReleaseBoard from '../features/ReleasePlanning/components/ReleaseBoard';
-import DashboardContainer from '../features/Dashboard/components/DashboardContainer';
+import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
 import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
@@ -41,40 +41,33 @@ const SkipLinkStyle = createGlobalStyle`
 
 const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isLoggedIn, onLogin }) => {
   const navigate = useNavigate();
+  
+  if (!isLoggedIn) {
+    return (
+      <>
+        <a href="#main-content" className="skip-link">본문 바로가기</a>
+        <main id="main-content" role="main" aria-label="주요 컨텐츠">
+          <Routes>
+            <Route path="/login" element={<LoginPage onLogin={() => { onLogin(); navigate('/dashboard'); }} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <a href="#main-content" className="skip-link">본문 바로가기</a>
-      <nav style={{ padding: 16, borderBottom: '1px solid #eee', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} aria-label="주요 메뉴">
-        <div>
-          <Link to="/dashboard" style={{ marginRight: 16 }}>Dashboard</Link>
-          <Link to="/testcases" style={{ marginRight: 16 }}>테스트케이스</Link>
-          <Link to="/folders" style={{ marginRight: 16 }}>폴더 관리</Link>
-          <Link to="/releases" style={{ marginRight: 16 }}>릴리즈 관리</Link>
-          {/* 다른 메뉴 추가 가능 */}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Icon name="logo" size={32} />
-          <NotificationBadge />
-        </div>
-      </nav>
-      <main id="main-content" role="main" aria-label="주요 컨텐츠">
-        <Routes>
-          <Route path="/login" element={<LoginPage onLogin={() => { onLogin(); navigate('/dashboard'); }} />} />
-          <Route path="/dashboard" element={isLoggedIn ? <DashboardContainer /> : <Navigate to="/login" replace />} />
-          <Route path="/dashboard/:releaseId" element={isLoggedIn ? <DashboardContainer /> : <Navigate to="/login" replace />} />
-          <Route path="/releases" element={isLoggedIn ? <ReleaseSelection /> : <Navigate to="/login" replace />} />
-          <Route path="/testcases" element={isLoggedIn ? <TestCaseList /> : <Navigate to="/login" replace />} />
-          <Route path="/folders" element={isLoggedIn ? <FolderManagementPage /> : <Navigate to="/login" replace />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          {/* 다른 라우트 추가 가능 */}
-        </Routes>
-      </main>
+      <DashboardLayout />
     </>
   );
 };
 
 const AppInner: React.FC = () => {
-  const isLoggedIn = useSelector((state: RootState) => state.users.isLoggedIn);
+  const user = useSelector((state: RootState) => state.users.me);
+  const isLoggedIn = !!user;
+  
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />

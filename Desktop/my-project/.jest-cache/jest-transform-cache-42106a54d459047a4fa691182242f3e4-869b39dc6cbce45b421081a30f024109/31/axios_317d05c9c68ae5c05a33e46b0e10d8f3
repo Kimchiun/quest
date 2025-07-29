@@ -1,0 +1,13 @@
+8b0c1a2d0af7cd710c393362511d30da
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const axios_1 = __importDefault(require("axios"));
+const api = axios_1.default.create({
+    baseURL: 'http://localhost:3000', // 백엔드 서버 주소/포트에 맞게 수정
+    withCredentials: false,
+});
+exports.default = api;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0Rlc2t0b3AvbXktcHJvamVjdC9zcmMvcmVuZGVyZXIvdXRpbHMvYXhpb3MudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7QUFBQSxrREFBMEI7QUFFMUIsTUFBTSxHQUFHLEdBQUcsZUFBSyxDQUFDLE1BQU0sQ0FBQztJQUN2QixPQUFPLEVBQUUsdUJBQXVCLEVBQUUsc0JBQXNCO0lBQ3hELGVBQWUsRUFBRSxLQUFLO0NBQ3ZCLENBQUMsQ0FBQztBQUVILGtCQUFlLEdBQUcsQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvVXNlcnMvM2ktYTEtMjAyMS0wMTcvRGVza3RvcC9teS1wcm9qZWN0L3NyYy9yZW5kZXJlci91dGlscy9heGlvcy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgYXhpb3MgZnJvbSAnYXhpb3MnO1xuXG5jb25zdCBhcGkgPSBheGlvcy5jcmVhdGUoe1xuICBiYXNlVVJMOiAnaHR0cDovL2xvY2FsaG9zdDozMDAwJywgLy8g67Cx7JeU65OcIOyEnOuyhCDso7zshowv7Y+s7Yq47JeQIOunnuqyjCDsiJjsoJVcbiAgd2l0aENyZWRlbnRpYWxzOiBmYWxzZSxcbn0pO1xuXG5leHBvcnQgZGVmYXVsdCBhcGk7ICJdLCJ2ZXJzaW9uIjozfQ==

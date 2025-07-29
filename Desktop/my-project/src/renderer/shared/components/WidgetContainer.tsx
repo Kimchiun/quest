@@ -5,6 +5,7 @@ interface WidgetContainerProps {
   children: React.ReactNode;
   $columns?: number;
   $gap?: string;
+  onReorder?: (newWidgets: React.ReactNode[]) => void;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = ({ children, $columns = 3, $gap = '16px' }) => {

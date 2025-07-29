@@ -63,6 +63,44 @@ export async function getFolderTree(): Promise<FolderTree[]> {
     return rootFolders;
 }
 
+export async function getFolderTreePaginated(page = 1, limit = 100): Promise<{ folders: FolderTree[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // 전체 개수 조회
+    const countResult = await pgClient.query('SELECT COUNT(*) as total FROM folders');
+    const total = parseInt(countResult.rows[0].total);
+    
+    // 페이징된 폴더 조회
+    const result = await pgClient.query(
+        'SELECT * FROM folders ORDER BY name LIMIT $1 OFFSET $2',
+        [limit, offset]
+    );
+    
+    const folders = result.rows.map(row => ({
+        ...row,
+        children: [],
+        testCaseCount: 0
+    }));
+    
+    return { folders, total };
+}
+
+export async function getFolderTreeWithLazyLoading(parentId?: number): Promise<FolderTree[]> {
+    const whereClause = parentId ? 'WHERE parent_id = $1' : 'WHERE parent_id IS NULL';
+    const params = parentId ? [parentId] : [];
+    
+    const result = await pgClient.query(
+        `SELECT * FROM folders ${whereClause} ORDER BY name`,
+        params
+    );
+    
+    return result.rows.map(row => ({
+        ...row,
+        children: [],
+        testCaseCount: 0
+    }));
+}
+
 export async function updateFolder(id: number, updates: Partial<Folder>): Promise<Folder | null> {
     const fields = [];
     const values = [];
@@ -127,6 +165,29 @@ export async function moveTestCase(testCaseId: number, fromFolderId: number, toF
     try {
         await removeTestCaseFromFolder(testCaseId, fromFolderId);
         await addTestCaseToFolder(testCaseId, toFolderId);
+        await pgClient.query('COMMIT');
+    } catch (error) {
+        await pgClient.query('ROLLBACK');
+        throw error;
+    }
+}
+
+export async function moveTestCasesBatch(testCaseIds: number[], fromFolderId: number, toFolderId: number): Promise<void> {
+    await pgClient.query('BEGIN');
+    try {
+        // 기존 관계 제거
+        await pgClient.query(
+            'DELETE FROM case_folders WHERE testcase_id = ANY($1) AND folder_id = $2',
+            [testCaseIds, fromFolderId]
+        );
+        
+        // 새 관계 추가 (배치 처리)
+        const values = testCaseIds.map((_, index) => `($${index + 1}, $${testCaseIds.length + 1})`).join(', ');
+        await pgClient.query(
+            `INSERT INTO case_folders (testcase_id, folder_id) VALUES ${values}`,
+            [...testCaseIds, toFolderId]
+        );
+        
         await pgClient.query('COMMIT');
     } catch (error) {
         await pgClient.query('ROLLBACK');

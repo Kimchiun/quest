@@ -7,11 +7,17 @@ interface TypographyProps {
   $variant?: TypographyVariant;
   children: React.ReactNode;
   style?: React.CSSProperties;
+  color?: string;
+  align?: 'left' | 'center' | 'right';
+  weight?: number;
 }
 
 const StyledTypography = styled.div<TypographyProps>`
   margin: 0;
   padding: 0;
+  color: ${({ color }) => color || 'inherit'};
+  text-align: ${({ align }) => align || 'left'};
+  font-weight: ${({ weight }) => weight || 'inherit'};
   
   ${({ $variant }) => {
     switch ($variant) {

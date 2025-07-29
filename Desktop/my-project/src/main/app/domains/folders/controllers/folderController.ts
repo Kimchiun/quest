@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import * as folderService from '../services/folderService';
 import { CreateFolderRequest, UpdateFolderRequest, MoveFolderRequest, MoveTestCaseRequest } from '../models/Folder';
+import bulkRouter from './bulkController';
 
 const router = Router();
+
+// 일괄 작업 라우터 등록
+router.use('/bulk', bulkRouter);
 
 // 폴더 트리 조회
 router.get('/tree', async (req, res) => {

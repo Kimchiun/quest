@@ -6,7 +6,7 @@ import Typography from '../../shared/components/Typography';
 import Icon from '../../shared/components/Icon';
 import { useDispatch } from 'react-redux';
 import api from '../../utils/axios';
-import { setUser } from '../../store';
+import { setMe } from '../../store';
 
 const fields: FormField[] = [
   { name: 'username', label: '아이디', type: 'text', required: true, placeholder: '아이디를 입력하세요' },
@@ -25,7 +25,7 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
       }
       const user = res.data.user || res.data;
       if (user && user.role) {
-        dispatch(setUser(user));
+        dispatch(setMe(user));
         if (onLogin) onLogin(user);
       } else {
         alert('로그인 실패: 사용자 정보 없음');

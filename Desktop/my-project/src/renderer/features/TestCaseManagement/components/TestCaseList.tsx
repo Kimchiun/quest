@@ -1,143 +1,220 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { fetchTestCases, searchTestCases, setSearchParams, TestCase } from '../store/testCaseSlice';
-import Container from '../../../shared/components/Container';
-import Grid from '../../../shared/components/Grid';
-import Typography from '../../../shared/components/Typography';
-import Button from '../../../shared/components/Button';
-import Form, { FormField } from '../../../shared/components/Form';
-import Table, { TableColumn } from '../../../shared/components/Table';
-import TestCaseDetail from './TestCaseDetail';
-import api from '../../../utils/axios';
+import { TestCase } from '../store/testCaseSlice';
+import { selectTestCase, deselectTestCase, selectAllTestCases, deselectAllTestCases } from '../store/selectionSlice';
+import EditableCell from '../../../shared/components/EditableCell';
+import ContextMenu from '../../../shared/components/ContextMenu';
+import { useKeyboardShortcuts } from '../../../hooks/useKeyboardShortcuts';
+import axios from '../../../utils/axios';
 
-const priorities = ['High', 'Medium', 'Low'];
-const statuses = ['Active', 'Archived'];
+const TableContainer = styled.div`
+  margin: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+`;
+
+const Th = styled.th`
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+`;
+
+const Td = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+`;
+
+const Checkbox = styled.input`
+  margin: 0;
+  cursor: pointer;
+`;
 
 const TestCaseList: React.FC = () => {
   const dispatch = useDispatch();
-  const { list, loading, error, searchParams } = useSelector((state: RootState) => state.testcases);
-  const [selectedId, setSelectedId] = React.useState<number | null>(null);
-  const [showCreate, setShowCreate] = React.useState(false);
-  const [createForm, setCreateForm] = React.useState({ title: '', steps: '', expected: '', priority: 'Medium', tags: '', status: 'Active', prereq: '' });
-
-  const handleDelete = React.useCallback(async (id: number) => {
-    if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    await api.delete(`/api/testcases/${id}`);
-    dispatch(fetchTestCases() as any);
-  }, [dispatch]);
-
-  const columns = React.useMemo<TableColumn<TestCase>[]>(() => [
-    { key: 'id', title: 'ID', width: 60, align: 'center' },
-    { key: 'title', title: '제목', render: (v, row) => <span style={{ cursor: 'pointer', color: '#2563eb' }} onClick={() => setSelectedId(row.id)}>{v}</span> },
-    { key: 'priority', title: '우선순위', align: 'center' },
-    { key: 'status', title: '상태', align: 'center' },
-    { key: 'createdBy', title: '작성자', align: 'center' },
-    { key: 'createdAt', title: '생성일', render: v => new Date(v).toLocaleString(), align: 'center' },
-    { key: 'delete', title: '삭제', width: 80, align: 'center', render: (_, row) => <Button size="sm" variant="danger" onClick={e => { e.stopPropagation(); handleDelete(row.id); }}>삭제</Button> },
-  ], [setSelectedId, handleDelete]);
+  const testCases = useSelector((state: RootState) => state.testcases.list) || [];
+  const { selectedTestCases = [] } = useSelector((state: RootState) => state.selection);
+  const [loading, setLoading] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean;
+    x: number;
+    y: number;
+  }>({
+    isVisible: false,
+    x: 0,
+    y: 0
+  });
 
   useEffect(() => {
-    dispatch(fetchTestCases() as any);
-  }, [dispatch]);
+    // 테스트 케이스 데이터 로드
+    setLoading(false);
+  }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const title = (form.elements.namedItem('title') as HTMLInputElement).value;
-    const priority = (form.elements.namedItem('priority') as HTMLSelectElement).value;
-    const status = (form.elements.namedItem('status') as HTMLSelectElement).value;
-    const query: any = { query: { bool: { must: [] as any[] } } };
-    if (title) query.query.bool.must.push({ match: { title } });
-    if (priority) query.query.bool.must.push({ term: { priority } });
-    if (status) query.query.bool.must.push({ term: { status } });
-    dispatch(setSearchParams({ title, priority, status }));
-    dispatch(searchTestCases(query) as any);
+  const handleSelectAll = () => {
+    if (selectedTestCases.length === testCases.length) {
+      dispatch(deselectAllTestCases());
+    } else {
+      const allTestCaseIds = testCases.map((tc: TestCase) => tc.id);
+      dispatch(selectAllTestCases(allTestCaseIds));
+    }
   };
 
-  const createFields: FormField[] = [
-    { name: 'title', label: '제목', type: 'text', required: true },
-    { name: 'prereq', label: '전제조건', type: 'textarea' },
-    { name: 'steps', label: '스텝(줄바꿈 구분)', type: 'textarea', required: true },
-    { name: 'expected', label: '기대결과', type: 'textarea', required: true },
-    { name: 'priority', label: '우선순위', type: 'select', options: priorities.map(p => ({ label: p, value: p })), required: true },
-    { name: 'tags', label: '태그(,로 구분)', type: 'text' },
-    { name: 'status', label: '상태', type: 'select', options: statuses.map(s => ({ label: s, value: s })), required: true },
-  ];
+  const handleSelectTestCase = (testCaseId: number, index: number, isShiftKey: boolean) => {
+    dispatch(selectTestCase({ id: testCaseId, index, isShiftKey }));
+  };
+
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      isVisible: true,
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  const handleBulkAction = async (action: 'move' | 'copy' | 'delete' | 'status') => {
+    if (selectedTestCases.length === 0) return;
+
+    try {
+      switch (action) {
+        case 'copy':
+          await axios.post('/api/bulk/copy', {
+            ids: selectedTestCases,
+            type: 'testcase',
+            targetFolderId: 1 // 기본 폴더
+          });
+          break;
+        case 'move':
+          await axios.post('/api/bulk/move', {
+            ids: selectedTestCases,
+            type: 'testcase',
+            targetFolderId: 1 // 기본 폴더
+          });
+          break;
+        case 'delete':
+          await axios.delete('/api/bulk', {
+            data: {
+              ids: selectedTestCases,
+              type: 'testcase'
+            }
+          } as any);
+          break;
+        case 'status':
+          await axios.patch('/api/bulk/status', {
+            ids: selectedTestCases,
+            type: 'testcase',
+            status: 'active'
+          });
+          break;
+      }
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+    }
+  };
+
+  const handleCopy = useCallback(() => {
+    handleBulkAction('copy');
+  }, [selectedTestCases]);
+
+  const handlePaste = useCallback(() => {
+    // 붙여넣기 로직 구현
+    console.log('붙여넣기 기능');
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    if (window.confirm(`${selectedTestCases.length}개 항목을 삭제하시겠습니까?`)) {
+      handleBulkAction('delete');
+    }
+  }, [selectedTestCases]);
+
+  const handleSelectAllShortcut = useCallback(() => {
+    handleSelectAll();
+  }, [selectedTestCases.length, testCases.length]);
+
+  const handleDeselectAll = useCallback(() => {
+    dispatch(deselectAllTestCases());
+  }, []);
+
+  // 키보드 단축키 설정
+  useKeyboardShortcuts({
+    onCopy: handleCopy,
+    onPaste: handlePaste,
+    onDelete: handleDelete,
+    onSelectAll: handleSelectAllShortcut,
+    onDeselectAll: handleDeselectAll
+  });
+
+  if (loading) {
+    return <div>로딩 중...</div>;
+  }
 
   return (
-    <Container
-      $maxWidth="1200px"
-      $padding="24px"
-      $background="white"
-      $radius="8px"
-      style={{ margin: '0 auto' }}
-    >
-      <Typography $variant="h2" style={{ marginBottom: 24 }}>테스트케이스 목록</Typography>
-      <Grid
-        $columns={1}
-        $gap="16px"
-        style={{ marginBottom: 16 }}
-      >
-        <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography $variant="caption" style={{ marginBottom: 4 }}>제목 검색</Typography>
-            <input name="title" type="text" defaultValue={searchParams.title || ''} style={{ minWidth: 160, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography $variant="caption" style={{ marginBottom: 4 }}>우선순위</Typography>
-            <select name="priority" defaultValue={searchParams.priority || ''} style={{ minWidth: 120, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }}>
-              <option value="">전체</option>
-              {priorities.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography $variant="caption" style={{ marginBottom: 4 }}>상태</Typography>
-            <select name="status" defaultValue={searchParams.status || ''} style={{ minWidth: 120, padding: 8, borderRadius: 4, border: '1px solid #e5e7eb' }}>
-              <option value="">전체</option>
-              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <Button type="submit" variant="primary">검색</Button>
-        </form>
-        <div style={{ textAlign: 'right' }}>
-          <Button onClick={() => setShowCreate(v => !v)}>{showCreate ? '취소' : '테스트케이스 생성'}</Button>
-        </div>
-      </Grid>
-      {showCreate && (
-        <Form
-          fields={createFields}
-          initialValues={createForm}
-          onSubmit={async (values) => {
-            await api.post('/api/testcases', {
-              ...values,
-              steps: values.steps.split('\n'),
-              tags: values.tags.split(',').map((t: string) => t.trim()),
-              createdBy: 'tester',
-            });
-            setShowCreate(false);
-            setCreateForm({ title: '', steps: '', expected: '', priority: 'Medium', tags: '', status: 'Active', prereq: '' });
-            dispatch(fetchTestCases() as any);
-          }}
-          layout="vertical"
-          variant="bordered"
-          submitLabel="저장"
-          style={{ marginBottom: 24 }}
-        />
-      )}
-      {loading && <Typography $variant="body">로딩 중...</Typography>}
-      {error && <Typography $variant="body" style={{ color: 'red' }}>{error}</Typography>}
-      <Table<TestCase>
-        columns={columns}
-        data={list}
-        striped
-        bordered
-        size="md"
-        style={{ marginTop: 8 }}
+    <>
+      <TableContainer onContextMenu={handleContextMenu}>
+        <Table>
+          <thead>
+            <tr>
+              <Th>
+                <Checkbox
+                  type="checkbox"
+                  checked={selectedTestCases.length === testCases.length && testCases.length > 0}
+                  onChange={handleSelectAll}
+                />
+              </Th>
+              <Th>제목</Th>
+              <Th>우선순위</Th>
+              <Th>상태</Th>
+              <Th>생성일</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {testCases.map((testCase: TestCase, index: number) => (
+              <tr key={testCase.id}>
+                <Td>
+                  <Checkbox
+                    type="checkbox"
+                    checked={selectedTestCases.includes(testCase.id)}
+                    onChange={() => handleSelectTestCase(testCase.id, index, false)}
+                  />
+                </Td>
+                <Td>
+                  <EditableCell
+                    value={testCase.title}
+                    onSave={(newValue) => {
+                      console.log('제목 변경:', newValue);
+                    }}
+                  />
+                </Td>
+                <Td>{testCase.priority}</Td>
+                <Td>{testCase.status}</Td>
+                <Td>{new Date(testCase.createdAt).toLocaleDateString()}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableContainer>
+
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        isVisible={contextMenu.isVisible}
+        onClose={() => setContextMenu({ ...contextMenu, isVisible: false })}
+        selectedItems={selectedTestCases.map(id => ({ id, type: 'testcase' as const }))}
+        onBulkAction={handleBulkAction}
       />
-      {list.length === 0 && !loading && <Typography $variant="body">데이터 없음</Typography>}
-      {selectedId && <TestCaseDetail id={selectedId} onClose={() => setSelectedId(null)} />}
-    </Container>
+    </>
   );
 };
 

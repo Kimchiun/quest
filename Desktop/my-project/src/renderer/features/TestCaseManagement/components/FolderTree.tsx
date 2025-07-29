@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Tree from 'rc-tree';
 import 'rc-tree/assets/index.css';
 import styled from 'styled-components';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../../store';
+import { selectFolder, deselectFolder, clearFolderSelection } from '../store/selectionSlice';
 import Typography from '../../../shared/components/Typography';
 import Button from '../../../shared/components/Button';
 import FolderModal from './FolderModal';
@@ -19,6 +22,9 @@ const TreeContainer = styled.div`
     padding: 8px 12px;
     border-radius: 4px;
     margin: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .rc-tree-node-content-wrapper:hover {
@@ -32,6 +38,14 @@ const TreeContainer = styled.div`
   .rc-tree-title {
     font-size: 14px;
     color: #374151;
+    flex: 1;
+  }
+
+  .folder-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin-right: 8px;
   }
 `;
 
@@ -49,6 +63,27 @@ const TreeTitle = styled(Typography)`
   color: #111827;
 `;
 
+const SelectionInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #64748b;
+`;
+
+const SelectAllButton = styled.button`
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+
+  &:hover {
+    color: #2563eb;
+  }
+`;
+
 interface FolderTreeData {
   key: string;
   title: string;
@@ -62,6 +97,8 @@ interface FolderTreeProps {
 }
 
 const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, selectedFolderId }) => {
+  const dispatch = useDispatch();
+  const { selectedFolders } = useSelector((state: RootState) => state.selection);
   const [treeData, setTreeData] = useState<FolderTreeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [contextMenu, setContextMenu] = useState<{
@@ -111,6 +148,39 @@ const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, select
     }
   };
 
+  const handleFolderCheckbox = (folderId: number, checked: boolean) => {
+    if (checked) {
+      dispatch(selectFolder(folderId));
+    } else {
+      dispatch(deselectFolder(folderId));
+    }
+  };
+
+  const handleSelectAllFolders = () => {
+    const allFolderIds = getAllFolderIds(treeData);
+    allFolderIds.forEach(folderId => {
+      dispatch(selectFolder(folderId));
+    });
+  };
+
+  const handleDeselectAllFolders = () => {
+    dispatch(clearFolderSelection());
+  };
+
+  const getAllFolderIds = (data: FolderTreeData[]): number[] => {
+    const ids: number[] = [];
+    const traverse = (items: FolderTreeData[]) => {
+      items.forEach(item => {
+        ids.push(parseInt(item.key));
+        if (item.children) {
+          traverse(item.children);
+        }
+      });
+    };
+    traverse(data);
+    return ids;
+  };
+
   const handleContextMenu = (event: React.MouseEvent, folderId?: number) => {
     event.preventDefault();
     setContextMenu({
@@ -127,7 +197,6 @@ const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, select
   };
 
   const handleEditFolder = () => {
-    // 폴더 정보를 가져와서 모달 열기
     setModalState({ isOpen: true, mode: 'edit', folder: { id: contextMenu.folderId } });
     setContextMenu({ isOpen: false, x: 0, y: 0 });
   };
@@ -149,7 +218,7 @@ const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, select
             name: data.name,
             description: data.description,
             parentId: data.parentId,
-            createdBy: 'testuser' // 실제 사용자 정보로 교체
+            createdBy: 'testuser'
           })
         });
         if (response.ok) {
@@ -190,10 +259,21 @@ const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, select
     <TreeContainer>
       <TreeHeader>
         <TreeTitle $variant="h4">폴더 구조</TreeTitle>
-        <Button size="sm" onClick={handleCreateFolder}>
-          새 폴더
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button size="sm" onClick={handleCreateFolder}>
+            새 폴더
+          </Button>
+        </div>
       </TreeHeader>
+
+      {selectedFolders.length > 0 && (
+        <SelectionInfo>
+          <span>{selectedFolders.length}개 폴더 선택됨</span>
+          <SelectAllButton onClick={handleDeselectAllFolders}>
+            선택 해제
+          </SelectAllButton>
+        </SelectionInfo>
+      )}
 
       <Tree
         treeData={treeData}
@@ -205,6 +285,18 @@ const FolderTreeComponent: React.FC<FolderTreeProps> = ({ onFolderSelect, select
         }}
         showLine
         showIcon
+        titleRender={(nodeData) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              className="folder-checkbox"
+              checked={selectedFolders.includes(parseInt(nodeData.key.toString()))}
+              onChange={(e) => handleFolderCheckbox(parseInt(nodeData.key.toString()), e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <span>{nodeData.title}</span>
+          </div>
+        )}
       />
 
       <ContextMenu
