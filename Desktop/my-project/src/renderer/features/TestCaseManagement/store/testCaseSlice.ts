@@ -138,9 +138,9 @@ export const saveSearchPreset = createAsyncThunk(
 // 검색 프리셋 목록 조회
 export const fetchSearchPresets = createAsyncThunk(
   'testcases/fetchPresets',
-  async (createdBy?: string, { rejectWithValue }) => {
+  async (arg: { createdBy?: string }, { rejectWithValue }) => {
     try {
-      const params = createdBy ? { createdBy } : {};
+      const params = arg.createdBy ? { createdBy: arg.createdBy } : {};
       const res = await api.get('/api/testcases/search/presets', { params });
       return res.data as SearchPreset[];
     } catch (error: any) {

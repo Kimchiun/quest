@@ -5,6 +5,7 @@ export const theme = {
   font: tokens.font,
   radius: tokens.radius,
   spacing: tokens.spacing,
+  shadow: tokens.shadow,
 };
 
 export type Theme = typeof theme;
