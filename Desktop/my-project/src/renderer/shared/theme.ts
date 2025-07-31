@@ -6,6 +6,11 @@ export const theme = {
   radius: tokens.radius,
   spacing: tokens.spacing,
   shadow: tokens.shadow,
+  animation: tokens.animation,
+  zIndex: tokens.zIndex,
+  breakpoint: tokens.breakpoint,
+  grid: tokens.grid,
+  component: tokens.component,
 };
 
 export type Theme = typeof theme;
