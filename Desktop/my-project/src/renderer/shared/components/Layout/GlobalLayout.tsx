@@ -1,7 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
+import { setCurrentSection, NavigationSection } from '../../../store/navigationSlice';
+import MainContent from './ContentComponents';
 
 // 레이아웃 컨테이너
 const LayoutContainer = styled.div`
@@ -59,8 +61,8 @@ const Header = styled.header`
   }
 `;
 
-// 메인 컨텐츠
-const MainContent = styled.main`
+// 메인 컨텐츠 영역
+const MainContentArea = styled.main`
   grid-area: main;
   background: #f8f9fa;
   overflow-y: auto;
@@ -68,7 +70,7 @@ const MainContent = styled.main`
 `;
 
 // 네비게이션 메뉴 아이템
-const NavItem = styled.div<{ active?: boolean }>`
+const NavItem = styled.div<{ active?: boolean; onClick?: () => void }>`
   padding: 12px 16px;
   margin: 4px 0;
   border-radius: 8px;
@@ -113,14 +115,36 @@ interface GlobalLayoutProps {
 }
 
 const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
+  const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.users.me);
+  const currentSection = useSelector((state: RootState) => state.navigation.currentSection);
   const selectedRelease = useSelector((state: RootState) => (state.releases as any).selectedRelease);
 
   const getCurrentPageTitle = () => {
-    if (selectedRelease) {
-      return `${selectedRelease.name} - 테스트 관리`;
+    switch (currentSection) {
+      case 'dashboard':
+        return 'Quest - 대시보드';
+      case 'test-management':
+        return 'Quest - 테스트 관리';
+      case 'release-management':
+        return 'Quest - 릴리즈 관리';
+      case 'defect-management':
+        return 'Quest - 결함 관리';
+      case 'report':
+        return 'Quest - 리포트';
+      case 'settings':
+        return 'Quest - 설정';
+      default:
+        return 'Quest - 테스트 관리 시스템';
     }
-    return 'ITMS - 통합 테스트 관리 시스템';
+  };
+
+  const handleNavigationClick = (section: NavigationSection) => {
+    dispatch(setCurrentSection(section));
+  };
+
+  const isActiveSection = (section: NavigationSection) => {
+    return currentSection === section;
   };
 
   return (
@@ -128,29 +152,47 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       <Navigation>
         <div style={{ marginBottom: '30px' }}>
           <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
-            ITMS
+            Quest
           </h2>
           <p style={{ margin: 0, opacity: 0.8, fontSize: '14px' }}>
-            통합 테스트 관리 시스템
+            테스트 관리 시스템
           </p>
         </div>
         
-        <NavItem active={!selectedRelease}>
+        <NavItem 
+          active={isActiveSection('dashboard')}
+          onClick={() => handleNavigationClick('dashboard')}
+        >
           📊 대시보드
         </NavItem>
-        <NavItem active={selectedRelease}>
+        <NavItem 
+          active={isActiveSection('test-management')}
+          onClick={() => handleNavigationClick('test-management')}
+        >
           🧪 테스트 관리
         </NavItem>
-        <NavItem>
+        <NavItem 
+          active={isActiveSection('release-management')}
+          onClick={() => handleNavigationClick('release-management')}
+        >
           📋 릴리즈 관리
         </NavItem>
-        <NavItem>
+        <NavItem 
+          active={isActiveSection('defect-management')}
+          onClick={() => handleNavigationClick('defect-management')}
+        >
           🐛 결함 관리
         </NavItem>
-        <NavItem>
+        <NavItem 
+          active={isActiveSection('report')}
+          onClick={() => handleNavigationClick('report')}
+        >
           📈 리포트
         </NavItem>
-        <NavItem>
+        <NavItem 
+          active={isActiveSection('settings')}
+          onClick={() => handleNavigationClick('settings')}
+        >
           ⚙️ 설정
         </NavItem>
       </Navigation>
@@ -165,9 +207,9 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         </HeaderActions>
       </Header>
 
-      <MainContent>
-        {children}
-      </MainContent>
+      <MainContentArea>
+        <MainContent />
+      </MainContentArea>
     </LayoutContainer>
   );
 };

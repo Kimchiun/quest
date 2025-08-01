@@ -3,7 +3,7 @@ import { Client } from 'pg';
 const pgClient = new Client({
     user: process.env.PGUSER || 'postgres',
     host: process.env.PGHOST || 'localhost',
-    database: process.env.PGDATABASE || 'itms',
+    database: process.env.PGDATABASE || 'quest',
     password: process.env.PGPASSWORD || 'password',
     port: Number(process.env.PGPORT) || 5432,
 });

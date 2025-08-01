@@ -13,13 +13,36 @@ module.exports = {
     alias: {
       '@': path.resolve(__dirname, 'src/renderer'),
     },
+    fallback: {
+      "path": require.resolve("path-browserify"),
+      "fs": false,
+      "crypto": false,
+      "stream": false,
+      "util": false,
+    }
   },
   module: {
     rules: [
       {
         test: /\.(ts|tsx)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
+        use: {
+          loader: 'ts-loader',
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              module: 'esnext',
+              target: 'es2020',
+              jsx: 'react-jsx',
+            },
+          },
+        },
+        include: [
+          path.resolve(__dirname, 'src'),
+          path.resolve(__dirname, 'node_modules/@remix-run'),
+          path.resolve(__dirname, 'node_modules/react-router'),
+          path.resolve(__dirname, 'node_modules/react-router-dom'),
+          path.resolve(__dirname, 'node_modules/reselect'),
+        ],
       },
       {
         test: /\.css$/,
@@ -40,4 +63,11 @@ module.exports = {
     hot: true,
     open: false,
   },
+  experiments: {
+    topLevelAwait: true,
+  },
+  ignoreWarnings: [
+    /Failed to parse source map/,
+    /Module not found/,
+  ],
 }; 

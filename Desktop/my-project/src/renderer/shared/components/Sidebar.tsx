@@ -63,7 +63,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ releases, selectedReleaseId, onSelectRelease, onNavigate }) => (
   <SidebarRoot>
-    <Typography $variant="h3" style={{ color: '#38bdf8', margin: '0 0 24px 32px' }}>ITMS</Typography>
+            <Typography $variant="h3" style={{ color: '#38bdf8', margin: '0 0 24px 32px' }}>Quest</Typography>
     <Nav>
       <NavLink onClick={() => onNavigate?.('/dashboard')} active={false}>대시보드</NavLink>
       <NavLink onClick={() => onNavigate?.('/testcases')} active={false}>테스트케이스</NavLink>

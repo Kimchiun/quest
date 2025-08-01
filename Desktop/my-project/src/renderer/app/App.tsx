@@ -19,6 +19,7 @@ import FeedbackCollector from '../features/Feedback/components/FeedbackCollector
 import { LayoutProvider } from '../shared/components/Layout/LayoutContext';
 import GlobalLayout from '../shared/components/Layout/GlobalLayout';
 import ResponsiveLayout from '../shared/components/Layout/ResponsiveLayout';
+import ToastContainer from '../shared/components/Toast/ToastContainer';
 
 const SkipLinkStyle = createGlobalStyle`
   .skip-link {
@@ -67,7 +68,6 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
       <GlobalLayout>
         <ResponsiveLayout>
           <a href="#main-content" className="skip-link">본문 바로가기</a>
-          <DashboardLayout />
           <UserFlowManager />
           <AccessibilityManager />
           <FeedbackCollector />
@@ -88,6 +88,8 @@ const AppInner: React.FC = () => {
       <Router>
         <AppRoutes isLoggedIn={isLoggedIn} onLogin={() => {}} />
       </Router>
+      {/* Toast 알림 시스템 */}
+      <ToastContainer />
     </ThemeProvider>
   );
 };

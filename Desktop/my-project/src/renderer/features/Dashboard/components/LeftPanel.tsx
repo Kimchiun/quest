@@ -129,7 +129,7 @@ const LeftPanel: React.FC = () => {
   return (
     <Panel>
       <Header>
-        <Title>ITMS</Title>
+        <Title>Quest</Title>
       </Header>
       
       <NavigationMenu role="navigation" aria-label="주요 메뉴">

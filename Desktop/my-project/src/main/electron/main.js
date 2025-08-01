@@ -58,7 +58,7 @@ function createWindow() {
         } catch (fallbackError) {
           console.error('❌ 폴백 로드도 실패:', fallbackError.message);
           // 최종 폴백: 빈 HTML
-          await mainWindow.loadURL('data:text/html;charset=utf-8,<html><body style="background-color:#282c34;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div><h1>ITMS 로딩 중...</h1><p>React 서버에 연결할 수 없습니다.</p><p>잠시 후 다시 시도해주세요.</p></div></body></html>');
+          await mainWindow.loadURL('data:text/html;charset=utf-8,<html><body style="background-color:#282c34;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div><h1>Quest 로딩 중...</h1><p>React 서버에 연결할 수 없습니다.</p><p>잠시 후 다시 시도해주세요.</p></div></body></html>');
         }
       }
     }

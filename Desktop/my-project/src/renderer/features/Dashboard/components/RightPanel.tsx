@@ -191,7 +191,7 @@ const RightPanel: React.FC = () => {
   ];
 
   const contextInfo = [
-    { label: '현재 프로젝트', value: 'ITMS v2.1' },
+    { label: '현재 프로젝트', value: 'Quest v2.1' },
     { label: '활성 릴리즈', value: 'v2.1.0' },
     { label: '테스트 환경', value: 'Staging' },
     { label: '마지막 로그인', value: '2시간 전' }

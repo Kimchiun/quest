@@ -1,23 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import styled, { css, keyframes } from 'styled-components';
+import { createPortal } from 'react-dom';
 import { Theme } from '../theme';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
-export type ModalVariant = 'default' | 'danger' | 'success';
-
 interface ModalProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: ModalSize;
-  variant?: ModalVariant;
   children: React.ReactNode;
-  footer?: React.ReactNode;
-  hideClose?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   closeOnOverlayClick?: boolean;
+  closeOnEscape?: boolean;
+  showCloseButton?: boolean;
+  className?: string;
 }
 
-// 애니메이션 정의
 const fadeIn = keyframes`
   from {
     opacity: 0;
@@ -38,84 +35,108 @@ const slideIn = keyframes`
   }
 `;
 
-const getSizeStyle = (size: ModalSize = 'md', theme: Theme) => {
-  switch (size) {
-    case 'sm':
-      return css`
-        min-width: 320px;
-        max-width: 400px;
-        padding: ${theme.spacing.lg} ${theme.spacing.md};
-      `;
-    case 'lg':
-      return css`
-        min-width: 640px;
-        max-width: 800px;
-        padding: ${theme.spacing.xl} ${theme.spacing.lg};
-      `;
-    case 'xl':
-      return css`
-        min-width: 800px;
-        max-width: 1200px;
-        padding: ${theme.spacing.xl} ${theme.spacing.lg};
-      `;
-    default:
-      return css`
-        min-width: 440px;
-        max-width: 600px;
-        padding: ${theme.spacing.lg} ${theme.spacing.md};
-      `;
-  }
-};
-
-const getVariantStyle = (variant: ModalVariant = 'default', theme: Theme) => {
-  switch (variant) {
-    case 'danger':
-      return css`
-        border: 2px solid ${theme.color.danger};
-        box-shadow: 0 4px 32px rgba(239, 68, 68, 0.15);
-      `;
-    case 'success':
-      return css`
-        border: 2px solid ${theme.color.success};
-        box-shadow: 0 4px 32px rgba(21, 128, 61, 0.15);
-      `;
-    default:
-      return css`
-        border: 1px solid ${theme.color.neutralBorder};
-        box-shadow: ${theme.shadow.lg};
-      `;
-  }
-};
-
-const Overlay = styled.div`
+const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  background: ${({ theme }) => theme.color.overlay};
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: ${({ theme }) => theme.zIndex.modal};
+  animation: ${fadeIn} ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.easeOut};
   padding: ${({ theme }) => theme.spacing.md};
-  animation: ${fadeIn} 0.2s ease-out;
-  backdrop-filter: blur(4px);
 `;
 
-const ModalBox = styled.div<{ size: ModalSize; variant: ModalVariant }>`
+const getModalSize = (size: string = 'md', theme: Theme) => {
+  switch (size) {
+    case 'sm':
+      return css`
+        max-width: 400px;
+        width: 100%;
+      `;
+    case 'lg':
+      return css`
+        max-width: 800px;
+        width: 100%;
+      `;
+    case 'xl':
+      return css`
+        max-width: 1200px;
+        width: 100%;
+      `;
+    default:
+      return css`
+        max-width: 600px;
+        width: 100%;
+      `;
+  }
+};
+
+const ModalContent = styled.div<{ size: string }>`
   background: ${({ theme }) => theme.color.surface};
   border-radius: ${({ theme }) => theme.radius.lg};
+  box-shadow: ${({ theme }) => theme.shadow.xl};
   position: relative;
-  outline: none;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: ${slideIn} 0.3s ease-out;
+  animation: ${slideIn} ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.easeOut};
+  overflow: hidden;
   
-  ${props => getSizeStyle(props.size, props.theme)}
-  ${props => getVariantStyle(props.variant, props.theme)}
+  ${props => getModalSize(props.size, props.theme)}
+`;
 
-  /* 스크롤바 스타일링 */
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.lg};
+  border-bottom: 1px solid ${({ theme }) => theme.color.neutralBorder};
+  background: ${({ theme }) => theme.color.neutralBg};
+`;
+
+const ModalTitle = styled.h2`
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.sizeLg};
+  font-weight: ${({ theme }) => theme.font.weightBold};
+  line-height: ${({ theme }) => theme.font.lineHeightTight};
+  color: ${({ theme }) => theme.color.text};
+  margin: 0;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  padding: ${({ theme }) => theme.spacing.xs};
+  border-radius: ${({ theme }) => theme.radius.sm};
+  cursor: pointer;
+  color: ${({ theme }) => theme.color.textSecondary};
+  transition: all ${({ theme }) => theme.animation.duration.fast} ${({ theme }) => theme.animation.easing.easeOut};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.neutralBorder};
+    color: ${({ theme }) => theme.color.text};
+  }
+  
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.focus};
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.color.focusRing};
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg};
+  max-height: 70vh;
+  overflow-y: auto;
+  
+  /* Custom scrollbar */
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -135,124 +156,80 @@ const ModalBox = styled.div<{ size: ModalSize; variant: ModalVariant }>`
   }
 `;
 
-const ModalTitle = styled.h2`
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.sizeLg};
-  font-weight: ${({ theme }) => theme.font.weightBold};
-  line-height: ${({ theme }) => theme.font.lineHeight};
-  margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
-  color: ${({ theme }) => theme.color.text};
-  padding-right: ${({ theme }) => theme.spacing.xl};
-`;
-
-const CloseBtn = styled.button`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.md};
-  right: ${({ theme }) => theme.spacing.md};
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: ${({ theme }) => theme.color.textSecondary};
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  transition: all 0.15s ease;
-  
-  &:hover {
-    background: ${({ theme }) => theme.color.neutralBg};
-    color: ${({ theme }) => theme.color.text};
-  }
-  
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.focus};
-    outline-offset: 2px;
-    background: ${({ theme }) => theme.color.neutralBg};
-  }
-`;
-
-const Footer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.lg};
-  padding-top: ${({ theme }) => theme.spacing.md};
-  border-top: 1px solid ${({ theme }) => theme.color.neutralBorder};
-  display: flex;
-  justify-content: flex-end;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const ModalContent = styled.div`
-  color: ${({ theme }) => theme.color.text};
-  line-height: ${({ theme }) => theme.font.lineHeight};
-`;
-
-const Modal: React.FC<ModalProps> = ({ 
-  open, 
-  onClose, 
-  title, 
-  size = 'md', 
-  variant = 'default', 
-  children, 
-  footer, 
-  hideClose = false,
-  closeOnOverlayClick = true
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = 'md',
+  closeOnOverlayClick = true,
+  closeOnEscape = true,
+  showCloseButton = true,
+  className,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const titleId = React.useId();
 
-  // ESC 키로 닫기
   useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && closeOnEscape) {
+        onClose();
+      }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
 
-  // 포커스 트랩
-  useEffect(() => {
-    if (open && modalRef.current) {
-      modalRef.current.focus();
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
     }
-  }, [open]);
 
-  // 오버레이 클릭으로 닫기
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && closeOnOverlayClick) {
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose, closeOnEscape]);
+
+  const handleOverlayClick = (event: React.MouseEvent) => {
+    if (event.target === event.currentTarget && closeOnOverlayClick) {
       onClose();
     }
   };
 
-  if (!open) return null;
+  const handleModalClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
 
-  return (
-    <Overlay onClick={handleOverlayClick}>
-      <ModalBox
-        ref={modalRef}
-        size={size}
-        variant={variant}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
-        tabIndex={-1}
-      >
-        {title && <ModalTitle id={titleId}>{title}</ModalTitle>}
-        {!hideClose && (
-          <CloseBtn 
-            onClick={onClose} 
-            aria-label="모달 닫기"
-            type="button"
-          >
-            ×
-          </CloseBtn>
+  if (!isOpen) return null;
+
+  return createPortal(
+    <ModalOverlay onClick={handleOverlayClick} className={className}>
+      <ModalContent size={size} onClick={handleModalClick} ref={modalRef}>
+        {(title || showCloseButton) && (
+          <ModalHeader>
+            {title && <ModalTitle>{title}</ModalTitle>}
+            {showCloseButton && (
+              <CloseButton
+                onClick={onClose}
+                aria-label="Close modal"
+                type="button"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M12 4L4 12M4 4L12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </CloseButton>
+            )}
+          </ModalHeader>
         )}
-        <ModalContent>{children}</ModalContent>
-        {footer && <Footer>{footer}</Footer>}
-      </ModalBox>
-    </Overlay>
+        <ModalBody>
+          {children}
+        </ModalBody>
+      </ModalContent>
+    </ModalOverlay>,
+    document.body
   );
 };
 

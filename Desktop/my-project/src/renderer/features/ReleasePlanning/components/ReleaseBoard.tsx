@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/renderer/store';
+import { RootState } from '../../../store';
 import { fetchReleases, fetchSuites } from '../store/releaseSlice';
-import { fetchTestCases } from '@/renderer/features/TestCaseManagement/store/testCaseSlice';
+import { fetchTestCases } from '../../../features/TestCaseManagement/store/testCaseSlice';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import axios from 'axios';

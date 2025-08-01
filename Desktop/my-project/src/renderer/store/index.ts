@@ -1,13 +1,15 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { api } from '../services/api';
 import testCaseReducer from '../features/TestCaseManagement/store/testCaseSlice';
 import releaseReducer from '../features/ReleasePlanning/store/releaseSlice';
 import dashboardReducer from '../features/Dashboard/store/dashboardSlice';
 import executionReducer from '../features/ExecutionManagement/store/executionSlice';
 import commentReducer from '../features/ExecutionManagement/store/commentSlice';
-import notificationReducer from '../features/ExecutionManagement/store/notificationSlice';
+import notificationReducer from './notificationSlice';
 import selectionReducer from '../features/TestCaseManagement/store/selectionSlice';
 import dashboardLayoutReducer from './dashboardLayoutSlice';
 import animationReducer from './animationSlice';
+import navigationReducer from './navigationSlice';
 import { undoRedoMiddleware } from './undoRedoMiddleware';
 
 export type UserRole = 'ADMIN' | 'QA' | 'DEV' | 'PM';
@@ -32,6 +34,10 @@ export const { setMe, logout } = userSlice.actions;
 
 export const store = configureStore({
   reducer: {
+    // RTK Query API
+    [api.reducerPath]: api.reducer,
+    
+    // 기존 슬라이스들
     testcases: testCaseReducer,
     releases: releaseReducer,
     dashboard: dashboardReducer,
@@ -41,6 +47,7 @@ export const store = configureStore({
     selection: selectionReducer,
     dashboardLayout: dashboardLayoutReducer,
     animation: animationReducer,
+    navigation: navigationReducer,
     users: userSlice.reducer
   },
   middleware: (getDefaultMiddleware) =>
@@ -48,7 +55,9 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST']
       }
-    }).concat(undoRedoMiddleware)
+    })
+    .concat(api.middleware)
+    .concat(undoRedoMiddleware)
 });
 
 export type RootState = ReturnType<typeof store.getState>;
