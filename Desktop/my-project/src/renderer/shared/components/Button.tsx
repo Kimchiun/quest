@@ -3,7 +3,7 @@ import styled, { css, keyframes } from 'styled-components';
 import { Theme } from '../theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -33,79 +33,73 @@ const getVariantStyle = (variant: ButtonVariant = 'primary', theme: Theme) => {
   switch (variant) {
     case 'secondary':
       return css`
-        background: ${theme.color.surface};
-        color: ${theme.color.text};
-        border: 1px solid ${theme.color.neutralBorder};
-        box-shadow: ${theme.shadow.sm};
+        background: white;
+        color: ${theme.color.text.primary};
+        border: 2px solid ${theme.color.border.primary};
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.neutralBg};
-          border-color: ${theme.color.primary};
-          color: ${theme.color.primary};
-          box-shadow: ${theme.shadow.md};
-          transform: translateY(-1px);
+          background: ${theme.color.surface.secondary};
+          border-color: ${theme.color.primary[600]};
+          color: ${theme.color.primary[600]};
         }
       `;
     case 'danger':
       return css`
-        background: ${theme.color.danger};
-        color: #fff;
-        border: 1px solid ${theme.color.danger};
-        box-shadow: ${theme.shadow.sm};
+        background: ${theme.color.danger[500]};
+        color: white;
+        border: 2px solid ${theme.color.danger[500]};
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.dangerHover};
-          border-color: ${theme.color.dangerHover};
-          box-shadow: ${theme.shadow.md};
-          transform: translateY(-1px);
+          background: ${theme.color.danger[50]};
+          border-color: ${theme.color.danger[50]};
+          color: ${theme.color.danger[600]};
         }
       `;
     case 'success':
       return css`
-        background: ${theme.color.success};
-        color: #fff;
-        border: 1px solid ${theme.color.success};
-        box-shadow: ${theme.shadow.sm};
+        background: ${theme.color.success[500]};
+        color: white;
+        border: 2px solid ${theme.color.success[500]};
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.successHover};
-          border-color: ${theme.color.successHover};
-          box-shadow: ${theme.shadow.md};
-          transform: translateY(-1px);
+          background: ${theme.color.success[50]};
+          border-color: ${theme.color.success[50]};
+          color: ${theme.color.success[600]};
         }
       `;
     case 'warning':
       return css`
-        background: ${theme.color.warning};
-        color: #fff;
-        border: 1px solid ${theme.color.warning};
-        box-shadow: ${theme.shadow.sm};
+        background: ${theme.color.warning[500]};
+        color: white;
+        border: 2px solid ${theme.color.warning[500]};
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.warningHover};
-          border-color: ${theme.color.warningHover};
-          box-shadow: ${theme.shadow.md};
-          transform: translateY(-1px);
+          background: ${theme.color.warning[50]};
+          border-color: ${theme.color.warning[50]};
+          color: ${theme.color.warning[600]};
         }
       `;
     case 'ghost':
       return css`
         background: transparent;
-        color: ${theme.color.text};
-        border: 1px solid transparent;
+        color: ${theme.color.text.primary};
+        border: 2px solid transparent;
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.neutralBg};
-          color: ${theme.color.primary};
-          box-shadow: ${theme.shadow.sm};
+          background: ${theme.color.surface.secondary};
+          color: ${theme.color.primary[600]};
         }
       `;
     default:
       return css`
-        background: ${theme.color.primary};
-        color: #fff;
-        border: 1px solid ${theme.color.primary};
-        box-shadow: ${theme.shadow.sm};
+        background: ${theme.color.primary[500]};
+        color: white;
+        border: 2px solid ${theme.color.primary[500]};
+        box-shadow: none;
         &:hover:not(:disabled) {
-          background: ${theme.color.primaryHover};
-          border-color: ${theme.color.primaryHover};
-          box-shadow: ${theme.shadow.md};
-          transform: translateY(-1px);
+          background: ${theme.color.primary[50]};
+          border-color: ${theme.color.primary[50]};
+          color: ${theme.color.primary[600]};
         }
       `;
   }
@@ -115,24 +109,31 @@ const getSizeStyle = (size: ButtonSize = 'md', theme: Theme) => {
   switch (size) {
     case 'sm':
       return css`
-        padding: ${theme.spacing.xs} ${theme.spacing.md};
-        font-size: ${theme.font.sizeSm};
+        padding: ${theme.spacing['2']} ${theme.spacing['4']};
+        font-size: ${theme.font.size.sm};
         min-height: 32px;
-        gap: ${theme.spacing.xs};
+        gap: ${theme.spacing['2']};
       `;
     case 'lg':
       return css`
-        padding: ${theme.spacing.lg} ${theme.spacing.xl};
-        font-size: ${theme.font.sizeLg};
+        padding: ${theme.spacing['6']} ${theme.spacing['8']};
+        font-size: ${theme.font.size.lg};
         min-height: 48px;
-        gap: ${theme.spacing.md};
+        gap: ${theme.spacing['4']};
+      `;
+    case 'xl':
+      return css`
+        padding: ${theme.spacing['8']} ${theme.spacing['12']};
+        font-size: ${theme.font.size.xl};
+        min-height: 56px;
+        gap: ${theme.spacing['6']};
       `;
     default:
       return css`
-        padding: ${theme.spacing.sm} ${theme.spacing.lg};
-        font-size: ${theme.font.sizeBase};
+        padding: ${theme.spacing['4']} ${theme.spacing['6']};
+        font-size: ${theme.font.size.base};
         min-height: 40px;
-        gap: ${theme.spacing.sm};
+        gap: ${theme.spacing['3']};
       `;
   }
 };
@@ -143,10 +144,10 @@ const StyledButton = styled.button<ButtonProps & { $loading?: boolean }>`
   justify-content: center;
   width: ${({ fullWidth }) => (fullWidth ? '100%' : 'auto')};
   border-radius: ${({ theme }) => theme.radius.md};
-  font-family: ${({ theme }) => theme.font.family};
-  font-weight: ${({ theme }) => theme.font.weightMedium};
-  line-height: ${({ theme }) => theme.font.lineHeightTight};
-  transition: all ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.easeOut};
+  font-family: ${({ theme }) => theme.font.family.primary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  line-height: ${({ theme }) => theme.font.lineHeight.tight};
+  transition: all ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.out};
   border: 1px solid transparent;
   cursor: pointer;
   user-select: none;
@@ -158,9 +159,9 @@ const StyledButton = styled.button<ButtonProps & { $loading?: boolean }>`
   ${props => getSizeStyle(props.size, props.theme)}
 
   &:disabled {
-    background: ${({ theme }) => theme.color.disabledBg};
-    color: ${({ theme }) => theme.color.disabledText};
-    border-color: ${({ theme }) => theme.color.disabled};
+    background: ${({ theme }) => theme.color.neutral[100]};
+    color: ${({ theme }) => theme.color.neutral[400]};
+    border-color: ${({ theme }) => theme.color.neutral[200]};
     cursor: not-allowed;
     opacity: 0.6;
     box-shadow: none;

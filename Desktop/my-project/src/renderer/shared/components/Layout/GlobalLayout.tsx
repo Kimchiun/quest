@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import { setCurrentSection, NavigationSection } from '../../../store/navigationSlice';
 import MainContent from './ContentComponents';
+import { DashboardIcon, TestIcon, ReleaseIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon } from '../Icons';
 
 // 레이아웃 컨테이너
 const LayoutContainer = styled.div`
@@ -77,10 +78,22 @@ const NavItem = styled.div<{ active?: boolean; onClick?: () => void }>`
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
+  display: flex;
+  align-items: center;
+  gap: 12px;
   
   &:hover {
     background: rgba(255, 255, 255, 0.1);
   }
+`;
+
+const NavIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: white;
 `;
 
 // 헤더 타이틀
@@ -108,6 +121,11 @@ const UserInfo = styled.div`
   border-radius: 20px;
   font-size: 14px;
   color: #6c757d;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #e9ecef;
+  }
 `;
 
 interface GlobalLayoutProps {
@@ -125,7 +143,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       case 'dashboard':
         return 'Quest - 대시보드';
       case 'test-management':
-        return 'Quest - 테스트 관리';
+        return '테스트 관리';
       case 'release-management':
         return 'Quest - 릴리즈 관리';
       case 'defect-management':
@@ -135,7 +153,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       case 'settings':
         return 'Quest - 설정';
       default:
-        return 'Quest - 테스트 관리 시스템';
+        return '테스트 관리 시스템';
     }
   };
 
@@ -163,37 +181,55 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
           active={isActiveSection('dashboard')}
           onClick={() => handleNavigationClick('dashboard')}
         >
-          📊 대시보드
+          <NavIcon>
+            <DashboardIcon size={20} color="white" />
+          </NavIcon>
+          대시보드
         </NavItem>
         <NavItem 
           active={isActiveSection('test-management')}
           onClick={() => handleNavigationClick('test-management')}
         >
-          🧪 테스트 관리
+          <NavIcon>
+            <TestIcon size={20} color="white" />
+          </NavIcon>
+          테스트 관리
         </NavItem>
         <NavItem 
           active={isActiveSection('release-management')}
           onClick={() => handleNavigationClick('release-management')}
         >
-          📋 릴리즈 관리
+          <NavIcon>
+            <ReleaseIcon size={20} color="white" />
+          </NavIcon>
+          릴리즈 관리
         </NavItem>
         <NavItem 
           active={isActiveSection('defect-management')}
           onClick={() => handleNavigationClick('defect-management')}
         >
-          🐛 결함 관리
+          <NavIcon>
+            <BugIcon size={20} color="white" />
+          </NavIcon>
+          결함 관리
         </NavItem>
         <NavItem 
           active={isActiveSection('report')}
           onClick={() => handleNavigationClick('report')}
         >
-          📈 리포트
+          <NavIcon>
+            <ChartIcon size={20} color="white" />
+          </NavIcon>
+          리포트
         </NavItem>
         <NavItem 
           active={isActiveSection('settings')}
           onClick={() => handleNavigationClick('settings')}
         >
-          ⚙️ 설정
+          <NavIcon>
+            <SettingsIcon size={20} color="white" />
+          </NavIcon>
+          설정
         </NavItem>
       </Navigation>
 
@@ -201,7 +237,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         <HeaderTitle>{getCurrentPageTitle()}</HeaderTitle>
         <HeaderActions>
           <UserInfo>
-            <span>👤</span>
+            <UserIcon size={16} color="#6b7280" />
             <span>{user?.username || '사용자'}</span>
           </UserInfo>
         </HeaderActions>

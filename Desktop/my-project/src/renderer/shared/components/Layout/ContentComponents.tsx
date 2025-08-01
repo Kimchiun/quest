@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { NavigationSection } from '../../../store/navigationSlice';
-import TestCaseList from '../../../features/TestCaseManagement/components/TestCaseList';
+import TestManagementPage from '../../../features/TestCaseManagement/components/TestManagementPage';
 import ReleaseBoard from '../../../features/ReleasePlanning/components/ReleaseBoard';
 import NewDashboard from '../../../features/Dashboard/components/NewDashboard';
 
@@ -55,8 +55,8 @@ const DashboardContent: React.FC = () => {
 // 테스트 관리 컨텐츠
 const TestManagementContent: React.FC = () => {
   return (
-    <ContentContainer>
-      <TestCaseList />
+    <ContentContainer style={{ padding: 0 }}>
+      <TestManagementPage />
     </ContentContainer>
   );
 };

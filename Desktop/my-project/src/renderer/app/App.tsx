@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Provider, useSelector, useDispatch } from 'react-redux';
-import { store, RootState } from '../store';
+import { store, RootState, setMe } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
 import ReleaseBoard from '../features/ReleasePlanning/components/ReleaseBoard';
 import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
@@ -20,6 +20,8 @@ import { LayoutProvider } from '../shared/components/Layout/LayoutContext';
 import GlobalLayout from '../shared/components/Layout/GlobalLayout';
 import ResponsiveLayout from '../shared/components/Layout/ResponsiveLayout';
 import ToastContainer from '../shared/components/Toast/ToastContainer';
+import ConnectionStatusIndicator from '../shared/components/ConnectionStatus';
+import { testBackendConnection, logConnectionStatus } from '../utils/connectionTest';
 
 const SkipLinkStyle = createGlobalStyle`
   .skip-link {
@@ -79,7 +81,66 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
 
 const AppInner: React.FC = () => {
   const user = useSelector((state: RootState) => state.users.me);
+  const dispatch = useDispatch();
   const isLoggedIn = !!user;
+  
+  // 개발 환경에서 MSW를 통한 자동 로그인
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && !isLoggedIn) {
+      console.log('🔧 개발 환경 MSW 자동 로그인 시도...');
+      
+      const autoLoginWithMSW = async () => {
+        try {
+          // MSW를 통해 로그인 시도
+          const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: 'admin',
+              password: 'admin123'
+            })
+          });
+          
+          if (loginResponse.ok) {
+            const data = await loginResponse.json();
+            if (data.user) {
+              dispatch(setMe(data.user));
+              console.log('✅ MSW 자동 로그인 성공:', data.user);
+            }
+          } else {
+            console.log('⚠️ MSW 로그인 실패. 로그인 페이지를 표시합니다.');
+          }
+        } catch (error) {
+          console.log('⚠️ MSW 연결 실패. 로그인 페이지를 표시합니다:', error);
+        }
+      };
+      
+      // 1초 후에 MSW 자동 로그인 실행
+      setTimeout(autoLoginWithMSW, 1000);
+    }
+  }, [isLoggedIn, dispatch]);
+  
+  // 앱 시작 시 백엔드 연결 테스트
+  useEffect(() => {
+    const testConnection = async () => {
+      console.log('🔗 백엔드 연결 테스트 시작...');
+      const status = await testBackendConnection();
+      logConnectionStatus(status);
+      
+      if (!status.backend) {
+        console.error('⚠️ 백엔드 서버가 실행되지 않았습니다.');
+        console.log('💡 다음 명령어로 백엔드를 시작하세요:');
+        console.log('   npm run dev:backend');
+      }
+    };
+    
+    // 3초 후에 연결 테스트 실행 (서버 시작 시간 고려)
+    const timer = setTimeout(testConnection, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   return (
     <ThemeProvider theme={theme}>
@@ -90,6 +151,8 @@ const AppInner: React.FC = () => {
       </Router>
       {/* Toast 알림 시스템 */}
       <ToastContainer />
+      {/* 연결 상태 표시기 */}
+      <ConnectionStatusIndicator />
     </ThemeProvider>
   );
 };

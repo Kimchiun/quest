@@ -56,9 +56,15 @@ module.exports = {
     }),
   ],
   devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist/renderer/app'),
-    },
+    static: [
+      {
+        directory: path.join(__dirname, 'dist/renderer/app'),
+      },
+      {
+        directory: path.join(__dirname, 'public'),
+        publicPath: '/',
+      },
+    ],
     port: 4000,
     hot: true,
     open: false,

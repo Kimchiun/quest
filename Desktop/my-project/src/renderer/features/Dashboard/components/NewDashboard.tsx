@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import Card from '../../../shared/components/Card';
 import Typography from '../../../shared/components/Typography';
 import Icon from '../../../shared/components/Icon';
+import TestCaseModal, { TestCaseFormData } from '../../TestCaseManagement/components/TestCaseModal';
+import { createTestCase } from '../../TestCaseManagement/store/testCaseSlice';
 
 const DashboardContainer = styled.div`
   padding: 24px;
@@ -125,6 +127,9 @@ const ActivityTime = styled.div`
 `;
 
 const NewDashboard: React.FC = () => {
+  const dispatch = useDispatch();
+  const [isTestCaseModalOpen, setIsTestCaseModalOpen] = useState(false);
+
   // 실제 데이터는 Redux store에서 가져와야 합니다
   const mockStats = {
     totalTestCases: 1247,
@@ -166,7 +171,66 @@ const NewDashboard: React.FC = () => {
 
   const handleQuickAction = (action: string) => {
     console.log(`Quick action: ${action}`);
-    // 여기에 실제 액션 로직을 구현
+    
+    switch (action) {
+      case 'create-testcase':
+        console.log('테스트 케이스 생성 모달 열기');
+        setIsTestCaseModalOpen(true);
+        break;
+      case 'start-execution':
+        // 테스트 실행 로직
+        console.log('테스트 실행 시작');
+        break;
+      case 'create-defect':
+        // 결함 등록 로직
+        console.log('결함 등록');
+        break;
+      case 'view-reports':
+        // 보고서 보기 로직
+        console.log('보고서 보기');
+        break;
+      default:
+        console.log(`Unknown action: ${action}`);
+    }
+  };
+
+  const handleTestCaseSubmit = async (data: TestCaseFormData) => {
+    try {
+      console.log('테스트 케이스 생성:', data);
+      
+      // API 호출
+      const response = await fetch('/api/testcases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          status: data.status,
+          steps: data.steps,
+          expected: data.expectedResult,
+          tags: data.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          createdBy: 'current-user' // 실제로는 현재 사용자 정보를 사용해야 함
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('테스트 케이스 생성에 실패했습니다.');
+      }
+
+      const createdTestCase = await response.json();
+      
+      // 성공 알림
+      alert('테스트 케이스가 성공적으로 생성되었습니다!');
+      
+      // 모달 닫기
+      setIsTestCaseModalOpen(false);
+    } catch (error) {
+      console.error('테스트 케이스 생성 오류:', error);
+      alert('테스트 케이스 생성에 실패했습니다.');
+    }
   };
 
   return (
@@ -205,7 +269,13 @@ const NewDashboard: React.FC = () => {
         빠른 액션
       </Typography>
       <QuickActionsGrid>
-        <ActionCard onClick={() => handleQuickAction('create-testcase')}>
+        <ActionCard 
+          onClick={() => {
+            console.log('테스트 케이스 생성 버튼 클릭됨');
+            handleQuickAction('create-testcase');
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <ActionIcon>➕</ActionIcon>
           <Typography variant="h3" style={{ marginBottom: '4px' }}>
             테스트 케이스 생성
@@ -260,6 +330,14 @@ const NewDashboard: React.FC = () => {
           ))}
         </ActivityList>
       </RecentActivitySection>
+
+      {/* 테스트 케이스 생성 모달 */}
+      <TestCaseModal
+        isOpen={isTestCaseModalOpen}
+        onClose={() => setIsTestCaseModalOpen(false)}
+        onSubmit={handleTestCaseSubmit}
+        mode="create"
+      />
     </DashboardContainer>
   );
 };

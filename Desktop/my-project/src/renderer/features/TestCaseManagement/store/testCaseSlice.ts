@@ -164,6 +164,29 @@ export const deleteSearchPreset = createAsyncThunk(
   }
 );
 
+// 테스트 케이스 생성
+export const createTestCase = createAsyncThunk(
+  'testcases/create',
+  async (testCaseData: {
+    title: string;
+    description: string;
+    priority: 'High' | 'Medium' | 'Low';
+    status: 'Draft' | 'Active' | 'Inactive';
+    steps: string[];
+    expectedResult: string;
+    tags: string;
+  }, { rejectWithValue }) => {
+    try {
+      const res = await api.post('/api/testcases', testCaseData);
+      showToast('테스트 케이스가 성공적으로 생성되었습니다!', 'success');
+      return res.data as TestCase;
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || error.message || '테스트 케이스 생성 실패', 'error');
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const testCaseSlice = createSlice({
   name: 'testcases',
   initialState,
@@ -217,6 +240,16 @@ const testCaseSlice = createSlice({
       // 프리셋 삭제
       .addCase(deleteSearchPreset.fulfilled, (state, action) => {
         state.presets = state.presets.filter(preset => preset.id !== action.payload);
+      })
+      // 테스트 케이스 생성
+      .addCase(createTestCase.pending, state => { state.loading = true; state.error = null; })
+      .addCase(createTestCase.fulfilled, (state, action) => { 
+        state.loading = false; 
+        state.list.unshift(action.payload);
+      })
+      .addCase(createTestCase.rejected, (state, action) => { 
+        state.loading = false; 
+        state.error = action.error.message || '생성 실패'; 
       });
   },
 });

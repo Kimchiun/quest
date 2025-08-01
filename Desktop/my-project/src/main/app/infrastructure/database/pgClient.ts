@@ -1,17 +1,23 @@
 import { Client } from 'pg';
 
-const pgClient = new Client({
-    user: process.env.PGUSER || 'postgres',
-    host: process.env.PGHOST || 'localhost',
-    database: process.env.PGDATABASE || 'quest',
-    password: process.env.PGPASSWORD || 'password',
-    port: Number(process.env.PGPORT) || 5432,
-});
-
+let pgClient: Client | null = null;
 let isConnected = false;
+
+function createClient() {
+    return new Client({
+        user: process.env.PGUSER || 'postgres',
+        host: process.env.PGHOST || 'localhost',
+        database: process.env.PGDATABASE || 'quest',
+        password: process.env.PGPASSWORD || 'password',
+        port: Number(process.env.PGPORT) || 5432,
+    });
+}
 
 export async function ensurePgConnected() {
     if (!isConnected) {
+        if (!pgClient) {
+            pgClient = createClient();
+        }
         await pgClient.connect();
         isConnected = true;
     }
@@ -20,11 +26,17 @@ export async function ensurePgConnected() {
 export async function testPgConnection() {
     try {
         await ensurePgConnected();
-        await pgClient.query('SELECT NOW()');
+        if (pgClient) {
+            await pgClient.query('SELECT NOW()');
+        }
         return true;
     } catch (err) {
         return false;
     }
+}
+
+export function getPgClient() {
+    return pgClient;
 }
 
 export default pgClient;

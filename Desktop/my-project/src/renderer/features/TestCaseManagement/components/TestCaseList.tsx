@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { selectTestCase, deselectTestCase, selectAllTestCases, deselectAllTestCases } from '../store/selectionSlice';
@@ -6,29 +6,26 @@ import { useGetTestCasesQuery, useDeleteTestCaseMutation, useBulkDeleteMutation,
 import { addNotification } from '../../../store/notificationSlice';
 import ListView from '../../../shared/components/List/ListView';
 import LoadingSpinner from '../../../shared/components/LoadingSpinner/LoadingSpinner';
+import TestCaseModal, { TestCaseFormData } from './TestCaseModal';
+import Button from '../../../shared/components/Button';
 
-const TestCaseList: React.FC = () => {
+interface TestCaseListProps {
+  testCases: any[];
+  isLoading: boolean;
+  selectedFolderId?: number | null;
+}
+
+const TestCaseList: React.FC<TestCaseListProps> = ({ testCases, isLoading, selectedFolderId }) => {
   const dispatch = useDispatch();
   const { selectedTestCases = [] } = useSelector((state: RootState) => state.selection);
-  
-  // RTK Query hooks
-  const { data: testCases = [], isLoading, error, refetch } = useGetTestCasesQuery();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [deleteTestCase] = useDeleteTestCaseMutation();
   const [bulkDelete] = useBulkDeleteMutation();
   const [bulkMove] = useBulkMoveMutation();
   const [bulkCopy] = useBulkCopyMutation();
   const [bulkUpdateStatus] = useBulkUpdateStatusMutation();
 
-  // 에러 처리
-  React.useEffect(() => {
-    if (error) {
-      dispatch(addNotification({
-        type: 'error',
-        message: '테스트 케이스를 불러오는데 실패했습니다.',
-        title: '오류'
-      }));
-    }
-  }, [error, dispatch]);
+  // 에러 처리 - 이제 부모 컴포넌트에서 처리됨
 
   // CRUD 후 refetch 및 알림
   const handleBulkAction = useCallback(async (action: 'move' | 'copy' | 'delete' | 'status') => {
@@ -115,6 +112,55 @@ const TestCaseList: React.FC = () => {
       }));
     }
   }, [deleteTestCase, dispatch]);
+
+  // 테스트 케이스 생성 핸들러
+  const handleCreateTestCase = async (data: TestCaseFormData) => {
+    try {
+      console.log('테스트 케이스 생성:', data);
+      
+      // API 호출
+      const response = await fetch('/api/testcases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          status: data.status,
+          steps: data.steps,
+          expected: data.expectedResult,
+          tags: data.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          createdBy: 'current-user' // 실제로는 현재 사용자 정보를 사용해야 함
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('테스트 케이스 생성에 실패했습니다.');
+      }
+
+      const createdTestCase = await response.json();
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: '테스트 케이스가 성공적으로 생성되었습니다!',
+        title: '생성 완료'
+      }));
+      
+      setIsCreateModalOpen(false);
+      
+      // 목록 새로고침
+              // 부모 컴포넌트에서 refetch 처리
+    } catch (error) {
+      console.error('테스트 케이스 생성 오류:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: '테스트 케이스 생성에 실패했습니다.',
+        title: '오류'
+      }));
+    }
+  };
 
   // 로딩 상태 처리
   if (isLoading) {
@@ -216,7 +262,15 @@ const TestCaseList: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <Button 
+          onClick={() => setIsCreateModalOpen(true)}
+          variant="primary"
+          style={{ marginRight: 'auto' }}
+        >
+          + 새 테스트 케이스 생성
+        </Button>
+        
         <button onClick={() => handleBulkAction('delete')} disabled={selectedTestCases.length === 0}>
           선택 삭제
         </button>
@@ -242,6 +296,14 @@ const TestCaseList: React.FC = () => {
         columns={columns}
         loading={isLoading}
         emptyMessage="테스트 케이스가 없습니다."
+      />
+
+      {/* 테스트 케이스 생성 모달 */}
+      <TestCaseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateTestCase}
+        mode="create"
       />
     </div>
   );

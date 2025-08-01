@@ -41,14 +41,13 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: ${({ theme }) => theme.color.overlay};
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-  animation: ${fadeIn} ${({ theme }) => theme.animation.duration.normal} ${({ theme }) => theme.animation.easing.easeOut};
-  padding: ${({ theme }) => theme.spacing.md};
+  z-index: 1000;
+  animation: ${fadeIn} 0.2s ease-out;
+  padding: 16px;
 `;
 
 const getModalSize = (size: string = 'md', theme: Theme) => {
