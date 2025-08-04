@@ -21,14 +21,14 @@ app.listen(PORT, async () => {
         console.log(`PostgreSQL 연결: ${pgOk ? '성공' : '실패'}`);
         console.log(`Elasticsearch 연결: ${esOk ? '성공' : '실패'}`);
         
-        // 데이터베이스 초기화
-        if (pgOk) {
-            try {
-                await initializeDatabase();
-                console.log('✅ 데이터베이스 초기화 완료');
-            } catch (error) {
-                console.error('❌ 데이터베이스 초기화 실패:', error);
-            }
+        // 데이터베이스 초기화 (강제 실행)
+        try {
+            console.log('🔄 데이터베이스 초기화 시작...');
+            await initializeDatabase();
+            console.log('✅ 데이터베이스 초기화 완료');
+        } catch (error) {
+            console.error('❌ 데이터베이스 초기화 실패:', error);
+            console.log('⚠️ 데이터베이스 초기화 실패했지만 서버는 계속 실행됩니다.');
         }
     }
 }); 

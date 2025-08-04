@@ -10,6 +10,8 @@ export interface TestCase {
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
+    folderId?: number;
+    sortOrder?: number;
 }
 
 export interface TestCaseVersion {

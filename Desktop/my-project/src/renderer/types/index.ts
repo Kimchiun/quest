@@ -267,4 +267,51 @@ export interface TableConfig {
     order: 'asc' | 'desc';
   };
   filtering?: Record<string, any>;
+}
+
+// Tree Node Types
+export interface TreeNode {
+  id: number;
+  name: string;
+  type: 'folder' | 'testcase';
+  parentId?: number;
+  children?: TreeNode[];
+  sortOrder?: number;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Drag & Drop Types
+export interface DragDropRequest {
+  draggedNodeId: number;
+  targetNodeId: number;
+  dropType: 'before' | 'after' | 'inside';
+  position?: number;
+}
+
+// Performance Types
+export interface PerformanceMetrics {
+  responseTime: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  timestamp: Date;
+}
+
+// Integration Types
+export interface IntegrationConfig {
+  type: 'jira' | 'redmine' | 'gitlab' | 'github';
+  url: string;
+  apiToken: string;
+  projectKey?: string;
+  enabled: boolean;
+}
+
+// Feedback Types
+export interface FeedbackData {
+  category: 'usability' | 'performance' | 'accessibility' | 'bug';
+  rating: number;
+  comment: string;
+  userAgent: string;
+  timestamp: Date;
 } 

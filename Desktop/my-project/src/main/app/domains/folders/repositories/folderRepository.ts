@@ -1,220 +1,150 @@
-import pgClient from '../../../infrastructure/database/pgClient';
-import { Folder, FolderTree } from '../models/Folder';
+import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
+import { Folder, CreateFolderRequest, UpdateFolderRequest } from '../models/Folder';
 
-export async function createFolder(folder: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
+export async function createFolder(folderData: CreateFolderRequest): Promise<Folder> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const result = await pgClient.query(
-        'INSERT INTO folders (name, description, parent_id, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
-        [folder.name, folder.description, folder.parentId, folder.createdBy]
+        `INSERT INTO folders (name, description, parent_id, sort_order, testcase_count, created_by, is_expanded, is_readonly, permissions) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [
+            folderData.name,
+            folderData.description,
+            folderData.parentId,
+            folderData.sortOrder || 0,
+            folderData.testcaseCount || 0,
+            folderData.createdBy,
+            folderData.isExpanded !== false,
+            folderData.isReadOnly || false,
+            JSON.stringify(folderData.permissions || {
+                read: true,
+                write: true,
+                delete: true,
+                manage: true
+            })
+        ]
     );
-    return result.rows[0];
+    return rowToFolder(result.rows[0]);
 }
 
 export async function getFolderById(id: number): Promise<Folder | null> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const result = await pgClient.query('SELECT * FROM folders WHERE id = $1', [id]);
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+    return rowToFolder(result.rows[0]);
 }
 
-export async function getAllFolders(): Promise<Folder[]> {
-    const result = await pgClient.query('SELECT * FROM folders ORDER BY name');
-    return result.rows;
-}
-
-export async function getFolderTree(): Promise<FolderTree[]> {
-    // 모든 폴더 조회
-    const folders = await getAllFolders();
-    
-    // 테스트 케이스 수 조회
-    const testCaseCounts = await pgClient.query(`
-        SELECT folder_id, COUNT(*) as count 
-        FROM case_folders 
-        GROUP BY folder_id
-    `);
-    
-    const countMap = new Map<number, number>();
-    testCaseCounts.rows.forEach(row => {
-        countMap.set(row.folder_id, parseInt(row.count));
-    });
-    
-    // 트리 구조 생성
-    const folderMap = new Map<number, FolderTree>();
-    const rootFolders: FolderTree[] = [];
-    
-    folders.forEach(folder => {
-        const folderTree: FolderTree = {
-            ...folder,
-            children: [],
-            testCaseCount: countMap.get(folder.id) || 0
-        };
-        folderMap.set(folder.id, folderTree);
-    });
-    
-    folders.forEach(folder => {
-        const folderTree = folderMap.get(folder.id)!;
-        if (folder.parentId) {
-            const parent = folderMap.get(folder.parentId);
-            if (parent) {
-                parent.children.push(folderTree);
-            }
-        } else {
-            rootFolders.push(folderTree);
-        }
-    });
-    
-    return rootFolders;
-}
-
-export async function getFolderTreePaginated(page = 1, limit = 100): Promise<{ folders: FolderTree[], total: number }> {
-    const offset = (page - 1) * limit;
-    
-    // 전체 개수 조회
-    const countResult = await pgClient.query('SELECT COUNT(*) as total FROM folders');
-    const total = parseInt(countResult.rows[0].total);
-    
-    // 페이징된 폴더 조회
-    const result = await pgClient.query(
-        'SELECT * FROM folders ORDER BY name LIMIT $1 OFFSET $2',
-        [limit, offset]
-    );
-    
-    const folders = result.rows.map(row => ({
-        ...row,
-        children: [],
-        testCaseCount: 0
-    }));
-    
-    return { folders, total };
-}
-
-export async function getFolderTreeWithLazyLoading(parentId?: number): Promise<FolderTree[]> {
-    const whereClause = parentId ? 'WHERE parent_id = $1' : 'WHERE parent_id IS NULL';
-    const params = parentId ? [parentId] : [];
-    
-    const result = await pgClient.query(
-        `SELECT * FROM folders ${whereClause} ORDER BY name`,
-        params
-    );
-    
-    return result.rows.map(row => ({
-        ...row,
-        children: [],
-        testCaseCount: 0
-    }));
-}
-
-export async function updateFolder(id: number, updates: Partial<Folder>): Promise<Folder | null> {
-    const fields = [];
-    const values = [];
-    let paramIndex = 1;
-    
-    if (updates.name !== undefined) {
-        fields.push(`name = $${paramIndex++}`);
-        values.push(updates.name);
-    }
-    if (updates.description !== undefined) {
-        fields.push(`description = $${paramIndex++}`);
-        values.push(updates.description);
-    }
-    if (updates.parentId !== undefined) {
-        fields.push(`parent_id = $${paramIndex++}`);
-        values.push(updates.parentId);
+export async function updateFolder(id: number, folderData: UpdateFolderRequest): Promise<Folder | null> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
     }
     
-    fields.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
+    const current = await getFolderById(id);
+    if (!current) return null;
     
     const result = await pgClient.query(
-        `UPDATE folders SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-        values
+        `UPDATE folders SET name=$1, description=$2, parent_id=$3, sort_order=$4, updated_at=NOW() WHERE id=$5 RETURNING *`,
+        [
+            folderData.name ?? current.name,
+            folderData.description ?? current.description,
+            folderData.parentId ?? current.parentId,
+            folderData.sortOrder ?? current.sortOrder,
+            id
+        ]
     );
     
-    return result.rows[0] || null;
+    if (result.rows.length === 0) return null;
+    return rowToFolder(result.rows[0]);
 }
 
 export async function deleteFolder(id: number): Promise<boolean> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
+    // 하위 폴더들을 먼저 삭제
+    await pgClient.query('DELETE FROM folders WHERE parent_id = $1', [id]);
+    
+    // 테스트케이스들의 폴더 참조 제거
+    await pgClient.query('UPDATE testcases SET folder_id = NULL WHERE folder_id = $1', [id]);
+    
+    // 폴더 삭제
     const result = await pgClient.query('DELETE FROM folders WHERE id = $1', [id]);
     return (result.rowCount ?? 0) > 0;
 }
 
-export async function getTestCasesInFolder(folderId: number): Promise<number[]> {
-    const result = await pgClient.query(
-        'SELECT testcase_id FROM case_folders WHERE folder_id = $1',
-        [folderId]
-    );
-    return result.rows.map(row => row.testcase_id);
-}
-
-export async function addTestCaseToFolder(testCaseId: number, folderId: number): Promise<void> {
-    const result = await pgClient.query(
-        'INSERT INTO case_folders (testcase_id, folder_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id',
-        [testCaseId, folderId]
-    );
-    if (result.rowCount === 0) {
-        throw new Error('이미 해당 폴더에 포함된 테스트케이스입니다.');
+export async function listFolders(): Promise<Folder[]> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
     }
-}
-
-export async function removeTestCaseFromFolder(testCaseId: number, folderId: number): Promise<void> {
-    await pgClient.query(
-        'DELETE FROM case_folders WHERE testcase_id = $1 AND folder_id = $2',
-        [testCaseId, folderId]
-    );
-}
-
-export async function moveTestCase(testCaseId: number, fromFolderId: number, toFolderId: number): Promise<void> {
-    await pgClient.query('BEGIN');
-    try {
-        await removeTestCaseFromFolder(testCaseId, fromFolderId);
-        await addTestCaseToFolder(testCaseId, toFolderId);
-        await pgClient.query('COMMIT');
-    } catch (error) {
-        await pgClient.query('ROLLBACK');
-        throw error;
-    }
-}
-
-export async function moveTestCasesBatch(testCaseIds: number[], fromFolderId: number, toFolderId: number): Promise<void> {
-    await pgClient.query('BEGIN');
-    try {
-        // 기존 관계 제거
-        await pgClient.query(
-            'DELETE FROM case_folders WHERE testcase_id = ANY($1) AND folder_id = $2',
-            [testCaseIds, fromFolderId]
-        );
-        
-        // 새 관계 추가 (배치 처리)
-        const values = testCaseIds.map((_, index) => `($${index + 1}, $${testCaseIds.length + 1})`).join(', ');
-        await pgClient.query(
-            `INSERT INTO case_folders (testcase_id, folder_id) VALUES ${values}`,
-            [...testCaseIds, toFolderId]
-        );
-        
-        await pgClient.query('COMMIT');
-    } catch (error) {
-        await pgClient.query('ROLLBACK');
-        throw error;
-    }
-}
-
-export async function checkCircularReference(folderId: number, newParentId: number): Promise<boolean> {
-    if (!newParentId) return false;
     
-    const visited = new Set<number>();
-    let currentId = newParentId;
+    const result = await pgClient.query('SELECT * FROM folders ORDER BY sort_order, name');
+    return result.rows.map(rowToFolder);
+}
+
+export async function getFoldersByParentId(parentId?: number): Promise<Folder[]> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
     
-    while (currentId) {
-        if (visited.has(currentId) || currentId === folderId) {
-            return true; // 순환 참조 발견
+    const query = parentId 
+        ? 'SELECT * FROM folders WHERE parent_id = $1 ORDER BY sort_order, name'
+        : 'SELECT * FROM folders WHERE parent_id IS NULL ORDER BY sort_order, name';
+    
+    const params = parentId ? [parentId] : [];
+    const result = await pgClient.query(query, params);
+    return result.rows.map(rowToFolder);
+}
+
+export async function addTestCaseToFolder(testCaseId: number, folderId: number): Promise<boolean> {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
+    const result = await pgClient.query(
+        'UPDATE testcases SET folder_id = $1 WHERE id = $2',
+        [folderId, testCaseId]
+    );
+    return (result.rowCount ?? 0) > 0;
+}
+
+function rowToFolder(row: any): Folder {
+    return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        parentId: row.parent_id,
+        sortOrder: row.sort_order || 0,
+        testcaseCount: row.testcase_count || 0,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        isExpanded: row.is_expanded,
+        isReadOnly: row.is_readonly,
+        permissions: row.permissions ? (typeof row.permissions === 'string' ? JSON.parse(row.permissions) : row.permissions) : {
+            read: true,
+            write: true,
+            delete: true,
+            manage: true
         }
-        
-        visited.add(currentId);
-        const result = await pgClient.query(
-            'SELECT parent_id FROM folders WHERE id = $1',
-            [currentId]
-        );
-        
-        if (result.rows.length === 0) break;
-        currentId = result.rows[0].parent_id;
-    }
-    
-    return false;
+    };
 } 

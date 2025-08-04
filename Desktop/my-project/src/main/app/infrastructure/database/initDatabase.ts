@@ -1,4 +1,4 @@
-import pgClient, { ensurePgConnected } from './pgClient';
+import { getPgClient, ensurePgConnected } from './pgClient';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -7,6 +7,11 @@ export async function initializeDatabase() {
         // PostgreSQL 연결 확인
         await ensurePgConnected();
         console.log('PostgreSQL 연결: 성공');
+
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
 
         // 스키마 파일 읽기
         const schemaPath = path.join(__dirname, 'schema.sql');
@@ -51,6 +56,10 @@ export async function initializeDatabase() {
 
 export async function testDatabaseConnection() {
     try {
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         await pgClient.query('SELECT NOW()');
         return true;
     } catch (error) {

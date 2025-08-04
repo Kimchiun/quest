@@ -5,42 +5,41 @@ import authController from './domains/users/controllers/authController';
 import testCaseController from './domains/testcases/controllers/testCaseController';
 import releaseController from './domains/releases/controllers/releaseController';
 import executionController from './domains/executions/controllers/executionController';
-import integrationController from './domains/executions/controllers/integrationController';
-import dashboardController from './controllers/dashboardController';
-import commentController from './domains/comments/controllers/commentController';
+import treeController from './domains/tree/controllers/treeController';
 import folderController from './domains/folders/controllers/folderController';
-import defectController from './domains/defects/controllers/defectController';
-import { bulkMove, bulkCopy, bulkDelete, bulkUpdateStatus } from './controllers/bulkController';
+import bulkController from './domains/folders/controllers/bulkController';
+import { errorHandler } from './utils/errorHandler';
 
 const app = express();
 
+// 미들웨어 설정
+app.use(cors());
 app.use(express.json());
-app.use(cors({
-  origin: ['http://localhost:4000', 'http://127.0.0.1:4000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(express.urlencoded({ extended: true }));
+
+// Passport 초기화
 app.use(passport.initialize());
 
+// 라우터 설정
 app.use('/api/auth', authController);
-app.use('/api/testcases', testCaseController);
+app.use('/api/testcases', testCaseController); // 테스트케이스 API 활성화
 app.use('/api/releases', releaseController);
 app.use('/api/executions', executionController);
-app.use('/api/integrations', integrationController);
-app.use('/api/dashboard', dashboardController);
-app.use('/api/comments', commentController);
-app.use('/api/folders', folderController);
-app.use('/api/defects', defectController);
+app.use('/api/tree', treeController); // 새로운 트리 API
+app.use('/api/folders', folderController); // 폴더 API
+app.use('/api/bulk', bulkController); // 일괄 작업 API
 
-// 일괄 작업 API 라우트
-app.post('/api/bulk/move', bulkMove);
-app.post('/api/bulk/copy', bulkCopy);
-app.delete('/api/bulk', bulkDelete);
-app.patch('/api/bulk/status', bulkUpdateStatus);
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
+// 기본 라우트
+app.get('/', (req, res) => {
+  res.json({ message: 'Quest Desktop App API' });
 });
+
+// 404 핸들러
+app.use('*', (req, res) => {
+  res.status(404).json({ message: '요청한 리소스를 찾을 수 없습니다.' });
+});
+
+// 에러 핸들러
+app.use(errorHandler);
 
 export default app; 

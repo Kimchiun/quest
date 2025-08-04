@@ -56,8 +56,8 @@ describe('Advanced Search Service', () => {
       expect(query.query.bool.should).toHaveLength(4);
       expect(query.query.bool.minimum_should_match).toBe(1);
 
-      // 필터 조건들
-      expect(query.query.bool.filter).toHaveLength(5);
+      // 필터 조건들 (날짜 범위 포함)
+      expect(query.query.bool.filter).toHaveLength(6);
       expect(query.query.bool.filter).toContainEqual({
         terms: { folder: ['Smoke Tests'] }
       });

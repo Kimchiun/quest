@@ -28,12 +28,9 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '/cypress/',
-    'tests/folder.api.test.ts', // 임시 제외
-    'tests/folder.service.test.ts', // 임시 제외
     'tests/integration.jira.api.test.ts', // MSW 충돌 문제
     'tests/bulk-operations.test.ts', // 모듈 경로 문제
     'tests/multi-selection.test.tsx', // Redux 타입 문제
-    'tests/folder.e2e.test.ts', // Cypress 타입 문제
     'tests/testcase.service.test.ts', // 데이터베이스 문제
     'tests/bulk-edit.performance.test.tsx', // 성능 테스트 문제
   ],
