@@ -9,10 +9,19 @@ ALTER TABLE testcases ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'med
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS created_by VARCHAR(100) DEFAULT 'system';
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
+-- releases 테이블에 새로운 필드들 추가
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS version VARCHAR(50);
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Planning';
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS assignee VARCHAR(100);
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0;
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
 -- 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_folders_sort_order ON folders(sort_order);
 CREATE INDEX IF NOT EXISTS idx_testcases_folder_id ON testcases(folder_id);
 CREATE INDEX IF NOT EXISTS idx_testcases_sort_order ON testcases(sort_order);
+CREATE INDEX IF NOT EXISTS idx_releases_status ON releases(status);
+CREATE INDEX IF NOT EXISTS idx_releases_assignee ON releases(assignee);
 
 -- 샘플 데이터 삽입
 INSERT INTO folders (name, description, parent_id, sort_order, created_by) 
@@ -43,4 +52,10 @@ CREATE TRIGGER update_testcases_updated_at
 DROP TRIGGER IF EXISTS update_tree_nodes_updated_at ON tree_nodes;
 CREATE TRIGGER update_tree_nodes_updated_at 
     BEFORE UPDATE ON tree_nodes 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- releases 테이블 트리거 추가
+DROP TRIGGER IF EXISTS update_releases_updated_at ON releases;
+CREATE TRIGGER update_releases_updated_at 
+    BEFORE UPDATE ON releases 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 

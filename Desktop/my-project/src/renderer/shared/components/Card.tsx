@@ -14,6 +14,8 @@ export interface CardProps {
   ariaLabel?: string;
   children?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
+  onMouseDown?: () => void;
 }
 
 const getCardPadding = (size: string, theme: Theme) => {
@@ -146,7 +148,9 @@ const Card: React.FC<CardProps> = ({
   style, 
   ariaLabel, 
   children,
-  className 
+  className,
+  onClick,
+  onMouseDown
 }) => (
   <CardContainer 
     $color={color} 
@@ -156,6 +160,8 @@ const Card: React.FC<CardProps> = ({
     aria-label={ariaLabel || label} 
     role="region"
     className={className}
+    onClick={onClick}
+    onMouseDown={onMouseDown}
   >
     {icon && <IconContainer $color={color}>{icon}</IconContainer>}
     <Value $color={color}>{value}</Value>

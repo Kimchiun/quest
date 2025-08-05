@@ -9,7 +9,6 @@ const createMockStore = () => {
   return configureStore({
     reducer: {
       users: (state = { me: { username: 'testuser' } }, action: any) => state,
-      releases: (state = { selectedRelease: null }, action: any) => state,
       testcases: (state = { selectedTestCase: null }, action: any) => state
     }
   });

@@ -177,12 +177,12 @@ export const handlers = [
   
   // 로그인
   http.post(`${baseURL}/api/auth/login`, async ({ request }) => {
-    const { email, password } = await request.json();
-    console.log('MSW: 로그인 요청:', { email, password });
+    const { username, password } = await request.json();
+    console.log('MSW: 로그인 요청:', { username, password });
 
     // 간단한 인증 로직 (개발용)
-    if (email === 'admin@test.com' && password === 'password123') {
-      const user = mockUsers.find(u => u.email === email);
+    if (username === 'admin@test.com' && password === 'password123') {
+      const user = mockUsers.find(u => u.email === username);
       if (user) {
         console.log('MSW: 로그인 성공');
         return HttpResponse.json({

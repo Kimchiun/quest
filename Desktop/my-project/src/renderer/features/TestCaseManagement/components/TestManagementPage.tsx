@@ -948,14 +948,14 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
   };
 
   // 검색 및 필터링된 테스트 케이스
-  const filteredTestCases = testCases.filter(testCase => {
+  const filteredTestCases = Array.isArray(testCases) ? testCases.filter(testCase => {
     const matchesSearch = testCase.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          testCase.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || testCase.status === filterStatus;
     const matchesFolder = !selectedFolderId || testCase.folderId === selectedFolderId;
     
     return matchesSearch && matchesFilter && matchesFolder;
-  });
+  }) : [];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

@@ -1,6 +1,7 @@
 import { getPgClient, ensurePgConnected } from './pgClient';
 import * as fs from 'fs';
 import * as path from 'path';
+import bcrypt from 'bcrypt';
 
 export async function initializeDatabase() {
     try {
@@ -20,6 +21,9 @@ export async function initializeDatabase() {
         // 스키마 실행
         await pgClient.query(schemaSQL);
         console.log('데이터베이스 스키마 초기화 완료');
+
+        // 테스트용 사용자 생성
+        await createTestUsers(pgClient);
 
         // 테이블 존재 확인
         const tables = ['defects', 'attachments', 'activity_logs', 'comments'];
@@ -51,6 +55,29 @@ export async function initializeDatabase() {
     } catch (error) {
         console.error('데이터베이스 초기화 오류:', error);
         throw error;
+    }
+}
+
+async function createTestUsers(pgClient: any) {
+    try {
+        // 기존 사용자 확인
+        const existingUser = await pgClient.query('SELECT COUNT(*) FROM users WHERE username = $1', ['admin@test.com']);
+        
+        if (existingUser.rows[0].count === '0') {
+            // 테스트용 사용자 생성
+            const hashedPassword = await bcrypt.hash('password123', 10);
+            
+            await pgClient.query(`
+                INSERT INTO users (username, password, role) 
+                VALUES ($1, $2, $3)
+            `, ['admin@test.com', hashedPassword, 'ADMIN']);
+            
+            console.log('✅ 테스트용 사용자 생성 완료: admin@test.com / password123');
+        } else {
+            console.log('✅ 테스트용 사용자 이미 존재함: admin@test.com');
+        }
+    } catch (error) {
+        console.error('테스트용 사용자 생성 실패:', error);
     }
 }
 

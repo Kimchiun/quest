@@ -4,13 +4,11 @@ import { Provider } from 'react-redux';
 import { store } from '../store';
 import App from './App';
 
-// MSW 설정 (개발 환경에서만)
-if (process.env.NODE_ENV === 'development') {
-  const { worker } = require('../mocks/browser');
-  worker.start({
-    onUnhandledRequest: 'bypass',
-  });
-}
+// MSW 비활성화 - 실제 API 사용
+// if (process.env.NODE_ENV === 'development') {
+//   const { startMSW } = require('../mocks/browser');
+//   startMSW().catch(console.error);
+// }
 
 const container = document.getElementById('root');
 if (container) {

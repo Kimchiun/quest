@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../../store';
 import { setCurrentSection, NavigationSection } from '../../../store/navigationSlice';
 import MainContent from './ContentComponents';
-import { DashboardIcon, TestIcon, ReleaseIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon } from '../Icons';
+import { DashboardIcon, TestIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon } from '../Icons';
 
 // 레이아웃 컨테이너
 const LayoutContainer = styled.div<{ sidebarCollapsed: boolean }>`
@@ -222,9 +223,10 @@ interface GlobalLayoutProps {
 
 const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.users.me);
   const currentSection = useSelector((state: RootState) => state.navigation.currentSection);
-  const selectedRelease = useSelector((state: RootState) => (state.releases as any).selectedRelease);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const getCurrentPageTitle = () => {
@@ -232,9 +234,8 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       case 'dashboard':
         return 'Quest - 대시보드';
       case 'test-management':
-        return '테스트 관리';
-      case 'release-management':
-        return 'Quest - 릴리즈 관리';
+        return 'Quest - 테스트 관리';
+
       case 'defect-management':
         return 'Quest - 결함 관리';
       case 'report':
@@ -248,6 +249,28 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
 
   const handleNavigationClick = (section: NavigationSection) => {
     dispatch(setCurrentSection(section));
+    
+    // 라우팅 처리
+    switch (section) {
+      case 'dashboard':
+        navigate('/dashboard');
+        break;
+      case 'test-management':
+        navigate('/test-management');
+        break;
+
+      case 'defect-management':
+        navigate('/defect-management');
+        break;
+      case 'report':
+        navigate('/report');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      default:
+        navigate('/dashboard');
+    }
   };
 
   const isActiveSection = (section: NavigationSection) => {
@@ -297,17 +320,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
             </NavIcon>
             <NavText collapsed={sidebarCollapsed}>테스트 관리</NavText>
           </NavItem>
-          <NavItem 
-            active={isActiveSection('release-management')}
-            onClick={() => handleNavigationClick('release-management')}
-            collapsed={sidebarCollapsed}
-            data-title="릴리즈 관리"
-          >
-            <NavIcon>
-              <ReleaseIcon size={20} color="white" />
-            </NavIcon>
-            <NavText collapsed={sidebarCollapsed}>릴리즈 관리</NavText>
-          </NavItem>
+
           <NavItem 
             active={isActiveSection('defect-management')}
             onClick={() => handleNavigationClick('defect-management')}

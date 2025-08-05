@@ -28,7 +28,7 @@ const createTestStore = (initialState = {}) => {
         rightPanel: { isCollapsed: false, width: 320 },
         centerPanel: { isFullWidth: false },
         activeTab: 'overview',
-        selectedReleaseId: '1',
+        selectedReleaseId: null,
         selectedTestCaseId: null,
         selectedDefectId: null,
         filters: {
@@ -112,34 +112,18 @@ const mockDefects = [
   }
 ];
 
-describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 고급 필터링', () => {
+describe('IntegratedItemList - 테스트케이스-결함 연동 및 고급 필터링', () => {
   beforeEach(() => {
     mockAxios.get.mockClear();
   });
 
   describe('기본 렌더링 테스트', () => {
-    it('릴리즈가 선택되지 않았을 때 안내 메시지를 표시해야 함', () => {
-      renderIntegratedItemList({ selectedReleaseId: null });
-
-      expect(screen.getByText('릴리즈를 선택해주세요')).toBeInTheDocument();
-      expect(screen.getByText('좌측 패널에서 릴리즈를 선택하면 테스트케이스와 결함을 확인할 수 있습니다.')).toBeInTheDocument();
+    it('테스트케이스 목록이 표시되어야 함', () => {
+      renderIntegratedItemList();
+      expect(screen.getByText('테스트케이스 목록')).toBeInTheDocument();
     });
 
-    it('테스트케이스와 결함이 통합되어 표시되어야 함', () => {
-      renderIntegratedItemList({
-        releaseData: {
-          testCases: mockTestCases,
-          defects: mockDefects,
-          loading: false,
-          error: null,
-        }
-      });
-
-      expect(screen.getByText('테스트케이스 & 결함')).toBeInTheDocument();
-      expect(screen.getByText('5개 항목')).toBeInTheDocument(); // 3개 테스트케이스 + 2개 결함
-    });
-
-    it('테스트케이스와 결함이 구분되어 표시되어야 함', () => {
+    it('테스트케이스가 정상적으로 표시되어야 함', () => {
       renderIntegratedItemList({
         releaseData: {
           testCases: mockTestCases,
@@ -150,13 +134,8 @@ describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 �
       });
 
       expect(screen.getByText('로그인 테스트')).toBeInTheDocument();
-      expect(screen.getByText('로그인 버튼 클릭 시 오류')).toBeInTheDocument();
-      
-      // 유형 배지 확인
-      const tcBadges = screen.getAllByText('TC');
-      const bugBadges = screen.getAllByText('BUG');
-      expect(tcBadges).toHaveLength(3);
-      expect(bugBadges).toHaveLength(2);
+      expect(screen.getByText('회원가입 테스트')).toBeInTheDocument();
+      expect(screen.getByText('비밀번호 변경 테스트')).toBeInTheDocument();
     });
   });
 
@@ -177,7 +156,6 @@ describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 �
       fireEvent.change(searchInput, { target: { value: '로그인' } });
 
       expect(screen.getByText('로그인 테스트')).toBeInTheDocument();
-      expect(screen.getByText('로그인 버튼 클릭 시 오류')).toBeInTheDocument();
       expect(screen.queryByText('회원가입 테스트')).not.toBeInTheDocument();
     });
 
@@ -197,22 +175,7 @@ describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 �
       expect(screen.queryByText('회원가입 테스트')).not.toBeInTheDocument(); // Medium 우선순위
     });
 
-    it('심각도 필터가 동작해야 함', () => {
-      const severityFilter = screen.getByTestId('severity-filter');
-      fireEvent.change(severityFilter, { target: { value: ['High'] } });
 
-      expect(screen.getByText('로그인 버튼 클릭 시 오류')).toBeInTheDocument(); // High 심각도
-      expect(screen.queryByText('회원가입 폼 검증 오류')).not.toBeInTheDocument(); // Medium 심각도
-    });
-
-    it('결함만 표시 필터가 동작해야 함', () => {
-      const showOnlyDefectsCheckbox = screen.getByTestId('show-only-defects-checkbox');
-      fireEvent.click(showOnlyDefectsCheckbox);
-
-      expect(screen.queryByText('로그인 테스트')).not.toBeInTheDocument();
-      expect(screen.getByText('로그인 버튼 클릭 시 오류')).toBeInTheDocument();
-      expect(screen.getByText('회원가입 폼 검증 오류')).toBeInTheDocument();
-    });
 
     it('필터 초기화가 동작해야 함', () => {
       const searchInput = screen.getByTestId('keyword-search-input');
@@ -247,24 +210,16 @@ describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 �
       expect(testCaseRow).toHaveStyle({ background: '#eff6ff' });
     });
 
-    it('결함 클릭 시 선택 상태가 변경되어야 함', () => {
-      const defectRow = screen.getByTestId('item-row-defect-1');
-      fireEvent.click(defectRow);
+    it('다른 테스트케이스 클릭 시 이전 선택이 해제되어야 함', () => {
+      const testCaseRow1 = screen.getByTestId('item-row-testcase-1');
+      const testCaseRow2 = screen.getByTestId('item-row-testcase-2');
 
-      // 선택된 상태 확인
-      expect(defectRow).toHaveStyle({ background: '#eff6ff' });
-    });
+      fireEvent.click(testCaseRow1);
+      fireEvent.click(testCaseRow2);
 
-    it('다른 아이템 클릭 시 이전 선택이 해제되어야 함', () => {
-      const testCaseRow = screen.getByTestId('item-row-testcase-1');
-      const defectRow = screen.getByTestId('item-row-defect-1');
-
-      fireEvent.click(testCaseRow);
-      fireEvent.click(defectRow);
-
-      // 테스트케이스 선택 해제, 결함 선택
-      expect(testCaseRow).not.toHaveStyle({ background: '#eff6ff' });
-      expect(defectRow).toHaveStyle({ background: '#eff6ff' });
+      // 첫 번째 테스트케이스 선택 해제, 두 번째 테스트케이스 선택
+      expect(testCaseRow1).not.toHaveStyle({ background: '#eff6ff' });
+      expect(testCaseRow2).toHaveStyle({ background: '#eff6ff' });
     });
   });
 
@@ -284,19 +239,7 @@ describe('IntegratedItemList - 릴리즈-테스트케이스-결함 연동 및 �
       expect(screen.getByText('실행 전')).toBeInTheDocument(); // Untested
     });
 
-    it('결함 상태가 올바르게 표시되어야 함', () => {
-      renderIntegratedItemList({
-        releaseData: {
-          testCases: mockTestCases,
-          defects: mockDefects,
-          loading: false,
-          error: null,
-        }
-      });
 
-      expect(screen.getByText('열림')).toBeInTheDocument(); // Open
-      expect(screen.getByText('진행 중')).toBeInTheDocument(); // In Progress
-    });
 
     it('우선순위와 심각도가 올바르게 표시되어야 함', () => {
       renderIntegratedItemList({

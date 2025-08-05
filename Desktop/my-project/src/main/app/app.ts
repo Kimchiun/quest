@@ -3,7 +3,6 @@ import cors from 'cors';
 import passport from './infrastructure/security/passport';
 import authController from './domains/users/controllers/authController';
 import testCaseController from './domains/testcases/controllers/testCaseController';
-import releaseController from './domains/releases/controllers/releaseController';
 import executionController from './domains/executions/controllers/executionController';
 import treeController from './domains/tree/controllers/treeController';
 import folderController from './domains/folders/controllers/folderController';
@@ -12,8 +11,14 @@ import { errorHandler } from './utils/errorHandler';
 
 const app = express();
 
-// 미들웨어 설정
-app.use(cors());
+// CORS 설정 - Electron 앱을 위한 구체적인 설정
+app.use(cors({
+  origin: ['http://localhost:4000', 'http://localhost:3000', 'file://'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -23,7 +28,6 @@ app.use(passport.initialize());
 // 라우터 설정
 app.use('/api/auth', authController);
 app.use('/api/testcases', testCaseController); // 테스트케이스 API 활성화
-app.use('/api/releases', releaseController);
 app.use('/api/executions', executionController);
 app.use('/api/tree', treeController); // 새로운 트리 API
 app.use('/api/folders', folderController); // 폴더 API

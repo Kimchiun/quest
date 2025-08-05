@@ -1,7 +1,6 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '../services/api';
 import testCaseReducer from '../features/TestCaseManagement/store/testCaseSlice';
-import releaseReducer from '../features/ReleasePlanning/store/releaseSlice';
 import dashboardReducer from '../features/Dashboard/store/dashboardSlice';
 import executionReducer from '../features/ExecutionManagement/store/executionSlice';
 import commentReducer from '../features/ExecutionManagement/store/commentSlice';
@@ -39,7 +38,6 @@ export const store = configureStore({
     
     // 기존 슬라이스들
     testcases: testCaseReducer,
-    releases: releaseReducer,
     dashboard: dashboardReducer,
     executions: executionReducer,
     comments: commentReducer,

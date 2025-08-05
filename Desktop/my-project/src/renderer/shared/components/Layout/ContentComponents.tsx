@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { NavigationSection } from '../../../store/navigationSlice';
 import TestManagementPage from '../../../features/TestCaseManagement/components/TestManagementPage';
-import ReleaseBoard from '../../../features/ReleasePlanning/components/ReleaseBoard';
 import NewDashboard from '../../../features/Dashboard/components/NewDashboard';
 
 const ContentContainer = styled.div`
@@ -61,14 +60,7 @@ const TestManagementContent: React.FC = () => {
   );
 };
 
-// 릴리즈 관리 컨텐츠
-const ReleaseManagementContent: React.FC = () => {
-  return (
-    <ContentContainer>
-      <ReleaseBoard />
-    </ContentContainer>
-  );
-};
+
 
 // 결함 관리 컨텐츠
 const DefectManagementContent: React.FC = () => {
@@ -127,8 +119,6 @@ const MainContent: React.FC = () => {
         return <DashboardContent />;
       case 'test-management':
         return <TestManagementContent />;
-      case 'release-management':
-        return <ReleaseManagementContent />;
       case 'defect-management':
         return <DefectManagementContent />;
       case 'report':

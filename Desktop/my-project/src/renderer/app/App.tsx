@@ -3,8 +3,6 @@ import { HashRouter as Router, Route, Routes, Link, useNavigate, Navigate } from
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, setMe } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
-import ReleaseBoard from '../features/ReleasePlanning/components/ReleaseBoard';
-import ReleaseManagementPage from '../features/ReleasePlanning/components/ReleaseManagementPage';
 import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
 import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
@@ -14,7 +12,6 @@ import { theme } from '../shared/theme';
 import GlobalStyle from '../shared/GlobalStyle';
 import Icon from '../shared/components/Icon';
 import LoginPage from '../features/Login/LoginPage';
-import ReleaseSelection from '../features/ReleasePlanning/components/ReleaseSelection';
 import UserFlowManager from '../features/UserFlow/components/UserFlowManager';
 import AccessibilityManager from '../features/Accessibility/components/AccessibilityManager';
 import FeedbackCollector from '../features/Feedback/components/FeedbackCollector';
@@ -79,10 +76,7 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
             <Route path="/dashboard" element={<DashboardLayout />} />
             <Route path="/test-management" element={<QaseTestManagementPage />} />
             <Route path="/test-cases" element={<TestCaseList />} />
-            <Route path="/release-planning" element={<ReleaseBoard />} />
-            <Route path="/release-selection" element={<ReleaseSelection />} />
             <Route path="/folder-management" element={<FolderManagementPage />} />
-            <Route path="/release-management" element={<ReleaseManagementPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </ResponsiveLayout>
@@ -95,44 +89,67 @@ const AppInner: React.FC = () => {
   const user = useSelector((state: RootState) => state.users.me);
   const dispatch = useDispatch();
   const isLoggedIn = !!user;
+  const [autoLoginAttempted, setAutoLoginAttempted] = React.useState(false);
+  
+  // sessionStorage에서 임시 토큰 복원
+  useEffect(() => {
+    const tempToken = sessionStorage.getItem('tempToken');
+    if (tempToken && !isLoggedIn) {
+      console.log('🔑 임시 토큰 복원 중...');
+      localStorage.setItem('token', tempToken);
+      sessionStorage.removeItem('tempToken');
+      console.log('✅ 임시 토큰 복원 완료');
+    }
+  }, [isLoggedIn]);
   
   // 개발 환경에서 MSW를 통한 자동 로그인
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && !isLoggedIn) {
-      console.log('🔧 개발 환경 MSW 자동 로그인 시도...');
+    if (process.env.NODE_ENV === 'development' && !isLoggedIn && !autoLoginAttempted) {
+      console.log('🔧 개발 환경 자동 로그인 시도...');
+      setAutoLoginAttempted(true);
       
       const autoLoginWithMSW = async () => {
         try {
+          console.log('🔄 자동 로그인 요청 시작...');
+          const requestBody = {
+            username: 'admin@test.com',
+            password: 'password123'
+          };
+          console.log('📤 요청 본문:', JSON.stringify(requestBody, null, 2));
+          
           // MSW를 통해 로그인 시도
           const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              email: 'admin@test.com',
-              password: 'password123'
-            })
+            body: JSON.stringify(requestBody)
           });
+          
+          console.log('📥 응답 상태:', loginResponse.status, loginResponse.statusText);
+          console.log('📥 응답 헤더:', Object.fromEntries(loginResponse.headers.entries()));
           
           if (loginResponse.ok) {
             const data = await loginResponse.json();
+            console.log('📥 응답 데이터:', data);
             if (data.user) {
               dispatch(setMe(data.user));
-              console.log('✅ MSW 자동 로그인 성공:', data.user);
+              console.log('✅ 자동 로그인 성공:', data.user);
             }
           } else {
-            console.log('⚠️ MSW 로그인 실패. 로그인 페이지를 표시합니다.');
+            const errorText = await loginResponse.text();
+            console.log('❌ 자동 로그인 실패. 응답:', errorText);
+            console.log('⚠️ 자동 로그인 실패. 로그인 페이지를 표시합니다.');
           }
         } catch (error) {
-          console.log('⚠️ MSW 연결 실패. 로그인 페이지를 표시합니다:', error);
+          console.log('❌ 자동 로그인 연결 실패:', error);
         }
       };
       
-      // 1초 후에 MSW 자동 로그인 실행
+      // 1초 후에 자동 로그인 실행
       setTimeout(autoLoginWithMSW, 1000);
     }
-  }, [isLoggedIn, dispatch]);
+  }, [isLoggedIn, dispatch, autoLoginAttempted]);
   
   // 앱 시작 시 백엔드 연결 테스트
   useEffect(() => {
