@@ -28,7 +28,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 트리거 재생성
+-- 트리거 안전하게 재생성 (기존 트리거 삭제 후 생성)
 DROP TRIGGER IF EXISTS update_folders_updated_at ON folders;
 CREATE TRIGGER update_folders_updated_at 
     BEFORE UPDATE ON folders 
@@ -37,4 +37,10 @@ CREATE TRIGGER update_folders_updated_at
 DROP TRIGGER IF EXISTS update_testcases_updated_at ON testcases;
 CREATE TRIGGER update_testcases_updated_at 
     BEFORE UPDATE ON testcases 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- tree_nodes 테이블 트리거도 안전하게 처리
+DROP TRIGGER IF EXISTS update_tree_nodes_updated_at ON tree_nodes;
+CREATE TRIGGER update_tree_nodes_updated_at 
+    BEFORE UPDATE ON tree_nodes 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 

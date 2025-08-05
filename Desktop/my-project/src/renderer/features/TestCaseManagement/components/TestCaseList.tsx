@@ -1,311 +1,269 @@
-import React, { useCallback, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../store';
-import { selectTestCase, deselectTestCase, selectAllTestCases, deselectAllTestCases } from '../store/selectionSlice';
-import { useGetTestCasesQuery, useDeleteTestCaseMutation, useBulkDeleteMutation, useBulkMoveMutation, useBulkCopyMutation, useBulkUpdateStatusMutation } from '../../../services/api';
-import { addNotification } from '../../../store/notificationSlice';
-import ListView from '../../../shared/components/List/ListView';
-import LoadingSpinner from '../../../shared/components/LoadingSpinner/LoadingSpinner';
-import TestCaseModal, { TestCaseFormData } from './TestCaseModal';
-import Button from '../../../shared/components/Button';
+import React, { useState, useMemo, useEffect } from 'react';
+import styled from 'styled-components';
+import axios from '../../../utils/axios';
 
-interface TestCaseListProps {
-  testCases: any[];
-  isLoading: boolean;
-  selectedFolderId?: number | null;
+interface TestCase {
+  id: number;
+  title: string;
+  priority: 'High' | 'Medium' | 'Low';
+  status: 'Active' | 'Archived';
+  createdBy: string;
+  createdAt: string;
 }
 
-const TestCaseList: React.FC<TestCaseListProps> = ({ testCases, isLoading, selectedFolderId }) => {
-  const dispatch = useDispatch();
-  const { selectedTestCases = [] } = useSelector((state: RootState) => state.selection);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [deleteTestCase] = useDeleteTestCaseMutation();
-  const [bulkDelete] = useBulkDeleteMutation();
-  const [bulkMove] = useBulkMoveMutation();
-  const [bulkCopy] = useBulkCopyMutation();
-  const [bulkUpdateStatus] = useBulkUpdateStatusMutation();
+interface Props {
+  releaseId?: string;
+  testCases?: TestCase[];
+  onDataChange?: () => void;
+  searchTerm?: string;
+  priorityFilter?: string;
+  statusFilter?: string;
+  onSearchChange?: (term: string) => void;
+  onPriorityFilterChange?: (priority: string) => void;
+  onStatusFilterChange?: (status: string) => void;
+  folderId?: number;
+  searchPlaceholder?: string;
+  onTestCaseSelect?: (testCase: TestCase) => void;
+}
 
-  // 에러 처리 - 이제 부모 컴포넌트에서 처리됨
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
 
-  // CRUD 후 refetch 및 알림
-  const handleBulkAction = useCallback(async (action: 'move' | 'copy' | 'delete' | 'status') => {
-    if (selectedTestCases.length === 0) {
-      dispatch(addNotification({
-        type: 'warning',
-        message: '선택된 테스트 케이스가 없습니다.',
-        title: '경고'
-      }));
-      return;
-    }
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
 
-    try {
-      switch (action) {
-        case 'delete':
-          await bulkDelete({ ids: selectedTestCases }).unwrap();
-          dispatch(addNotification({
-            type: 'success',
-            message: `${selectedTestCases.length}개의 테스트 케이스가 삭제되었습니다.`,
-            title: '삭제 완료'
-          }));
-          break;
-        case 'move':
-          // 실제 구현에서는 폴더 선택 모달이 필요
-          const targetFolder = prompt('이동할 폴더를 입력하세요:');
-          if (targetFolder) {
-            await bulkMove({ ids: selectedTestCases, targetFolder }).unwrap();
-            dispatch(addNotification({
-              type: 'success',
-              message: `${selectedTestCases.length}개의 테스트 케이스가 이동되었습니다.`,
-              title: '이동 완료'
-            }));
-          }
-          break;
-        case 'copy':
-          const copyTargetFolder = prompt('복사할 폴더를 입력하세요:');
-          if (copyTargetFolder) {
-            await bulkCopy({ ids: selectedTestCases, targetFolder: copyTargetFolder }).unwrap();
-            dispatch(addNotification({
-              type: 'success',
-              message: `${selectedTestCases.length}개의 테스트 케이스가 복사되었습니다.`,
-              title: '복사 완료'
-            }));
-          }
-          break;
-        case 'status':
-          const newStatus = prompt('새로운 상태를 입력하세요 (Active/Archived):');
-          if (newStatus && ['Active', 'Archived'].includes(newStatus)) {
-            await bulkUpdateStatus({ ids: selectedTestCases, status: newStatus }).unwrap();
-            dispatch(addNotification({
-              type: 'success',
-              message: `${selectedTestCases.length}개의 테스트 케이스 상태가 변경되었습니다.`,
-              title: '상태 변경 완료'
-            }));
-          }
-          break;
+const Th = styled.th`
+  background: #f8fafc;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+`;
+
+const Td = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+`;
+
+const PriorityBadge = styled.span<{ priority: string }>`
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: ${({ priority }) => 
+    priority === 'High' ? '#fef2f2' : 
+    priority === 'Medium' ? '#fffbeb' : '#f0fdf4'};
+  color: ${({ priority }) => 
+    priority === 'High' ? '#dc2626' : 
+    priority === 'Medium' ? '#d97706' : '#059669'};
+`;
+
+const StatusBadge = styled.span<{ status: string }>`
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: ${({ status }) => status === 'Active' ? '#f0fdf4' : '#f9fafb'};
+  color: ${({ status }) => status === 'Active' ? '#059669' : '#6b7280'};
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+`;
+
+const TestCaseList: React.FC<Props> = ({ 
+  releaseId, 
+  testCases: propTestCases, 
+  onDataChange,
+  searchTerm: propSearchTerm,
+  priorityFilter: propPriorityFilter,
+  statusFilter: propStatusFilter,
+  onSearchChange,
+  onPriorityFilterChange,
+  onStatusFilterChange,
+  folderId,
+  searchPlaceholder,
+  onTestCaseSelect
+}) => {
+  const [searchTerm, setSearchTerm] = useState(propSearchTerm || '');
+  const [priorityFilter, setPriorityFilter] = useState(propPriorityFilter || '');
+  const [statusFilter, setStatusFilter] = useState(propStatusFilter || '');
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 컴포넌트가 마운트될 때 테스트케이스 데이터를 가져옵니다
+  useEffect(() => {
+    const fetchTestCases = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get('/api/testcases');
+        setTestCases(response.data);
+      } catch (error) {
+        console.error('테스트케이스 로드 실패:', error);
+        // 에러 시 빈 배열로 설정
+        setTestCases([]);
+      } finally {
+        setLoading(false);
       }
-      
-      // 선택 해제
-      dispatch(deselectAllTestCases());
-    } catch (error: any) {
-      dispatch(addNotification({
-        type: 'error',
-        message: error?.data?.message || '작업 실패',
-        title: '오류'
-      }));
-    }
-  }, [selectedTestCases, dispatch, bulkDelete, bulkMove, bulkCopy, bulkUpdateStatus]);
+    };
 
-  // 개별 삭제
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await deleteTestCase(id).unwrap();
-      dispatch(addNotification({
-        type: 'success',
-        message: '테스트 케이스가 삭제되었습니다.',
-        title: '삭제 완료'
-      }));
-    } catch (error: any) {
-      dispatch(addNotification({
-        type: 'error',
-        message: error?.data?.message || '삭제 실패',
-        title: '오류'
-      }));
+    // propTestCases가 제공되지 않은 경우에만 API 호출
+    if (!propTestCases) {
+      fetchTestCases();
+    } else {
+      setTestCases(propTestCases);
+      setLoading(false);
     }
-  }, [deleteTestCase, dispatch]);
+  }, [propTestCases]);
 
-  // 테스트 케이스 생성 핸들러
-  const handleCreateTestCase = async (data: TestCaseFormData) => {
-    try {
-      console.log('테스트 케이스 생성:', data);
+  const filteredTestCases = useMemo(() => {
+    return testCases.filter(testCase => {
+      const matchesSearch = testCase.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPriority = !priorityFilter || testCase.priority === priorityFilter;
+      const matchesStatus = !statusFilter || testCase.status === statusFilter;
       
-      // API 호출
-      const response = await fetch('/api/testcases', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          priority: data.priority,
-          status: data.status,
-          steps: data.steps,
-          expected: data.expectedResult,
-          tags: data.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-          createdBy: 'current-user' // 실제로는 현재 사용자 정보를 사용해야 함
-        }),
+      return matchesSearch && matchesPriority && matchesStatus;
+    });
+  }, [testCases, searchTerm, priorityFilter, statusFilter]);
+
+  // 부모 컴포넌트에서 전달받은 콜백 함수들을 사용
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    onSearchChange?.(value);
+  };
+
+  const handlePriorityFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setPriorityFilter(value);
+    onPriorityFilterChange?.(value);
+  };
+
+  const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setStatusFilter(value);
+    onStatusFilterChange?.(value);
+  };
+
+  const handleCreateTestCase = async () => {
+    try {
+      await axios.post('/api/testcases', {
+        title: '새 테스트케이스',
+        priority: 'Medium',
+        status: 'Active',
+        createdBy: 'current-user',
+        steps: ['1. 테스트 스텝'],
+        expected: '예상 결과'
       });
-
-      if (!response.ok) {
-        throw new Error('테스트 케이스 생성에 실패했습니다.');
+      
+      // 데이터 새로고침
+      if (onDataChange) {
+        onDataChange();
+      } else {
+        // 독립 실행 시 로컬 상태 업데이트
+        const response = await axios.get('/api/testcases');
+        setTestCases(response.data);
       }
-
-      const createdTestCase = await response.json();
-      
-      dispatch(addNotification({
-        type: 'success',
-        message: '테스트 케이스가 성공적으로 생성되었습니다!',
-        title: '생성 완료'
-      }));
-      
-      setIsCreateModalOpen(false);
-      
-      // 목록 새로고침
-              // 부모 컴포넌트에서 refetch 처리
     } catch (error) {
-      console.error('테스트 케이스 생성 오류:', error);
-      dispatch(addNotification({
-        type: 'error',
-        message: '테스트 케이스 생성에 실패했습니다.',
-        title: '오류'
-      }));
+      console.error('테스트케이스 생성 실패:', error);
     }
   };
 
-  // 로딩 상태 처리
-  if (isLoading) {
-    return <LoadingSpinner message="테스트 케이스를 불러오는 중..." />;
+  const handleDeleteTestCase = async (id: number) => {
+    try {
+      await axios.delete(`/api/testcases/${id}`);
+      
+      // 데이터 새로고침
+      if (onDataChange) {
+        onDataChange();
+      } else {
+        // 독립 실행 시 로컬 상태 업데이트
+        setTestCases(prev => prev.filter(tc => tc.id !== id));
+      }
+    } catch (error) {
+      console.error('테스트케이스 삭제 실패:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container>
+        <EmptyState>로딩 중...</EmptyState>
+      </Container>
+    );
   }
 
-  // ListView columns 정의
-  const columns = [
-    {
-      key: 'select',
-      label: '',
-      width: '50px',
-      render: (value: any, item: any) => (
-        <input
-          type="checkbox"
-          checked={selectedTestCases.includes(item.id)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              dispatch(selectTestCase(item.id));
-            } else {
-              dispatch(deselectTestCase(item.id));
-            }
-          }}
-        />
-      ),
-    },
-    {
-      key: 'title',
-      label: '제목',
-      sortable: true,
-      render: (value: any, item: any) => (
-        <div style={{ fontWeight: 'bold' }}>{item.title}</div>
-      ),
-    },
-    {
-      key: 'priority',
-      label: '우선순위',
-      width: '100px',
-      render: (value: any, item: any) => {
-        const color = item.priority === 'High' ? '#f44336' : item.priority === 'Medium' ? '#ff9800' : '#4caf50';
-        return <span style={{ color }}>{item.priority}</span>;
-      },
-    },
-    {
-      key: 'status',
-      label: '상태',
-      width: '100px',
-      render: (value: any, item: any) => (
-        <span style={{ color: item.status === 'Active' ? '#4caf50' : '#9e9e9e' }}>
-          {item.status}
-        </span>
-      ),
-    },
-    {
-      key: 'tags',
-      label: '태그',
-      render: (value: any, item: any) => (
-        <div>
-          {item.tags?.map((tag: string, index: number) => (
-            <span key={index} style={{ 
-              background: '#e3f2fd', 
-              padding: '2px 6px', 
-              borderRadius: '4px', 
-              fontSize: '12px',
-              marginRight: '4px'
-            }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '작업',
-      width: '120px',
-      render: (value: any, item: any) => (
-        <div>
-          <button onClick={() => handleDelete(item.id)} style={{ 
-            background: '#f44336', 
-            color: 'white', 
-            border: 'none', 
-            padding: '4px 8px', 
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}>
-            삭제
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  // items를 ListView 형식으로 변환
-  const items = testCases.map(tc => ({
-    ...tc,
-    id: String(tc.id) // ListView는 id를 string으로 요구
-  }));
-
   return (
-    <div>
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <Button 
-          onClick={() => setIsCreateModalOpen(true)}
-          variant="primary"
-          style={{ marginRight: 'auto' }}
-        >
-          + 새 테스트 케이스 생성
-        </Button>
-        
-        <button onClick={() => handleBulkAction('delete')} disabled={selectedTestCases.length === 0}>
-          선택 삭제
-        </button>
-        <button onClick={() => handleBulkAction('move')} disabled={selectedTestCases.length === 0}>
-          선택 이동
-        </button>
-        <button onClick={() => handleBulkAction('copy')} disabled={selectedTestCases.length === 0}>
-          선택 복사
-        </button>
-        <button onClick={() => handleBulkAction('status')} disabled={selectedTestCases.length === 0}>
-          상태 변경
-        </button>
-        <button onClick={() => dispatch(selectAllTestCases(testCases.map(tc => tc.id)))}>
-          전체 선택
-        </button>
-        <button onClick={() => dispatch(deselectAllTestCases())}>
-          선택 해제
-        </button>
-      </div>
-      
-      <ListView
-        items={items}
-        columns={columns}
-        loading={isLoading}
-        emptyMessage="테스트 케이스가 없습니다."
-      />
-
-      {/* 테스트 케이스 생성 모달 */}
-      <TestCaseModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateTestCase}
-        mode="create"
-      />
-    </div>
+    <Container>
+      {filteredTestCases.length === 0 ? (
+        <EmptyState>
+          {testCases.length === 0 ? '테스트케이스가 없습니다.' : '검색 결과가 없습니다.'}
+        </EmptyState>
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <Th>제목</Th>
+              <Th>우선순위</Th>
+              <Th>상태</Th>
+              <Th>생성자</Th>
+              <Th>생성일</Th>
+              <Th>작업</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTestCases.map((testCase) => (
+              <tr key={testCase.id} data-testid={`testcase-row-${testCase.id}`}>
+                <Td>{testCase.title}</Td>
+                <Td>
+                  <PriorityBadge priority={testCase.priority}>
+                    {testCase.priority === 'High' ? '높음' : 
+                     testCase.priority === 'Medium' ? '보통' : '낮음'}
+                  </PriorityBadge>
+                </Td>
+                <Td>
+                  <StatusBadge status={testCase.status}>
+                    {testCase.status === 'Active' ? '활성' : '보관'}
+                  </StatusBadge>
+                </Td>
+                <Td>{testCase.createdBy}</Td>
+                <Td>{new Date(testCase.createdAt).toLocaleDateString()}</Td>
+                <Td>
+                  <button
+                    onClick={() => handleDeleteTestCase(testCase.id)}
+                    style={{
+                      padding: '4px 8px',
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                    data-testid={`delete-testcase-${testCase.id}`}
+                  >
+                    삭제
+                  </button>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+    </Container>
   );
 };
 

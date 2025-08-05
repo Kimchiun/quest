@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { addNotification } from '../../../store/notificationSlice';
 import { useGetTestCasesQuery, useDeleteTestCaseMutation, useBulkDeleteMutation, useBulkMoveMutation, useBulkCopyMutation } from '../../../services/api';
-import FolderTree from '../../FolderManagement/components/FolderTree';
+import DraggableFolderList from './DraggableFolderList';
 import TestCaseList from './TestCaseList';
 import TestCaseModal, { TestCaseFormData } from './TestCaseModal';
 import Button from '../../../shared/components/Button';
@@ -196,6 +196,22 @@ const SearchInput = styled.input`
   }
 `;
 
+const FilterSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  height: 36px;
+  min-width: 120px;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+`;
+
 const FilterButton = styled.button`
   display: flex;
   align-items: center;
@@ -281,9 +297,12 @@ interface TestManagementPageProps {}
 const TestManagementPage: React.FC<TestManagementPageProps> = () => {
   const dispatch = useDispatch();
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [selectedFolderUniqueId, setSelectedFolderUniqueId] = useState<string | null>(null); // 고유 ID 기반 선택
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
@@ -296,6 +315,10 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
   const [bulkMove] = useBulkMoveMutation();
   const [bulkCopy] = useBulkCopyMutation();
 
+  // 폴더 데이터 상태
+  const [folders, setFolders] = useState<any[]>([]);
+  const [foldersLoading, setFoldersLoading] = useState(false);
+
   // 에러 처리
   useEffect(() => {
     if (error) {
@@ -307,12 +330,576 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
     }
   }, [error, dispatch]);
 
-  // 폴더 선택 처리
-  const handleFolderSelect = useCallback((folderId: number) => {
+  // 컴포넌트 마운트 시 폴더 데이터 로드
+  useEffect(() => {
+    loadFolders();
+  }, []);
+
+  // 폴더 선택 처리 - 고유 ID 기반 단일 선택
+  const handleFolderSelect = useCallback((folderId: number, uniqueId: string) => {
+    // folderId가 0이면 선택 해제
+    if (folderId === 0) {
+      setSelectedFolderId(null);
+      setSelectedFolderUniqueId(null);
+      setSelectedFolder(null);
+      return;
+    }
+    
+    // 단일 선택만 허용 - 이전 선택 상태를 완전히 초기화
     setSelectedFolderId(folderId);
+    setSelectedFolderUniqueId(uniqueId); // 고유 ID 저장
+    setSelectedFolder(null); // 이전 폴더 정보 초기화
+    
+    console.log('폴더 선택:', { folderId, uniqueId }); // 디버깅용
+    
     // 폴더 상세 정보 가져오기
     fetchFolderDetails(folderId);
   }, []);
+
+    const handleFolderMove = useCallback(async (folderId: number, newParentId: number | null) => {
+    try {
+      console.log('폴더 이동 요청:', { folderId, newParentId });
+      
+      // 유효성 검사
+      if (folderId === newParentId) {
+        dispatch(addNotification({
+          type: 'error',
+          message: '자기 자신을 부모로 설정할 수 없습니다.',
+          title: '이동 실패'
+        }));
+        return;
+      }
+
+      // 순환 참조 검사
+      const isCircularReference = (targetId: number, parentId: number | null): boolean => {
+        if (!parentId) return false;
+        if (targetId === parentId) return true;
+        
+        const findParent = (folders: any[], searchId: number): any | null => {
+          for (const folder of folders) {
+            if (folder.id === searchId) return folder;
+            if (folder.children) {
+              const found = findParent(folder.children, searchId);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        
+        const parentFolder = findParent(folders, parentId);
+        if (!parentFolder) return false;
+        
+        return isCircularReference(targetId, parentFolder.parentId);
+      };
+      
+      if (isCircularReference(folderId, newParentId)) {
+        dispatch(addNotification({
+          type: 'error',
+          message: '순환 참조가 발생할 수 없습니다.',
+          title: '이동 실패'
+        }));
+        return;
+      }
+      
+      const response = await fetch(`http://localhost:3000/api/folders/${folderId}/move`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newParentId }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const updatedFolder = await response.json();
+      console.log('폴더 이동 완료:', updatedFolder);
+      
+      // 폴더 리스트 업데이트 - 계층구조 재구성
+      setFolders(prevFolders => {
+        // 이동할 폴더 찾기 및 제거 (하위폴더 포함)
+        const findAndRemoveFolder = (folderList: any[], targetId: number): any | null => {
+          for (let i = 0; i < folderList.length; i++) {
+            if (folderList[i].id === targetId) {
+              // 하위폴더를 포함한 완전한 폴더 객체 복사
+              const removed = JSON.parse(JSON.stringify(folderList.splice(i, 1)[0]));
+              return removed;
+            }
+            if (folderList[i].children) {
+              const found = findAndRemoveFolder(folderList[i].children, targetId);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+      
+        // 새 부모 폴더에 자식 추가 (하위폴더 구조 유지)
+        const addToParent = (folderList: any[], parentId: number | null, folderToAdd: any): any[] => {
+          if (parentId === null) {
+            // 최상위로 이동 - 하위폴더 구조 유지
+            return [...folderList, { 
+              ...folderToAdd, 
+              parentId: null, 
+              children: folderToAdd.children || [] 
+            }];
+          }
+      
+          return folderList.map(folder => {
+            if (folder.id === parentId) {
+              return {
+                ...folder,
+                children: [...(folder.children || []), { 
+                  ...folderToAdd, 
+                  parentId, 
+                  children: folderToAdd.children || [] 
+                }]
+              };
+            }
+            if (folder.children) {
+              return {
+                ...folder,
+                children: addToParent(folder.children, parentId, folderToAdd)
+              };
+            }
+            return folder;
+          });
+        };
+      
+        // 깊은 복사로 새 배열 생성
+        const newFolders = JSON.parse(JSON.stringify(prevFolders));
+        
+        // 이동할 폴더 찾기 및 제거 (하위폴더 포함)
+        const folderToMove = findAndRemoveFolder(newFolders, folderId);
+        if (!folderToMove) {
+          console.error('이동할 폴더를 찾을 수 없습니다:', folderId);
+          return prevFolders;
+        }
+        
+        console.log('이동할 폴더 (하위폴더 포함):', folderToMove);
+        
+        // 새 부모에 추가 (하위폴더 구조 유지)
+        const updatedFolders = addToParent(newFolders, newParentId, folderToMove);
+        
+        // 고유 ID 재생성 (모든 하위폴더 포함)
+        const addUniqueIds = (folders: any[], level = 0, parentPath = ''): any[] => {
+          return folders.map(folder => {
+            const currentPath = parentPath ? `${parentPath}/${folder.id}` : `${folder.id}`;
+            const uniqueId = `${currentPath}-${level}`;
+            
+            return {
+              ...folder,
+              uniqueId,
+              level,
+              children: folder.children ? addUniqueIds(folder.children, level + 1, currentPath) : []
+            };
+          });
+        };
+        
+        const finalFolders = addUniqueIds(updatedFolders);
+        console.log('최종 폴더 구조:', finalFolders);
+        
+        return finalFolders;
+      });
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: '폴더가 성공적으로 이동되었습니다.',
+        title: '이동 완료'
+      }));
+      
+    } catch (error) {
+      console.error('폴더 이동 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: `폴더 이동에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+        title: '이동 실패'
+      }));
+    }
+  }, [folders, dispatch]);
+
+  const handleFolderReorder = useCallback(async (folderId: number, targetFolderId: number, position: 'before' | 'after') => {
+    try {
+      console.log('폴더 순서 변경 요청:', { folderId, targetFolderId, position });
+      
+      // 유효성 검사
+      if (folderId === targetFolderId) {
+        dispatch(addNotification({
+          type: 'error',
+          message: '자기 자신과의 순서 변경은 불가능합니다.',
+          title: '순서 변경 실패'
+        }));
+        return;
+      }
+
+      const response = await fetch(`http://localhost:3000/api/folders/${folderId}/reorder`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetFolderId, position }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const updatedFolder = await response.json();
+      console.log('폴더 순서 변경 완료:', updatedFolder);
+      
+      // 폴더 리스트 업데이트 - 순서 변경
+      setFolders(prevFolders => {
+        // 같은 부모를 가진 폴더들 찾기
+        const findSiblings = (folders: any[], parentId: number | null): any[] => {
+          const siblings: any[] = [];
+          
+          const traverse = (folderList: any[]) => {
+            for (const folder of folderList) {
+              if (folder.parentId === parentId) {
+                siblings.push(folder);
+              }
+              if (folder.children) {
+                traverse(folder.children);
+              }
+            }
+          };
+          
+          traverse(folders);
+          return siblings;
+        };
+        
+        // 이동할 폴더와 타겟 폴더 찾기
+        const findFolder = (folders: any[], targetId: number): any | null => {
+          for (const folder of folders) {
+            if (folder.id === targetId) {
+              return folder;
+            }
+            if (folder.children) {
+              const found = findFolder(folder.children, targetId);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        
+        const folderToMove = findFolder(prevFolders, folderId);
+        const targetFolder = findFolder(prevFolders, targetFolderId);
+        
+        if (!folderToMove || !targetFolder) {
+          console.error('폴더를 찾을 수 없습니다:', { folderId, targetFolderId });
+          return prevFolders;
+        }
+        
+        // 같은 부모를 가진지 확인
+        if (folderToMove.parentId !== targetFolder.parentId) {
+          console.error('같은 레벨의 폴더가 아닙니다.');
+          return prevFolders;
+        }
+        
+        // 깊은 복사로 새 배열 생성
+        const newFolders = JSON.parse(JSON.stringify(prevFolders));
+        
+        // 같은 부모를 가진 폴더들 찾기
+        const siblings = findSiblings(newFolders, folderToMove.parentId);
+        
+        // 이동할 폴더 제거
+        const removeFolderFromSiblings = (folderList: any[], targetId: number): any[] => {
+          return folderList.filter(folder => {
+            if (folder.id === targetId) {
+              return false;
+            }
+            if (folder.children) {
+              folder.children = removeFolderFromSiblings(folder.children, targetId);
+            }
+            return true;
+          });
+        };
+        
+        // 새 위치에 폴더 삽입
+        const insertFolderAtPosition = (folderList: any[], folderToInsert: any, targetId: number, position: 'before' | 'after'): any[] => {
+          const result: any[] = [];
+          
+          for (const folder of folderList) {
+            if (folder.id === targetId) {
+              if (position === 'before') {
+                result.push(folderToInsert);
+                result.push(folder);
+              } else {
+                result.push(folder);
+                result.push(folderToInsert);
+              }
+            } else {
+              result.push(folder);
+            }
+          }
+          
+          return result;
+        };
+        
+        // 부모 폴더에서 이동할 폴더 제거
+        const updateParentFolder = (folderList: any[], parentId: number | null, updateFn: (siblings: any[]) => any[]): any[] => {
+          return folderList.map(folder => {
+            if (folder.parentId === parentId) {
+              // 같은 레벨의 폴더들 업데이트
+              const siblings = folderList.filter(f => f.parentId === parentId);
+              return updateFn(siblings);
+            }
+            if (folder.children) {
+              return {
+                ...folder,
+                children: updateParentFolder(folder.children, parentId, updateFn)
+              };
+            }
+            return folder;
+          });
+        };
+        
+        // 이동할 폴더 제거
+        const foldersWithoutMoved = removeFolderFromSiblings(newFolders, folderId);
+        
+        // 새 위치에 삽입
+        const updatedFolders = updateParentFolder(foldersWithoutMoved, folderToMove.parentId, (siblings) => {
+          const targetIndex = siblings.findIndex(f => f.id === targetFolderId);
+          if (targetIndex === -1) return siblings;
+          
+          const newSiblings = [...siblings];
+          if (position === 'before') {
+            newSiblings.splice(targetIndex, 0, folderToMove);
+          } else {
+            newSiblings.splice(targetIndex + 1, 0, folderToMove);
+          }
+          
+          return newSiblings;
+        });
+        
+        // 고유 ID 재생성
+        const addUniqueIds = (folders: any[], level = 0, parentPath = ''): any[] => {
+          return folders.map(folder => {
+            const currentPath = parentPath ? `${parentPath}/${folder.id}` : `${folder.id}`;
+            const uniqueId = `${currentPath}-${level}`;
+            
+            return {
+              ...folder,
+              uniqueId,
+              level,
+              children: folder.children ? addUniqueIds(folder.children, level + 1, currentPath) : []
+            };
+          });
+        };
+        
+        const finalFolders = addUniqueIds(updatedFolders);
+        console.log('최종 폴더 순서:', finalFolders);
+        
+        return finalFolders;
+      });
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: '폴더 순서가 성공적으로 변경되었습니다.',
+        title: '순서 변경 완료'
+      }));
+      
+    } catch (error) {
+      console.error('폴더 순서 변경 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: `폴더 순서 변경에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`,
+        title: '순서 변경 실패'
+      }));
+    }
+  }, [dispatch]);
+
+  const handleFolderUpdate = useCallback(async (folderId: number, newName: string) => {
+    try {
+      console.log('폴더 수정:', { folderId, newName });
+      // TODO: 실제 API 호출 및 상태 업데이트 로직 구현
+      dispatch(addNotification({
+        type: 'success',
+        message: '폴더가 수정되었습니다.',
+      }));
+    } catch (error) {
+      console.error('폴더 수정 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: '폴더 수정에 실패했습니다.',
+      }));
+    }
+  }, [dispatch]);
+
+  const handleFolderDelete = useCallback(async (folderId: number) => {
+    try {
+      console.log('폴더 삭제:', { folderId });
+      // TODO: 실제 API 호출 및 상태 업데이트 로직 구현
+      dispatch(addNotification({
+        type: 'success',
+        message: '폴더가 삭제되었습니다.',
+      }));
+    } catch (error) {
+      console.error('폴더 삭제 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: '폴더 삭제에 실패했습니다.',
+      }));
+    }
+  }, [dispatch]);
+
+  const handleFolderDuplicate = useCallback(async (folderId: number) => {
+    try {
+      console.log('폴더 복제:', { folderId });
+      // TODO: 실제 API 호출 및 상태 업데이트 로직 구현
+      dispatch(addNotification({
+        type: 'success',
+        message: '폴더가 복제되었습니다.',
+      }));
+    } catch (error) {
+      console.error('폴더 복제 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: '폴더 복제에 실패했습니다.',
+      }));
+    }
+  }, [dispatch]);
+
+  // 폴더를 평면화하는 함수
+  const flattenFolders = (folders: any[], level = 0): any[] => {
+    const result: any[] = [];
+    for (const folder of folders) {
+      const folderWithLevel = { ...folder, level };
+      result.push(folderWithLevel);
+      if (folder.children && folder.children.length > 0) {
+        result.push(...flattenFolders(folder.children, level + 1));
+      }
+    }
+    return result;
+  };
+
+  const flatFolders = flattenFolders(folders);
+
+  const handleFolderCreate = useCallback(async (parentId: number | null) => {
+    try {
+      console.log('폴더 생성:', { parentId });
+      
+      // 기본 이름 생성 (중복 방지)
+      const getDefaultName = () => {
+        const existingNames = flatFolders.filter(f => f.name.startsWith('새 폴더'));
+        let counter = 1;
+        while (existingNames.some(f => f.name === `새 폴더 (${counter})`)) {
+          counter++;
+        }
+        return `새 폴더 (${counter})`;
+      };
+
+      const newFolder = {
+        id: Date.now(), // 임시 ID
+        name: getDefaultName(),
+        description: '',
+        parentId: parentId,
+        createdBy: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        children: [],
+        testCaseCount: 0,
+        level: parentId ? (flatFolders.find(f => f.id === parentId)?.level ?? 0) + 1 : 0,
+      };
+
+      // 상태에 즉시 추가
+      setFolders(prevFolders => {
+        const addToParent = (folders: any[], parentId: number | null, newFolder: any): any[] => {
+          return folders.map(folder => {
+            if (folder.id === parentId) {
+              return {
+                ...folder,
+                children: [...folder.children, newFolder],
+              };
+            } else if (folder.children) {
+              return {
+                ...folder,
+                children: addToParent(folder.children, parentId, newFolder),
+              };
+            }
+            return folder;
+          });
+        };
+
+        if (parentId === null) {
+          return [...prevFolders, newFolder];
+        } else {
+          return addToParent(prevFolders, parentId, newFolder);
+        }
+      });
+
+      // 새로 생성된 폴더 선택
+      setSelectedFolderId(newFolder.id);
+      
+      // 상위 폴더 자동 펼치기
+      if (parentId) {
+        setExpandedFolders(prev => new Set([...prev, parentId]));
+      }
+
+      // 즉시 편집 모드로 전환
+      setTimeout(() => {
+        const folderListElement = document.querySelector(`[data-folder-id="${newFolder.id}"]`);
+        if (folderListElement) {
+          const folderNameElement = folderListElement.querySelector('[data-folder-name]');
+          if (folderNameElement) {
+            folderNameElement.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+          }
+        }
+      }, 100);
+
+      dispatch(addNotification({
+        type: 'success',
+        message: '새 폴더가 생성되었습니다.',
+      }));
+    } catch (error) {
+      console.error('폴더 생성 실패:', error);
+      dispatch(addNotification({
+        type: 'error',
+        message: '폴더 생성에 실패했습니다.',
+      }));
+    }
+  }, [dispatch, flatFolders]);
+
+  // 폴더 데이터 로드 시 고유 ID 추가
+  const loadFolders = async () => {
+    try {
+      setFoldersLoading(true);
+      console.log('폴더 데이터 로드 시작...');
+      const response = await fetch('/api/folders/tree');
+      console.log('폴더 API 응답:', response.status, response.statusText);
+      
+      if (response.ok) {
+        const folderData = await response.json();
+        console.log('폴더 데이터:', folderData);
+        
+        // 고유 ID 추가
+        const addUniqueIds = (folders: any[], level = 0, parentPath = ''): any[] => {
+          return folders.map(folder => {
+            const currentPath = parentPath ? `${parentPath}/${folder.id}` : `${folder.id}`;
+            const uniqueId = `${currentPath}-${level}`;
+            
+            return {
+              ...folder,
+              uniqueId,
+              level,
+              children: folder.children ? addUniqueIds(folder.children, level + 1, currentPath) : []
+            };
+          });
+        };
+        
+        const foldersWithUniqueIds = addUniqueIds(folderData);
+        setFolders(foldersWithUniqueIds);
+      } else {
+        console.error('폴더 API 오류:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('폴더 로드 실패:', error);
+    } finally {
+      setFoldersLoading(false);
+    }
+  };
 
   const fetchFolderDetails = async (folderId: number) => {
     try {
@@ -397,6 +984,9 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
       });
 
       if (response.ok) {
+        const newFolder = await response.json();
+        console.log('새로 생성된 폴더:', newFolder);
+        
         dispatch(addNotification({
           type: 'success',
           message: '폴더가 생성되었습니다.',
@@ -404,7 +994,12 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
         }));
         setIsCreateFolderModalOpen(false);
         setNewFolderName('');
-        // 폴더 트리 새로고침이 필요할 수 있음
+        
+        // 폴더 리스트에 새 폴더 추가
+        setFolders(prevFolders => [...prevFolders, newFolder]);
+        
+        // 새로 생성된 폴더를 선택 상태로 설정
+        setSelectedFolderId(newFolder.id);
       } else {
         throw new Error('폴더 생성 실패');
       }
@@ -428,14 +1023,34 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
         <SidebarHeader $isCollapsed={isSidebarCollapsed}>
           <CreateFolderButton onClick={() => setIsCreateFolderModalOpen(true)}>
             <PlusIcon size={14} color="#6b7280" />
-            새 폴더
+            새 그룹
           </CreateFolderButton>
         </SidebarHeader>
         <SidebarContent $isCollapsed={isSidebarCollapsed}>
-          <FolderTree
-            onFolderSelect={handleFolderSelect}
-            selectedFolderId={selectedFolderId}
-          />
+          {foldersLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+              로딩 중...
+            </div>
+          ) : folders.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+              그룹이 없습니다.
+              <br />
+              새 그룹을 생성해보세요.
+            </div>
+          ) : (
+            <DraggableFolderList
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              selectedFolderUniqueId={selectedFolderUniqueId}
+              onFolderSelect={handleFolderSelect}
+              onFolderMove={handleFolderMove}
+              onFolderReorder={handleFolderReorder}
+              onFolderUpdate={handleFolderUpdate}
+              onFolderDelete={handleFolderDelete}
+              onFolderDuplicate={handleFolderDuplicate}
+              onFolderCreate={handleFolderCreate}
+            />
+          )}
         </SidebarContent>
       </Sidebar>
 
@@ -453,7 +1068,7 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
             {selectedFolder ? selectedFolder.name : ''}
           </ContentTitle>
           <ContentSubtitle>
-            {selectedFolder 
+            {selectedFolder && filteredTestCases.length > 0
               ? `${filteredTestCases.length}개의 테스트 케이스`
               : ''
             }
@@ -463,16 +1078,30 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
             <SearchBar>
               <SearchIcon size={16} color="#6b7280" />
               <SearchInput
-                placeholder="테스트 케이스 검색..."
+                placeholder={selectedFolderId ? "폴더 내 테스트 케이스 검색..." : "테스트 케이스 검색..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </SearchBar>
             
-            <FilterButton onClick={() => setFilterStatus(filterStatus === 'all' ? 'Active' : 'all')}>
-              <FilterIcon size={16} color="#6b7280" />
-              {filterStatus === 'all' ? '전체' : '활성'}
-            </FilterButton>
+            <FilterSelect
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="">모든 우선순위</option>
+              <option value="High">높음</option>
+              <option value="Medium">보통</option>
+              <option value="Low">낮음</option>
+            </FilterSelect>
+            
+            <FilterSelect
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">모든 상태</option>
+              <option value="Active">활성</option>
+              <option value="Archived">보관</option>
+            </FilterSelect>
             
             <Button
               onClick={() => setIsCreateModalOpen(true)}
@@ -489,8 +1118,12 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
           {selectedFolderId ? (
             <TestCaseList
               testCases={filteredTestCases}
-              isLoading={isLoading}
-              selectedFolderId={selectedFolderId}
+              searchTerm={searchTerm}
+              priorityFilter={priorityFilter}
+              statusFilter={statusFilter}
+              onSearchChange={setSearchTerm}
+              onPriorityFilterChange={setPriorityFilter}
+              onStatusFilterChange={setStatusFilter}
             />
           ) : (
             <EmptyState>
