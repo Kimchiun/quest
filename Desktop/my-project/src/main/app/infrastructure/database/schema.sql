@@ -1,83 +1,52 @@
--- 결함 테이블
-CREATE TABLE IF NOT EXISTS defects (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'open',
-    priority VARCHAR(50) NOT NULL DEFAULT 'medium',
-    assignee VARCHAR(100),
-    reporter VARCHAR(100) NOT NULL,
-    created_by VARCHAR(100) NOT NULL,
-    test_case_id INTEGER,
-    release_id INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP,
-    closed_at TIMESTAMP
-);
+-- =====================================================
+-- 폴더 및 테스트케이스 관리 시스템 스키마
+-- =====================================================
 
--- 첨부파일 테이블
-CREATE TABLE IF NOT EXISTS attachments (
+-- 트리 노드 테이블 (폴더와 테스트케이스를 통합)
+CREATE TABLE IF NOT EXISTS tree_nodes (
     id SERIAL PRIMARY KEY,
-    defect_id INTEGER REFERENCES defects(id) ON DELETE CASCADE,
-    test_case_id INTEGER,
     name VARCHAR(255) NOT NULL,
-    size BIGINT NOT NULL,
-    type VARCHAR(100) NOT NULL,
-    uploaded_by VARCHAR(100) NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    file_path VARCHAR(500) NOT NULL,
-    url VARCHAR(500) NOT NULL
-);
-
--- 활동 로그 테이블
-CREATE TABLE IF NOT EXISTS activity_logs (
-    id SERIAL PRIMARY KEY,
-    defect_id INTEGER REFERENCES defects(id) ON DELETE CASCADE,
-    test_case_id INTEGER,
-    action VARCHAR(100) NOT NULL,
-    user_name VARCHAR(100) NOT NULL,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    details TEXT,
-    type VARCHAR(50) NOT NULL
-);
-
--- 코멘트 테이블
-CREATE TABLE IF NOT EXISTS comments (
-    id SERIAL PRIMARY KEY,
-    defect_id INTEGER REFERENCES defects(id) ON DELETE CASCADE,
-    test_case_id INTEGER,
-    content TEXT NOT NULL,
-    author VARCHAR(100) NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('folder', 'testcase')),
+    parent_id INTEGER REFERENCES tree_nodes(id) ON DELETE CASCADE,
+    sort_order INTEGER DEFAULT 0,
+    created_by VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 트리 노드 이동 히스토리 테이블
+CREATE TABLE IF NOT EXISTS tree_node_move_history (
+    id SERIAL PRIMARY KEY,
+    node_id INTEGER NOT NULL,
+    old_parent_id INTEGER,
+    new_parent_id INTEGER,
+    old_sort_order INTEGER,
+    new_sort_order INTEGER,
+    moved_by VARCHAR(100) NOT NULL,
+    moved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 인덱스 생성
-CREATE INDEX IF NOT EXISTS idx_defects_status ON defects(status);
-CREATE INDEX IF NOT EXISTS idx_defects_priority ON defects(priority);
-CREATE INDEX IF NOT EXISTS idx_defects_assignee ON defects(assignee);
-CREATE INDEX IF NOT EXISTS idx_defects_created_at ON defects(created_at);
-CREATE INDEX IF NOT EXISTS idx_attachments_defect_id ON attachments(defect_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_defect_id ON activity_logs(defect_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(date);
-CREATE INDEX IF NOT EXISTS idx_comments_defect_id ON comments(defect_id);
+CREATE INDEX IF NOT EXISTS idx_tree_nodes_parent_id ON tree_nodes(parent_id);
+CREATE INDEX IF NOT EXISTS idx_tree_nodes_type ON tree_nodes(type);
+CREATE INDEX IF NOT EXISTS idx_tree_nodes_sort_order ON tree_nodes(sort_order);
+CREATE INDEX IF NOT EXISTS idx_tree_nodes_name ON tree_nodes(name);
 
--- 샘플 데이터 삽입
-INSERT INTO defects (title, description, status, priority, assignee, reporter, created_by, test_case_id, release_id) VALUES
-('로그인 페이지 로딩 지연', '사용자 로그인 시 페이지 로딩이 5초 이상 걸리는 문제', 'open', 'high', 'developer1', 'tester1', 'tester1', 1, 1),
-('결제 프로세스 오류', '결제 완료 후 성공 페이지가 표시되지 않는 문제', 'in_progress', 'critical', 'developer2', 'tester2', 'tester2', 2, 1),
-('모바일 반응형 레이아웃 깨짐', '768px 이하 화면에서 레이아웃이 깨지는 문제', 'resolved', 'medium', 'developer3', 'tester3', 'tester3', 3, 1);
+-- 트리거 함수: updated_at 자동 업데이트
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
-INSERT INTO activity_logs (defect_id, action, user_name, details, type) VALUES
-(1, '결함 생성', 'tester1', '새로운 결함이 생성되었습니다.', 'create'),
-(1, '상태 변경', 'developer1', '상태가 OPEN에서 IN_PROGRESS로 변경되었습니다.', 'status_change'),
-(2, '결함 생성', 'tester2', '결제 관련 결함이 생성되었습니다.', 'create'),
-(3, '결함 생성', 'tester3', '모바일 레이아웃 문제가 보고되었습니다.', 'create'),
-(3, '상태 변경', 'developer3', '상태가 OPEN에서 RESOLVED로 변경되었습니다.', 'status_change');
+-- 트리 노드 테이블 트리거
+CREATE TRIGGER update_tree_nodes_updated_at 
+    BEFORE UPDATE ON tree_nodes 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-INSERT INTO comments (defect_id, content, author) VALUES
-(1, '로그인 성능 개선 작업을 시작하겠습니다.', 'developer1'),
-(1, '테스트 완료 후 결과를 확인해주세요.', 'tester1'),
-(2, '결제 모듈 코드를 검토 중입니다.', 'developer2'),
-(3, '모바일 CSS 수정 완료했습니다.', 'developer3'); 
+-- 기본 루트 폴더 생성
+INSERT INTO tree_nodes (name, type, parent_id, sort_order, created_by) 
+VALUES ('루트', 'folder', NULL, 0, 'system')
+ON CONFLICT DO NOTHING; 

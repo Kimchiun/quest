@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import pgClient from '../../../main/app/infrastructure/database/pgClient';
+import { getPgClient, ensurePgConnected } from '../../../main/app/infrastructure/database/pgClient';
 import { calcDefectDensity, calcProgressRate, aggregateWorkload } from '../../../main/app/utils/dashboardStats';
 
 const router = Router();
@@ -7,6 +7,12 @@ const router = Router();
 // GET /api/dashboard/stats
 router.get('/stats', async (req: Request, res: Response) => {
     try {
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
+        
         // 전체 테스트 케이스 수
         const { rows: caseRows } = await pgClient.query('SELECT COUNT(*) FROM testcases');
         const totalCases = Number(caseRows[0].count);
@@ -15,7 +21,7 @@ router.get('/stats', async (req: Request, res: Response) => {
             SELECT status, COUNT(*) FROM executions GROUP BY status
         `);
         const statusCounts: Record<string, number> = {};
-        execRows.forEach(r => { statusCounts[r.status] = Number(r.count); });
+        execRows.forEach((r: any) => { statusCounts[r.status] = Number(r.count); });
         // 결함(이슈) 수 (comment에 [Jira: 또는 [Redmine: 포함된 실행)
         const { rows: defectRows } = await pgClient.query(`
             SELECT COUNT(*) FROM executions WHERE comment LIKE '%[Jira:%' OR comment LIKE '%[Redmine:%'

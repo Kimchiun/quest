@@ -116,7 +116,7 @@ const FolderModal: React.FC<FolderModalProps> = ({
                     fontSize: '14px'
                   }}
                 >
-                  <option value="">루트 폴더</option>
+                  <option value="">최상위</option>
                   {parentFolders.map(folder => (
                     <option key={folder.id} value={folder.id}>
                       {folder.name}

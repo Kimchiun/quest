@@ -1,12 +1,15 @@
 import { Execution } from '../models/Execution';
-import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
-
-const pool = pgClient;
+import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
 
 export const executionRepository = {
     async insert(execution: Omit<Execution, 'id' | 'createdAt' | 'updatedAt'>): Promise<Execution> {
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         const now = new Date();
-        const result = await pool.query(
+        const result = await pgClient.query(
             `INSERT INTO executions 
                 (testcase_id, suite_id, release_id, status, executed_by, executed_at, repro_steps, screenshot_path, log_file_path, comment, created_at, updated_at)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
@@ -30,23 +33,38 @@ export const executionRepository = {
     },
 
     async findById(id: number): Promise<Execution | null> {
-        const result = await pool.query('SELECT * FROM executions WHERE id = $1', [id]);
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
+        const result = await pgClient.query('SELECT * FROM executions WHERE id = $1', [id]);
         return result.rows[0] ? mapRowToExecution(result.rows[0]) : null;
     },
 
     async findByTestCase(testcaseId: number): Promise<Execution[]> {
-        const result = await pool.query('SELECT * FROM executions WHERE testcase_id = $1', [testcaseId]);
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
+        const result = await pgClient.query('SELECT * FROM executions WHERE testcase_id = $1', [testcaseId]);
         return result.rows.map(mapRowToExecution);
     },
 
     async update(id: number, update: Partial<Omit<Execution, 'id' | 'createdAt'>>): Promise<Execution | null> {
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         // 동적 쿼리 빌드(간단화)
         const fields = Object.keys(update);
         if (fields.length === 0) return this.findById(id);
         const setClause = fields.map((f, i) => `${toSnakeCase(f)} = $${i + 1}`).join(', ');
         const values = fields.map(f => (update as any)[f]);
         values.push(new Date()); // updated_at
-        const result = await pool.query(
+        const result = await pgClient.query(
             `UPDATE executions SET ${setClause}, updated_at = $${fields.length + 1} WHERE id = $${fields.length + 2} RETURNING *`,
             [...values, id]
         );
@@ -54,7 +72,12 @@ export const executionRepository = {
     },
 
     async delete(id: number): Promise<void> {
-        await pool.query('DELETE FROM executions WHERE id = $1', [id]);
+        await ensurePgConnected();
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
+        await pgClient.query('DELETE FROM executions WHERE id = $1', [id]);
     }
 };
 

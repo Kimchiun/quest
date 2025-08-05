@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { FolderTree } from '../components/FolderTree';
 import { FolderTree as FolderTreeType } from '../../../../main/app/domains/folders/models/Folder';
 
-// 간단한 API 클라이언트
+// API 클라이언트
 const apiClient = {
   async get(url: string) {
-    const response = await fetch(`http://localhost:3000${url}`);
+    const response = await fetch(`http://localhost:3000/api${url}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
-  
+
   async post(url: string, data: any) {
-    const response = await fetch(`http://localhost:3000${url}`, {
+    const response = await fetch(`http://localhost:3000/api${url}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -20,9 +20,9 @@ const apiClient = {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
-  
+
   async put(url: string, data: any) {
-    const response = await fetch(`http://localhost:3000${url}`, {
+    const response = await fetch(`http://localhost:3000/api${url}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -30,9 +30,9 @@ const apiClient = {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
-  
+
   async delete(url: string) {
-    const response = await fetch(`http://localhost:3000${url}`, {
+    const response = await fetch(`http://localhost:3000/api${url}`, {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -47,8 +47,8 @@ const PageContainer = styled.div`
 `;
 
 const Sidebar = styled.div`
-  width: 320px;
-  background: #ffffff;
+  width: 280px;
+  background: white;
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
@@ -57,156 +57,101 @@ const Sidebar = styled.div`
 const SidebarHeader = styled.div`
   padding: 16px;
   border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: #f9fafb;
 `;
 
 const SidebarTitle = styled.h2`
+  margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #111827;
-  margin: 0;
 `;
 
-const AddButton = styled.button`
+const SidebarContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+`;
+
+const Button = styled.button`
   background: #3b82f6;
   color: white;
   border: none;
+  padding: 8px 16px;
   border-radius: 6px;
-  padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 150ms ease;
+  transition: background 0.2s;
 
   &:hover {
     background: #2563eb;
   }
 
-  &:active {
-    background: #1d4ed8;
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
   }
 `;
 
 const ContentArea = styled.div`
   flex: 1;
   padding: 24px;
-  overflow-y: auto;
+  background: white;
 `;
 
-const FolderDetails = styled.div`
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-`;
-
-const DetailTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 16px 0;
-`;
-
-const DetailGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const DetailLabel = styled.span`
-  font-size: 12px;
-  font-weight: 500;
+const LoadingMessage = styled.div`
+  text-align: center;
+  padding: 40px;
   color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-`;
-
-const DetailValue = styled.span`
-  font-size: 14px;
-  color: #374151;
-  font-weight: 500;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-`;
-
-const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid;
-  transition: all 150ms ease;
-
-  ${props => {
-    if (props.variant === 'primary') {
-      return `
-        background: #3b82f6;
-        color: white;
-        border-color: #3b82f6;
-        &:hover { background: #2563eb; }
-      `;
-    }
-    if (props.variant === 'danger') {
-      return `
-        background: #ef4444;
-        color: white;
-        border-color: #ef4444;
-        &:hover { background: #dc2626; }
-      `;
-    }
-    return `
-      background: #ffffff;
-      color: #374151;
-      border-color: #d1d5db;
-      &:hover { background: #f9fafb; }
-    `;
-  }}
-`;
-
-const LoadingSpinner = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  color: #6b7280;
+  font-size: 16px;
 `;
 
 const ErrorMessage = styled.div`
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: 6px;
   margin-bottom: 16px;
 `;
 
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+`;
+
+const ContentHeader = styled.div`
+  margin-bottom: 24px;
+`;
+
+const ContentTitle = styled.h3`
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+const ContentDescription = styled.p`
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+`;
+
 export const FolderManagementPage: React.FC = () => {
   const [folders, setFolders] = useState<FolderTreeType[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<FolderTreeType | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [selectedFolderName, setSelectedFolderName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 폴더 트리 로드
   const loadFolders = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
-      const response = await apiClient.get('/folders/tree');
-      setFolders(response.data);
+      const data = await apiClient.get('/folders/tree');
+      setFolders(data);
     } catch (err) {
       setError('폴더 목록을 불러오는데 실패했습니다.');
       console.error('폴더 로드 실패:', err);
@@ -229,15 +174,19 @@ export const FolderManagementPage: React.FC = () => {
     };
 
     const folder = findFolder(folders);
-    setSelectedFolder(folder);
+    setSelectedFolderId(folderId);
+    setSelectedFolderName(folder?.name || '');
   }, [folders]);
 
   // 폴더 생성
   const handleFolderCreate = useCallback(async (parentId?: number) => {
     try {
+      // 폴더 생성 전 선택 상태 초기화
+      setSelectedFolderId(null);
+      setSelectedFolderName('');
+      
       const newFolder = {
         name: '새 폴더',
-        description: '새로 생성된 폴더',
         parentId,
         createdBy: 'system',
         isExpanded: true,
@@ -250,11 +199,21 @@ export const FolderManagementPage: React.FC = () => {
         }
       };
 
-      await apiClient.post('/folders', newFolder);
+      const response = await apiClient.post('/folders', newFolder);
+      
+      // 폴더 목록 새로고침
       await loadFolders();
+      
+      // 새로 생성된 폴더를 선택
+      if (response && response.id) {
+        setSelectedFolderId(response.id);
+        setSelectedFolderName(response.name || '새 폴더');
+      }
     } catch (err) {
       setError('폴더 생성에 실패했습니다.');
       console.error('폴더 생성 실패:', err);
+      setSelectedFolderId(null);
+      setSelectedFolderName('');
     }
   }, [loadFolders]);
 
@@ -278,7 +237,8 @@ export const FolderManagementPage: React.FC = () => {
     try {
       await apiClient.delete(`/folders/${folderId}`);
       await loadFolders();
-      setSelectedFolder(null);
+      setSelectedFolderId(null);
+      setSelectedFolderName('');
     } catch (err) {
       setError('폴더 삭제에 실패했습니다.');
       console.error('폴더 삭제 실패:', err);
@@ -288,29 +248,21 @@ export const FolderManagementPage: React.FC = () => {
   // 폴더 이동
   const handleFolderMove = useCallback(async (draggedId: number, targetId: number, dropType: 'before' | 'after' | 'inside') => {
     try {
-      // 드롭 타입에 따라 이동 로직 처리
       let targetParentId: number | undefined;
       
       if (dropType === 'inside') {
         targetParentId = targetId;
       } else {
-        // before/after의 경우 같은 부모 아래에서 순서만 변경
         const targetFolder = folders.find(f => f.id === targetId);
         targetParentId = targetFolder?.parentId;
       }
 
-      // 이동 중 로딩 상태 표시
-      setError(null);
-      
       await apiClient.post(`/folders/${draggedId}/move`, {
         targetParentId,
         updatedBy: 'system'
       });
 
       await loadFolders();
-      
-      // 성공 메시지 (실제로는 토스트 알림 사용)
-      console.log('폴더가 성공적으로 이동되었습니다.');
     } catch (err) {
       setError('폴더 이동에 실패했습니다.');
       console.error('폴더 이동 실패:', err);
@@ -325,7 +277,7 @@ export const FolderManagementPage: React.FC = () => {
   if (loading) {
     return (
       <PageContainer>
-        <LoadingSpinner>폴더를 불러오는 중...</LoadingSpinner>
+        <LoadingMessage>폴더를 불러오는 중...</LoadingMessage>
       </PageContainer>
     );
   }
@@ -335,73 +287,68 @@ export const FolderManagementPage: React.FC = () => {
       <Sidebar>
         <SidebarHeader>
           <SidebarTitle>폴더 관리</SidebarTitle>
-          <AddButton onClick={() => handleFolderCreate()}>
+          <Button onClick={() => handleFolderCreate()}>
             새 폴더
-          </AddButton>
+          </Button>
         </SidebarHeader>
         
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        
-        <FolderTree
-          folders={folders}
-          onFolderSelect={handleFolderSelect}
-          onFolderCreate={handleFolderCreate}
-          onFolderUpdate={handleFolderUpdate}
-          onFolderDelete={handleFolderDelete}
-          onFolderMove={handleFolderMove}
-        />
+        <SidebarContent>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          
+          {folders.length === 0 ? (
+            <EmptyState>
+              폴더가 없습니다. 새 폴더를 생성해보세요.
+            </EmptyState>
+          ) : (
+            <FolderTree
+              folders={folders}
+              onFolderSelect={handleFolderSelect}
+              onFolderCreate={handleFolderCreate}
+              onFolderUpdate={handleFolderUpdate}
+              onFolderDelete={handleFolderDelete}
+              onFolderMove={handleFolderMove}
+              selectedFolderId={selectedFolderId}
+              onSelectionChange={setSelectedFolderId}
+            />
+          )}
+        </SidebarContent>
       </Sidebar>
-
+      
       <ContentArea>
-        {selectedFolder ? (
-          <FolderDetails>
-            <DetailTitle>{selectedFolder.name}</DetailTitle>
+        {selectedFolderId ? (
+          <div>
+            <ContentHeader>
+              <ContentTitle>{selectedFolderName} - 폴더 정보</ContentTitle>
+              <ContentDescription>
+                선택된 폴더의 상세 정보가 여기에 표시됩니다.
+              </ContentDescription>
+            </ContentHeader>
             
-            <DetailGrid>
-              <DetailItem>
-                <DetailLabel>테스트케이스 수</DetailLabel>
-                <DetailValue>{selectedFolder.testcaseCount}개</DetailValue>
-              </DetailItem>
-              
-              <DetailItem>
-                <DetailLabel>생성일</DetailLabel>
-                <DetailValue>
-                  {selectedFolder.createdAt ? new Date(selectedFolder.createdAt).toLocaleDateString() : '-'}
-                </DetailValue>
-              </DetailItem>
-              
-              <DetailItem>
-                <DetailLabel>수정일</DetailLabel>
-                <DetailValue>
-                  {selectedFolder.updatedAt ? new Date(selectedFolder.updatedAt).toLocaleDateString() : '-'}
-                </DetailValue>
-              </DetailItem>
-              
-              <DetailItem>
-                <DetailLabel>상태</DetailLabel>
-                <DetailValue>
-                  {selectedFolder.isReadOnly ? '읽기 전용' : '편집 가능'}
-                </DetailValue>
-              </DetailItem>
-            </DetailGrid>
-
-            <ActionButtons>
-              <ActionButton variant="primary" onClick={() => handleFolderCreate(selectedFolder.id)}>
-                하위 폴더 추가
-              </ActionButton>
-              <ActionButton onClick={() => handleFolderUpdate(selectedFolder.id, { isExpanded: !selectedFolder.isExpanded })}>
-                {selectedFolder.isExpanded ? '축소' : '확장'}
-              </ActionButton>
-              <ActionButton variant="danger" onClick={() => handleFolderDelete(selectedFolder.id)}>
-                삭제
-              </ActionButton>
-            </ActionButtons>
-          </FolderDetails>
+            <div>
+              <p><strong>폴더 ID:</strong> {selectedFolderId}</p>
+              <p><strong>폴더명:</strong> {selectedFolderName}</p>
+              <p><strong>선택 시간:</strong> {new Date().toLocaleString()}</p>
+            </div>
+          </div>
         ) : (
-          <FolderDetails>
-            <DetailTitle>폴더를 선택하세요</DetailTitle>
-            <p>왼쪽에서 폴더를 선택하면 상세 정보를 확인할 수 있습니다.</p>
-          </FolderDetails>
+          <div>
+            <ContentHeader>
+              <ContentTitle>📁 폴더를 선택하세요</ContentTitle>
+              <ContentDescription>
+                왼쪽에서 폴더를 선택하여 테스트 케이스를 관리하세요
+              </ContentDescription>
+            </ContentHeader>
+            
+            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📋</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '500', color: '#374151' }}>
+                폴더를 선택하세요
+              </h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                왼쪽에서 폴더를 선택하면 해당 폴더의 테스트 케이스가 표시됩니다.
+              </p>
+            </div>
+          </div>
         )}
       </ContentArea>
     </PageContainer>

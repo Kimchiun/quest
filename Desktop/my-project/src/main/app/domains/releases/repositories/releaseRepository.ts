@@ -1,9 +1,13 @@
-import pgClient, { ensurePgConnected } from '../../../infrastructure/database/pgClient';
+import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
 import { Release } from '../models/Release';
 import { Suite } from '../../suites/models/Suite';
 
 export async function createRelease(data: Omit<Release, 'id' | 'createdAt'>): Promise<Release> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const result = await pgClient.query(
     `INSERT INTO releases (name, description, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *`,
     [data.name, data.description, data.startDate, data.endDate]
@@ -13,12 +17,20 @@ export async function createRelease(data: Omit<Release, 'id' | 'createdAt'>): Pr
 
 export async function listReleases(): Promise<Release[]> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const result = await pgClient.query('SELECT * FROM releases ORDER BY id DESC');
   return result.rows.map(rowToRelease);
 }
 
 export async function getReleaseById(id: number): Promise<Release | null> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const result = await pgClient.query('SELECT * FROM releases WHERE id = $1', [id]);
   if (result.rows.length === 0) return null;
   return rowToRelease(result.rows[0]);
@@ -26,6 +38,10 @@ export async function getReleaseById(id: number): Promise<Release | null> {
 
 export async function updateRelease(id: number, patch: Partial<Release>): Promise<Release | null> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const current = await getReleaseById(id);
   if (!current) return null;
   const result = await pgClient.query(
@@ -38,12 +54,20 @@ export async function updateRelease(id: number, patch: Partial<Release>): Promis
 
 export async function deleteRelease(id: number): Promise<boolean> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const result = await pgClient.query('DELETE FROM releases WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
 }
 
 export async function listSuitesByRelease(releaseId: number): Promise<Suite[]> {
   await ensurePgConnected();
+  const pgClient = getPgClient();
+  if (!pgClient) {
+    throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+  }
   const result = await pgClient.query('SELECT * FROM suites WHERE release_id = $1 ORDER BY id', [releaseId]);
   return result.rows.map(rowToSuite);
 }

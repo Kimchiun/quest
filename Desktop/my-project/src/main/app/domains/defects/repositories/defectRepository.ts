@@ -1,4 +1,4 @@
-import pgClient from '../../../infrastructure/database/pgClient';
+import { getPgClient } from '../../../infrastructure/database/pgClient';
 import { Defect, DefectStatus, DefectPriority } from '../models/Defect';
 
 export interface DefectListParams {
@@ -33,11 +33,19 @@ class DefectRepository {
             defect.updatedAt
         ];
         
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         const result = await pgClient.query(query, values);
         return result.rows[0];
     }
 
     async update(id: number, updates: Partial<Defect>): Promise<Defect | null> {
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         const setClause = Object.keys(updates)
             .filter(key => key !== 'id')
             .map((key, index) => `${key} = $${index + 2}`)
@@ -57,12 +65,20 @@ class DefectRepository {
     }
 
     async delete(id: number): Promise<boolean> {
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         const query = 'DELETE FROM defects WHERE id = $1';
         const result = await pgClient.query(query, [id]);
         return (result.rowCount || 0) > 0;
     }
 
     async findById(id: number): Promise<Defect | null> {
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
         const query = 'SELECT * FROM defects WHERE id = $1';
         const result = await pgClient.query(query, [id]);
         return result.rows[0] || null;
@@ -91,6 +107,11 @@ class DefectRepository {
             values.push(params.assignee);
         }
 
+        const pgClient = getPgClient();
+        if (!pgClient) {
+            throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+        }
+        
         // 총 개수 조회
         const countQuery = `SELECT COUNT(*) FROM defects ${whereClause}`;
         const countResult = await pgClient.query(countQuery, values);

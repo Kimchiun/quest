@@ -4,8 +4,10 @@ import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, setMe } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
 import ReleaseBoard from '../features/ReleasePlanning/components/ReleaseBoard';
+import ReleaseManagementPage from '../features/ReleasePlanning/components/ReleaseManagementPage';
 import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
 import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
+import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from '../shared/theme';
@@ -73,6 +75,16 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
           <UserFlowManager />
           <AccessibilityManager />
           <FeedbackCollector />
+          <Routes>
+            <Route path="/dashboard" element={<DashboardLayout />} />
+            <Route path="/test-management" element={<QaseTestManagementPage />} />
+            <Route path="/test-cases" element={<TestCaseList />} />
+            <Route path="/release-planning" element={<ReleaseBoard />} />
+            <Route path="/release-selection" element={<ReleaseSelection />} />
+            <Route path="/folder-management" element={<FolderManagementPage />} />
+            <Route path="/release-management" element={<ReleaseManagementPage />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </ResponsiveLayout>
       </GlobalLayout>
     </LayoutProvider>
@@ -98,8 +110,8 @@ const AppInner: React.FC = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              username: 'admin',
-              password: 'admin123'
+              email: 'admin@test.com',
+              password: 'password123'
             })
           });
           

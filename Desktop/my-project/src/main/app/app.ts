@@ -34,6 +34,15 @@ app.get('/', (req, res) => {
   res.json({ message: 'Quest Desktop App API' });
 });
 
+// 헬스 체크 엔드포인트
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    message: 'Quest Desktop App API is running'
+  });
+});
+
 // 404 핸들러
 app.use('*', (req, res) => {
   res.status(404).json({ message: '요청한 리소스를 찾을 수 없습니다.' });

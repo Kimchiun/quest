@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import pgClient from '../infrastructure/database/pgClient';
+import { getPgClient, ensurePgConnected } from '../infrastructure/database/pgClient';
 
 interface BulkOperationRequest {
   ids: number[];
@@ -10,6 +10,12 @@ interface BulkOperationRequest {
 
 export const bulkMove = async (req: Request, res: Response) => {
   try {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+      throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const { ids, type, targetFolderId }: BulkOperationRequest = req.body;
     
     if (!ids || ids.length === 0) {
@@ -58,6 +64,12 @@ export const bulkMove = async (req: Request, res: Response) => {
 
 export const bulkCopy = async (req: Request, res: Response) => {
   try {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+      throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const { ids, type, targetFolderId }: BulkOperationRequest = req.body;
     
     if (!ids || ids.length === 0) {
@@ -135,6 +147,12 @@ export const bulkCopy = async (req: Request, res: Response) => {
 
 export const bulkDelete = async (req: Request, res: Response) => {
   try {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+      throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const { ids, type }: BulkOperationRequest = req.body;
     
     if (!ids || ids.length === 0) {
@@ -172,6 +190,12 @@ export const bulkDelete = async (req: Request, res: Response) => {
 
 export const bulkUpdateStatus = async (req: Request, res: Response) => {
   try {
+    await ensurePgConnected();
+    const pgClient = getPgClient();
+    if (!pgClient) {
+      throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+    }
+    
     const { ids, newStatus }: BulkOperationRequest = req.body;
     
     if (!ids || ids.length === 0) {
