@@ -1,6 +1,6 @@
 import { createTestCase as createTestCaseRepo, getTestCaseById as getTestCaseByIdRepo, updateTestCase as updateTestCaseRepo, deleteTestCase as deleteTestCaseRepo, listTestCases, createTestCaseVersion, listTestCaseVersions } from '../repositories/testCaseRepository';
 import { indexTestCase, removeTestCaseFromIndex } from '../elasticsearch/testCaseIndexer';
-import { TestCase, TestCaseVersion } from '../models/TestCase';
+import { TestCase, TestCaseVersion } from '../types';
 
 function omitFields<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
     const copy = { ...obj };

@@ -1,4 +1,4 @@
-import { Execution } from '../models/Execution';
+import { Execution } from '../types';
 import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
 
 export const executionRepository = {

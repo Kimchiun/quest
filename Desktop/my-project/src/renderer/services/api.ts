@@ -17,7 +17,7 @@ const removeAuthToken = () => localStorage.removeItem('accessToken');
 // 토큰 갱신 함수
 const refreshToken = async () => {
   try {
-    const response = await fetch('http://localhost:3000/api/auth/refresh', {
+    const response = await fetch('http://localhost:3001/api/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ const refreshToken = async () => {
 
 // Base Query 설정
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:3000',
+  baseUrl: 'http://localhost:3001',
   prepareHeaders: (headers) => {
     const token = getAuthToken();
     if (token) {

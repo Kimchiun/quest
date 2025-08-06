@@ -1,4 +1,4 @@
-import { Execution } from '@/main/app/domains/executions/models/Execution';
+import { Execution } from '../../main/app/domains/executions/types';
 
 interface IndexedDBConfig {
   name: string;

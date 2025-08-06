@@ -1,4 +1,4 @@
-import { User, UserRole } from '../models/User';
+import { User, UserRole } from '../types';
 import { getPgClient } from '../../../infrastructure/database/pgClient';
 import bcrypt from 'bcrypt';
 
@@ -17,9 +17,11 @@ export async function createUser(username: string, password: string, role: UserR
     return {
         id: result.rows[0].id,
         username: result.rows[0].username,
+        email: result.rows[0].email || '',
         password: result.rows[0].password,
         role: result.rows[0].role,
         createdAt: result.rows[0].created_at,
+        updatedAt: result.rows[0].updated_at || result.rows[0].created_at,
     };
 }
 
@@ -37,9 +39,11 @@ export async function findUserByUsername(username: string): Promise<User | null>
     return {
         id: row.id,
         username: row.username,
+        email: row.email || '',
         password: row.password,
         role: row.role,
         createdAt: row.created_at,
+        updatedAt: row.updated_at || row.created_at,
     };
 }
 

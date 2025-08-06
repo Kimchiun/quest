@@ -211,7 +211,7 @@ const NewDashboard: React.FC = () => {
           status: data.status,
           steps: data.steps,
           expected: data.expectedResult,
-          tags: data.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          tags: typeof data.tags === 'string' ? data.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag) : (data.tags as string[]) || [],
           createdBy: 'current-user' // 실제로는 현재 사용자 정보를 사용해야 함
         }),
       });
@@ -246,19 +246,19 @@ const NewDashboard: React.FC = () => {
 
       {/* 통계 카드 */}
       <StatsGrid>
-        <StatCard>
+        <StatCard value={mockStats.totalTestCases.toLocaleString()} label="총 테스트 케이스">
           <StatValue>{mockStats.totalTestCases.toLocaleString()}</StatValue>
           <StatLabel>총 테스트 케이스</StatLabel>
         </StatCard>
-        <StatCard>
+        <StatCard value={mockStats.totalExecutions.toLocaleString()} label="총 실행 횟수">
           <StatValue>{mockStats.totalExecutions.toLocaleString()}</StatValue>
           <StatLabel>총 실행 횟수</StatLabel>
         </StatCard>
-        <StatCard>
+        <StatCard value={`${mockStats.passRate}%`} label="통과율">
           <StatValue>{mockStats.passRate}%</StatValue>
           <StatLabel>통과율</StatLabel>
         </StatCard>
-        <StatCard>
+        <StatCard value={mockStats.totalDefects.toString()} label="활성 결함">
           <StatValue>{mockStats.totalDefects}</StatValue>
           <StatLabel>활성 결함</StatLabel>
         </StatCard>
@@ -270,6 +270,8 @@ const NewDashboard: React.FC = () => {
       </Typography>
       <QuickActionsGrid>
         <ActionCard 
+          value="테스트 케이스 생성"
+          label="새로운 테스트 케이스를 작성하세요"
           onClick={() => {
             console.log('테스트 케이스 생성 버튼 클릭됨');
             handleQuickAction('create-testcase');
@@ -284,7 +286,11 @@ const NewDashboard: React.FC = () => {
             새로운 테스트 케이스를 작성하세요
           </Typography>
         </ActionCard>
-        <ActionCard onClick={() => handleQuickAction('start-execution')}>
+        <ActionCard 
+          value="테스트 실행"
+          label="테스트 케이스를 실행하세요"
+          onClick={() => handleQuickAction('start-execution')}
+        >
           <ActionIcon>▶</ActionIcon>
           <Typography variant="h3" style={{ marginBottom: '4px' }}>
             테스트 실행
@@ -293,7 +299,11 @@ const NewDashboard: React.FC = () => {
             테스트 케이스를 실행하세요
           </Typography>
         </ActionCard>
-        <ActionCard onClick={() => handleQuickAction('create-defect')}>
+        <ActionCard 
+          value="결함 등록"
+          label="새로운 결함을 등록하세요"
+          onClick={() => handleQuickAction('create-defect')}
+        >
           <ActionIcon>⚠</ActionIcon>
           <Typography variant="h3" style={{ marginBottom: '4px' }}>
             결함 등록
@@ -302,7 +312,11 @@ const NewDashboard: React.FC = () => {
             새로운 결함을 등록하세요
           </Typography>
         </ActionCard>
-        <ActionCard onClick={() => handleQuickAction('view-reports')}>
+        <ActionCard 
+          value="보고서 보기"
+          label="테스트 결과 보고서를 확인하세요"
+          onClick={() => handleQuickAction('view-reports')}
+        >
           <ActionIcon>📊</ActionIcon>
           <Typography variant="h3" style={{ marginBottom: '4px' }}>
             보고서 보기

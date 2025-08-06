@@ -1,5 +1,5 @@
 import * as treeRepository from '../repositories/treeRepository';
-import { TreeNode, CreateTreeNodeRequest, UpdateTreeNodeRequest, DragDropRequest, DragDropResult, TreeSearchRequest, TreeSearchResult } from '../models/TreeNode';
+import { TreeNode, CreateTreeNodeRequest, UpdateTreeNodeRequest, DragDropRequest, DragDropResult, TreeSearchRequest, TreeSearchResult } from '../types';
 
 // =====================================================
 // 기본 CRUD 서비스
@@ -75,7 +75,7 @@ export async function searchTreeNodes(request: TreeSearchRequest): Promise<TreeS
 // =====================================================
 
 export async function handleTreeNodeDragDrop(request: DragDropRequest): Promise<DragDropResult> {
-  const { draggedNodeId, targetNodeId, dropType, position } = request;
+  const { sourceId: draggedNodeId, targetId: targetNodeId, position } = request;
 
   // 드래그한 노드와 대상 노드 조회
   const draggedNode = await treeRepository.getTreeNodeById(draggedNodeId);
@@ -92,19 +92,15 @@ export async function handleTreeNodeDragDrop(request: DragDropRequest): Promise<
 
   let movedNode: TreeNode;
 
-  if (dropType === 'reorder') {
+  if (position === 'before' || position === 'after') {
     // 순서 변경
-    if (!position) {
-      throw new Error('순서 변경 시 position이 필요합니다.');
-    }
-
     const reorderedNode = await treeRepository.reorderTreeNode(draggedNodeId, targetNodeId, position);
     if (!reorderedNode) {
       throw new Error('노드 순서 변경에 실패했습니다.');
     }
     movedNode = reorderedNode;
   } else {
-    // 계층 변경
+    // 계층 변경 (inside)
     // 순환 참조 검사
     const hasCircularReference = await treeRepository.checkCircularReference(draggedNodeId, targetNodeId);
     if (hasCircularReference) {
@@ -121,22 +117,20 @@ export async function handleTreeNodeDragDrop(request: DragDropRequest): Promise<
   // 히스토리 기록
   await treeRepository.recordTreeNodeMove({
     nodeId: draggedNodeId,
-    oldParentId: draggedNode.parentId,
-    newParentId: movedNode.parentId,
-    oldSortOrder: draggedNode.sortOrder,
-    newSortOrder: movedNode.sortOrder,
+    oldParentId: draggedNode.parentId || null,
+    newParentId: movedNode.parentId || null,
+    oldSortOrder: draggedNode.sortOrder || 0,
+    newSortOrder: movedNode.sortOrder || 0,
     movedBy: 'system'
   });
 
   return {
     success: true,
     message: '노드가 성공적으로 이동되었습니다.',
-    data: {
-      movedNode,
-      newPosition: {
-        parentId: movedNode.parentId,
-        sortOrder: movedNode.sortOrder
-      }
+    movedNode,
+    newPosition: {
+      parentId: movedNode.parentId || null,
+      sortOrder: movedNode.sortOrder || 0
     }
   };
 }

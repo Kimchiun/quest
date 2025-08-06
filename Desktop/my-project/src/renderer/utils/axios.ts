@@ -16,7 +16,7 @@ function handleLogout() {
 async function attemptAutoLogin() {
   try {
     console.log('🔄 토큰 만료로 인한 자동 로그인 시도...');
-    const response = await fetch('http://localhost:4000/api/auth/login', {
+    const response = await fetch('http://localhost:3001/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ function showToast(message: string, type: 'error' | 'info' | 'success' = 'error'
 }
 
 const api = axios.create({
-  baseURL: 'http://localhost:4000', // 백엔드 서버 주소/포트에 맞게 수정
+  baseURL: 'http://localhost:3001', // 백엔드 서버 주소/포트에 맞게 수정
   withCredentials: false,
 });
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import passport from '../../../infrastructure/security/passport';
 import jwt from 'jsonwebtoken';
 import { createUser, findUserByUsername } from '../services/userService';
-import { UserRole } from '../models/User';
+import { UserRole } from '../types';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';

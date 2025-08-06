@@ -1,5 +1,5 @@
 import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
-import { Folder, CreateFolderRequest, UpdateFolderRequest } from '../models/Folder';
+import { Folder, CreateFolderRequest, UpdateFolderRequest } from '../types';
 
 export async function createFolder(folderData: CreateFolderRequest): Promise<Folder> {
     await ensurePgConnected();
@@ -9,23 +9,14 @@ export async function createFolder(folderData: CreateFolderRequest): Promise<Fol
     }
     
     const result = await pgClient.query(
-        `INSERT INTO folders (name, description, parent_id, sort_order, testcase_count, created_by, is_expanded, is_readonly, permissions) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        `INSERT INTO folders (name, description, parent_id, sort_order, created_by) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [
             folderData.name,
             folderData.description,
             folderData.parentId,
             folderData.sortOrder || 0,
-            folderData.testcaseCount || 0,
-            folderData.createdBy,
-            folderData.isExpanded !== false,
-            folderData.isReadOnly || false,
-            JSON.stringify(folderData.permissions || {
-                read: true,
-                write: true,
-                delete: true,
-                manage: true
-            })
+            folderData.createdBy
         ]
     );
     return rowToFolder(result.rows[0]);
@@ -134,17 +125,8 @@ function rowToFolder(row: any): Folder {
         description: row.description,
         parentId: row.parent_id,
         sortOrder: row.sort_order || 0,
-        testcaseCount: row.testcase_count || 0,
         createdBy: row.created_by,
         createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        isExpanded: row.is_expanded,
-        isReadOnly: row.is_readonly,
-        permissions: row.permissions ? (typeof row.permissions === 'string' ? JSON.parse(row.permissions) : row.permissions) : {
-            read: true,
-            write: true,
-            delete: true,
-            manage: true
-        }
+        updatedAt: row.updated_at
     };
 } 

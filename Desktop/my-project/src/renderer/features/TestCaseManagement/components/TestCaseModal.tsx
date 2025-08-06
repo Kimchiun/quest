@@ -6,6 +6,19 @@ import Input from '../../../shared/components/Input';
 import Modal from '../../../shared/components/Modal';
 import { TestCase } from '../../../../main/app/domains/folders/models/Folder';
 
+export interface TestCaseFormData {
+  title: string;
+  prereq?: string;
+  steps: string[];
+  expected?: string;
+  expectedResult?: string;
+  description?: string;
+  priority: 'High' | 'Medium' | 'Low';
+  tags?: string | string[];
+  status: 'Active' | 'Inactive' | 'Deprecated';
+  folderId?: number;
+}
+
 // 스타일 컴포넌트
 const Form = styled.form`
   display: flex;

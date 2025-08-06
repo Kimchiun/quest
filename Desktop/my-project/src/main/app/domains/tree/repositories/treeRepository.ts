@@ -1,5 +1,5 @@
 import { getPgClient } from '../../../infrastructure/database/pgClient';
-import { TreeNode, CreateTreeNodeRequest, UpdateTreeNodeRequest, TreeSearchRequest, TreeSearchResult } from '../models/TreeNode';
+import { TreeNode, CreateTreeNodeRequest, UpdateTreeNodeRequest, TreeSearchRequest, TreeSearchResult } from '../types';
 
 // =====================================================
 // 기본 CRUD 함수
@@ -279,7 +279,8 @@ export async function searchTreeNodes(request: TreeSearchRequest): Promise<TreeS
   const countResult = await pgClient.query(countQuery, countValues);
   const total = parseInt(countResult.rows[0].count);
 
-  return { nodes, total };
+  const hasMore = (request.offset || 0) + nodes.length < total;
+  return { nodes, total, hasMore };
 }
 
 // =====================================================
@@ -357,7 +358,7 @@ export async function reorderTreeNode(nodeId: number, targetNodeId: number, posi
     }
 
     // 대상 노드의 현재 순서 조회
-    const targetSortOrder = targetNode.sortOrder;
+    const targetSortOrder = targetNode.sortOrder || 0;
 
     // 새로운 순서 계산
     let newSortOrder: number;

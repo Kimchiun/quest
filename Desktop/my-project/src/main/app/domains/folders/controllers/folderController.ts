@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as folderService from '../services/folderService';
-import { CreateFolderRequest, UpdateFolderRequest } from '../models/Folder';
+import { CreateFolderRequest, UpdateFolderRequest } from '../types';
 
 const router = Router();
 
@@ -82,11 +82,7 @@ router.post('/', async (req, res) => {
             description: req.body.description,
             parentId: req.body.parentId,
             sortOrder: req.body.sortOrder,
-            testcaseCount: req.body.testcaseCount,
-            createdBy: req.body.createdBy || 'system',
-            isExpanded: req.body.isExpanded,
-            isReadOnly: req.body.isReadOnly,
-            permissions: req.body.permissions
+            createdBy: req.body.createdBy || 'system'
         };
 
         const folder = await folderService.createFolder(folderData);
@@ -109,12 +105,7 @@ router.put('/:id', async (req, res) => {
             name: req.body.name,
             description: req.body.description,
             parentId: req.body.parentId,
-            sortOrder: req.body.sortOrder,
-            testcaseCount: req.body.testcaseCount,
-            updatedBy: req.body.updatedBy || 'system',
-            isExpanded: req.body.isExpanded,
-            isReadOnly: req.body.isReadOnly,
-            permissions: req.body.permissions
+            sortOrder: req.body.sortOrder
         };
 
         const folder = await folderService.updateFolder(id, updateData);

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as treeService from '../services/treeService';
-import { CreateTreeNodeRequest, UpdateTreeNodeRequest, DragDropRequest } from '../models/TreeNode';
+import { CreateTreeNodeRequest, UpdateTreeNodeRequest, DragDropRequest } from '../types';
 
 const router = Router();
 
@@ -177,9 +177,8 @@ router.post('/dragdrop', async (req, res) => {
     }
 
     const dragDropRequest: DragDropRequest = {
-      draggedNodeId,
-      targetNodeId,
-      dropType,
+      sourceId: draggedNodeId,
+      targetId: targetNodeId,
       position
     };
 

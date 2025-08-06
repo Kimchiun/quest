@@ -1,5 +1,5 @@
 import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
-import { TestCase, TestCaseVersion } from '../models/TestCase';
+import { TestCase, TestCaseVersion } from '../types';
 
 export async function createTestCase(tc: Omit<TestCase, 'id' | 'createdAt' | 'updatedAt'>): Promise<TestCase> {
     await ensurePgConnected();

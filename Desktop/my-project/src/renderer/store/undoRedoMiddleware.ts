@@ -3,13 +3,16 @@ import { Middleware } from 'redux';
 // RootState 타입을 직접 정의하여 순환 참조 방지
 interface RootState {
   testcases: any;
-  releases: any;
   dashboard: any;
   executions: any;
   comments: any;
   notifications: any;
   selection: any;
   users: any;
+  api: any;
+  dashboardLayout: any;
+  animation: any;
+  navigation: any;
 }
 
 interface HistoryState {

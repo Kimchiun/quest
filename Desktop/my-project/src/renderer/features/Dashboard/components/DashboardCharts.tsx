@@ -52,7 +52,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
 
   return (
     <ChartContainer>
-      <Typography $variant="h4" style={{ marginBottom: '16px' }}>
+      <Typography variant="h4" style={{ marginBottom: '16px' }}>
         차트 및 통계
       </Typography>
       

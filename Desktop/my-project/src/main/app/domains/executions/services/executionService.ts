@@ -1,4 +1,4 @@
-import { Execution } from '../models/Execution';
+import { Execution } from '../types';
 import { executionRepository } from '../repositories/executionRepository';
 
 export const executionService = {

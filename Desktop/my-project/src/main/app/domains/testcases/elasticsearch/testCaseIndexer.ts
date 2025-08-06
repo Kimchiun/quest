@@ -1,5 +1,5 @@
 import esClient from '../../../infrastructure/elasticsearch/esClient';
-import { TestCase } from '../models/TestCase';
+import { TestCase } from '../types';
 
 const INDEX = 'testcases';
 
