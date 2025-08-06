@@ -7,6 +7,7 @@ import executionController from './domains/executions/controllers/executionContr
 import treeController from './domains/tree/controllers/treeController';
 import folderController from './domains/folders/controllers/folderController';
 import bulkController from './domains/folders/controllers/bulkController';
+import releaseRoutes from './domains/releases/routes/releaseRoutes';
 import { errorHandler } from './utils/errorHandler';
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/executions', executionController);
 app.use('/api/tree', treeController); // 새로운 트리 API
 app.use('/api/folders', folderController); // 폴더 API
 app.use('/api/bulk', bulkController); // 일괄 작업 API
+app.use('/api/releases', releaseRoutes); // 릴리즈 관리 API
 
 // 기본 라우트
 app.get('/', (req, res) => {

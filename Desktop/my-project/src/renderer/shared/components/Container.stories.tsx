@@ -202,7 +202,7 @@ export const CustomBackground: Story = {
     children: sampleContent,
     maxWidth: '1200px',
     padding: '2rem',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
     radius: '1rem',
     shadow: 'lg',
     variant: 'default',

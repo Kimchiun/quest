@@ -35,11 +35,11 @@ const FolderItem = styled.div<{ $isSelected: boolean }>`
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: ${props => props.$isSelected ? '#e3f2fd' : 'transparent'};
-  color: ${props => props.$isSelected ? '#1976d2' : '#374151'};
+  background: ${props => props.$isSelected ? '#eff6ff' : 'transparent'};
+  color: ${props => props.$isSelected ? '#3b82f6' : '#374151'};
   
   &:hover {
-    background: ${props => props.$isSelected ? '#e3f2fd' : '#f3f4f6'};
+    background: ${props => props.$isSelected ? '#eff6ff' : '#f3f4f6'};
   }
 `;
 
@@ -96,7 +96,7 @@ const FolderList: React.FC<FolderListProps> = ({ folders, selectedFolderId, onFo
           onClick={() => onFolderSelect(folder.id)}
         >
           <FolderIconWrapper>
-            <FolderIcon size={16} color={selectedFolderId === folder.id ? '#1976d2' : '#6b7280'} />
+            <FolderIcon size={16} color={selectedFolderId === folder.id ? '#3b82f6' : '#6b7280'} />
           </FolderIconWrapper>
           <FolderName>{folder.name}</FolderName>
           {folder.testCaseCount > 0 && (

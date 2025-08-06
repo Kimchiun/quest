@@ -109,12 +109,12 @@ const FolderItem = styled.div<{
       return 'transparent';
     }
     if (props.$isHovered) {
-      return props.$isSelected ? '#e3f2fd' : '#f8fafc';
+      return props.$isSelected ? '#eff6ff' : '#f8fafc';
     }
-    return props.$isSelected ? '#e3f2fd' : 'transparent';
+    return props.$isSelected ? '#eff6ff' : 'transparent';
   }};
   
-  color: ${props => props.$isSelected ? '#1976d2' : '#374151'};
+  color: ${props => props.$isSelected ? '#3b82f6' : '#374151'};
   border-left: ${props => props.$level > 0 ? '2px solid #e5e7eb' : 'none'};
   
   &:hover {
@@ -122,7 +122,7 @@ const FolderItem = styled.div<{
       if (props.$isDragOver) {
         return props.$dropType === 'hierarchy' ? '#dbeafe' : '#f0f9ff';
       }
-      return props.$isSelected ? '#e3f2fd' : '#f8fafc';
+      return props.$isSelected ? '#eff6ff' : '#f8fafc';
     }};
   }
 `;
@@ -874,7 +874,7 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
               <FolderIconWrapper>
                 <FolderIcon 
                   size={16} 
-                  color={isSelected ? '#1976d2' : '#6b7280'} 
+                  color={isSelected ? '#3b82f6' : '#6b7280'} 
                 />
               </FolderIconWrapper>
               

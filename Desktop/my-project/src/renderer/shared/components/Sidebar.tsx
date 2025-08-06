@@ -20,13 +20,13 @@ const Nav = styled.nav`
 const NavLink = styled.button<{ active?: boolean }>`
   background: none;
   border: none;
-  color: ${({ active }) => (active ? '#38bdf8' : '#fff')};
+  color: ${({ active }) => (active ? '#3b82f6' : '#fff')};
   font-weight: ${({ active }) => (active ? 700 : 400)};
   font-size: 1rem;
   text-align: left;
   padding: 8px 32px;
   cursor: pointer;
-  border-left: 4px solid ${({ active }) => (active ? '#38bdf8' : 'transparent')};
+  border-left: 4px solid ${({ active }) => (active ? '#3b82f6' : 'transparent')};
   transition: background 0.1s, color 0.1s;
   &:hover { background: #334155; }
 `;
@@ -42,14 +42,14 @@ const ReleaseItem = styled.li<{ active?: boolean }>`
   > button {
     background: none;
     border: none;
-    color: ${({ active }) => (active ? '#38bdf8' : '#fff')};
+    color: ${({ active }) => (active ? '#3b82f6' : '#fff')};
     font-weight: ${({ active }) => (active ? 700 : 400)};
     font-size: 0.98rem;
     text-align: left;
     width: 100%;
     padding: 6px 0 6px 8px;
     cursor: pointer;
-    border-left: 3px solid ${({ active }) => (active ? '#38bdf8' : 'transparent')};
+    border-left: 3px solid ${({ active }) => (active ? '#3b82f6' : 'transparent')};
     &:hover { background: #334155; }
   }
 `;
@@ -63,13 +63,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ releases, selectedReleaseId, onSelectRelease, onNavigate }) => (
   <SidebarRoot>
-            <Typography $variant="h3" style={{ color: '#38bdf8', margin: '0 0 24px 32px' }}>Quest</Typography>
+            <Typography $variant="h3" style={{ color: '#3b82f6', margin: '0 0 24px 32px' }}>Quest</Typography>
     <Nav>
       <NavLink onClick={() => onNavigate?.('/dashboard')} active={false}>대시보드</NavLink>
       <NavLink onClick={() => onNavigate?.('/testcases')} active={false}>테스트케이스</NavLink>
       {/* 필요시 추가 메뉴 */}
     </Nav>
-    <Typography $variant="h4" style={{ color: '#bae6fd', margin: '0 0 8px 32px', fontSize: '1.1rem' }}>릴리즈</Typography>
+    <Typography $variant="h4" style={{ color: '#dbeafe', margin: '0 0 8px 32px', fontSize: '1.1rem' }}>릴리즈</Typography>
     <ReleaseList>
       {releases.map(r => (
         <ReleaseItem key={r.id} active={r.id === selectedReleaseId}>

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../../store';
 import { setCurrentSection, NavigationSection } from '../../../store/navigationSlice';
 import MainContent from './ContentComponents';
-import { DashboardIcon, TestIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon } from '../Icons';
+import { DashboardIcon, TestIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon, ReleaseIcon } from '../Icons';
 
 // 레이아웃 컨테이너
 const LayoutContainer = styled.div<{ sidebarCollapsed: boolean }>`
@@ -37,7 +37,7 @@ const LayoutContainer = styled.div<{ sidebarCollapsed: boolean }>`
 // 좌측 네비게이션
 const Navigation = styled.nav<{ collapsed: boolean }>`
   grid-area: nav;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   padding: ${props => props.collapsed ? '20px 10px' : '20px'};
   overflow-y: auto;
@@ -235,7 +235,8 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         return 'Quest - 대시보드';
       case 'test-management':
         return 'Quest - 테스트 관리';
-
+      case 'release-management':
+        return 'Quest - 릴리즈 관리';
       case 'defect-management':
         return 'Quest - 결함 관리';
       case 'report':
@@ -248,27 +249,37 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
   };
 
   const handleNavigationClick = (section: NavigationSection) => {
+    console.log('🔍 Navigation clicked:', section);
     dispatch(setCurrentSection(section));
     
     // 라우팅 처리
     switch (section) {
       case 'dashboard':
+        console.log('🏠 Navigating to dashboard');
         navigate('/dashboard');
         break;
       case 'test-management':
+        console.log('🧪 Navigating to test-management');
         navigate('/test-management');
         break;
-
+      case 'release-management':
+        console.log('📦 Navigating to release-management');
+        navigate('/release-management');
+        break;
       case 'defect-management':
+        console.log('🐛 Navigating to defect-management');
         navigate('/defect-management');
         break;
       case 'report':
+        console.log('📊 Navigating to report');
         navigate('/report');
         break;
       case 'settings':
+        console.log('⚙️ Navigating to settings');
         navigate('/settings');
         break;
       default:
+        console.log('❓ Unknown section, navigating to dashboard:', section);
         navigate('/dashboard');
     }
   };
@@ -319,6 +330,18 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
               <TestIcon size={20} color="white" />
             </NavIcon>
             <NavText collapsed={sidebarCollapsed}>테스트 관리</NavText>
+          </NavItem>
+
+          <NavItem 
+            active={isActiveSection('release-management')}
+            onClick={() => handleNavigationClick('release-management')}
+            collapsed={sidebarCollapsed}
+            data-title="릴리즈 관리"
+          >
+            <NavIcon>
+              <ReleaseIcon size={20} color="white" />
+            </NavIcon>
+            <NavText collapsed={sidebarCollapsed}>릴리즈 관리</NavText>
           </NavItem>
 
           <NavItem 

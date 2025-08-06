@@ -21,7 +21,7 @@ const TreeContainer = styled.div`
     }
     
     &.rc-tree-node-selected {
-      background-color: #e3f2fd;
+      background-color: #eff6ff;
     }
   }
   
@@ -46,8 +46,8 @@ const FolderName = styled.span`
 `;
 
 const TestCaseCount = styled.span`
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #eff6ff;
+      color: #3b82f6;
   padding: 2px 6px;
   border-radius: 10px;
   font-size: 12px;

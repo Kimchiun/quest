@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import styled, { css, keyframes } from 'styled-components';
-import { createPortal } from 'react-dom';
+import * as ReactDOM from 'react-dom';
 import { Theme } from '../theme';
 
 interface ModalProps {
@@ -198,7 +198,7 @@ const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  return createPortal(
+  return ReactDOM.createPortal(
     <ModalOverlay onClick={handleOverlayClick} className={className}>
       <ModalContent size={size} onClick={handleModalClick} ref={modalRef}>
         {(title || showCloseButton) && (

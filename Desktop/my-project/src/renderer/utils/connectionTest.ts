@@ -7,7 +7,7 @@ export interface ConnectionStatus {
 
 export const testBackendConnection = async (): Promise<ConnectionStatus> => {
   try {
-    const response = await fetch('http://localhost:3000/health', {
+    const response = await fetch('http://localhost:3001/health', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ export const testBackendConnection = async (): Promise<ConnectionStatus> => {
 
 export const testApiEndpoint = async (endpoint: string): Promise<boolean> => {
   try {
-    const response = await fetch(`http://localhost:3000${endpoint}`, {
+    const response = await fetch(`http://localhost:3001${endpoint}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

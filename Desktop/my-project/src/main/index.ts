@@ -6,7 +6,7 @@ import { initializeDatabase } from './app/infrastructure/database/initDatabase';
 // 개발 환경에서는 데이터베이스 연결을 건너뛰기 위한 플래그
 const SKIP_DB_IN_DEV = process.env.NODE_ENV === 'development' && process.env.SKIP_DB === 'true';
 
-const PORT = process.env.BACKEND_PORT || 3000;
+const PORT = process.env.BACKEND_PORT || 3001;
 
 app.listen(PORT, async () => {
     console.log(`Express 서버가 포트 ${PORT}에서 실행 중입니다.`);

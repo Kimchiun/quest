@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
+import { HashRouter as Router } from 'react-router-dom';
+import { Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, setMe } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
 import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
-import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
-import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
+// import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
+// import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
+import ReleaseManagementPage from '../features/ReleaseManagement/components/ReleaseManagementPage';
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from '../shared/theme';
@@ -74,9 +76,20 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
           <FeedbackCollector />
           <Routes>
             <Route path="/dashboard" element={<DashboardLayout />} />
-            <Route path="/test-management" element={<QaseTestManagementPage />} />
+            {/* <Route path="/test-management" element={<QaseTestManagementPage />} /> */}
             <Route path="/test-cases" element={<TestCaseList />} />
-            <Route path="/folder-management" element={<FolderManagementPage />} />
+            {/* <Route path="/folder-management" element={<FolderManagementPage />} /> */}
+            <Route path="/release-management" element={
+              <div>
+                {console.log('🎯 ReleaseManagementPage 라우트 렌더링')}
+                <div style={{ padding: '20px', background: 'white', color: 'black' }}>
+                  <h1>릴리즈 관리 페이지 테스트</h1>
+                  <p>이 텍스트가 보인다면 라우트는 정상 작동합니다.</p>
+                  <p>현재 시간: {new Date().toLocaleString()}</p>
+                </div>
+                <ReleaseManagementPage />
+              </div>
+            } />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </ResponsiveLayout>

@@ -60,7 +60,7 @@ const ToastContainer = styled.div<{ type: string; isVisible: boolean }>`
       case 'info':
       default:
         return `
-          background: linear-gradient(135deg, #2196f3, #1976d2);
+          background: linear-gradient(135deg, #60a5fa, #3b82f6);
           color: white;
         `;
     }

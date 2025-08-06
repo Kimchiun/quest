@@ -111,7 +111,7 @@ const CommentList: React.FC<CommentListProps> = ({ objectType, objectId, current
               <>
                 <span style={{ marginLeft: 8 }}>{c.content}</span>
                 {c.mentions.length > 0 && (
-                  <span style={{ color: '#1976d2', marginLeft: 8 }}>
+                  <span style={{ color: '#3b82f6', marginLeft: 8 }}>
                     {c.mentions.map((m: any) => `@${m}`).join(' ')}
                   </span>
                 )}

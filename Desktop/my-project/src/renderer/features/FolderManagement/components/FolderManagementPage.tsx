@@ -47,12 +47,12 @@ const FolderInfo = styled.div`
   padding: 16px;
   background: #f8f9fa;
   border-radius: 8px;
-  border-left: 4px solid #1976d2;
+  border-left: 4px solid #3b82f6;
 `;
 
 const FolderName = styled.h3`
   margin: 0 0 8px 0;
-  color: #1976d2;
+  color: #3b82f6;
   font-size: 18px;
   font-weight: 600;
 `;

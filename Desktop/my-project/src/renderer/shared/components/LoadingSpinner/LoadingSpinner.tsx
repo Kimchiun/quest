@@ -66,7 +66,7 @@ const Message = styled.div<{ size: string }>`
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'medium',
-  color = '#2196f3',
+  color = '#3b82f6',
   message,
   overlay = false,
 }) => {

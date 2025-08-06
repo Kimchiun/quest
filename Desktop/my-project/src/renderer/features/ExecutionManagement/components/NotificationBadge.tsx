@@ -35,7 +35,7 @@ const NotificationBadge: React.FC = () => {
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 320, overflowY: 'auto' }}>
             {notifications.length === 0 && <li style={{ padding: 16, color: '#888' }}>알림 없음</li>}
             {notifications.map((n: any) => (
-              <li key={n.id} style={{ padding: 8, background: n.read ? '#f5f5f5' : '#e3f2fd', borderBottom: '1px solid #eee', cursor: 'pointer' }}
+              <li key={n.id} style={{ padding: 8, background: n.read ? '#f5f5f5' : '#eff6ff', borderBottom: '1px solid #eee', cursor: 'pointer' }}
                   onClick={() => handleMarkAsRead(n.id)}>
                 <Notification type={n.type}>{n.message}</Notification>
                 <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{new Date(n.createdAt).toLocaleString()}</div>

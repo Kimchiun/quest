@@ -9,6 +9,7 @@ import selectionReducer from '../features/TestCaseManagement/store/selectionSlic
 import dashboardLayoutReducer from './dashboardLayoutSlice';
 import animationReducer from './animationSlice';
 import navigationReducer from './navigationSlice';
+import releaseReducer from '../features/ReleaseManagement/store/releaseSlice';
 import { undoRedoMiddleware } from './undoRedoMiddleware';
 
 export type UserRole = 'ADMIN' | 'QA' | 'DEV' | 'PM';
@@ -46,7 +47,8 @@ export const store = configureStore({
     dashboardLayout: dashboardLayoutReducer,
     animation: animationReducer,
     navigation: navigationReducer,
-    users: userSlice.reducer
+    users: userSlice.reducer,
+    releases: releaseReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

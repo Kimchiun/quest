@@ -22,11 +22,14 @@ export async function initializeDatabase() {
         await pgClient.query(schemaSQL);
         console.log('데이터베이스 스키마 초기화 완료');
 
+        // 마이그레이션 실행
+        await runMigrations(pgClient);
+
         // 테스트용 사용자 생성
         await createTestUsers(pgClient);
 
         // 테이블 존재 확인
-        const tables = ['defects', 'attachments', 'activity_logs', 'comments'];
+        const tables = ['defects', 'attachments', 'activity_logs', 'comments', 'releases', 'release_test_cases', 'release_issues'];
         for (const table of tables) {
             const result = await pgClient.query(`
                 SELECT EXISTS (
@@ -92,5 +95,26 @@ export async function testDatabaseConnection() {
     } catch (error) {
         console.error('데이터베이스 연결 테스트 실패:', error);
         return false;
+    }
+}
+
+async function runMigrations(pgClient: any) {
+    try {
+        console.log('📦 릴리즈 관리 마이그레이션 실행 중...');
+        
+        // 릴리즈 관련 마이그레이션 파일 실행
+        const migrationPath = path.join(__dirname, 'migrations', '005_create_releases.sql');
+        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+        
+        await pgClient.query(migrationSQL);
+        console.log('✅ 릴리즈 관리 마이그레이션 완료');
+        
+        // 릴리즈 테이블 데이터 확인
+        const releaseCountResult = await pgClient.query('SELECT COUNT(*) as count FROM releases');
+        console.log(`📊 릴리즈 데이터: ${releaseCountResult.rows[0].count}개`);
+        
+    } catch (error) {
+        console.error('❌ 릴리즈 마이그레이션 실패:', error);
+        // 마이그레이션 실패해도 서버는 계속 실행
     }
 } 
