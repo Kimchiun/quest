@@ -29,54 +29,74 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 12px 24px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
-const Title = styled.h1`
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+const TitleSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 24px;
+`;
+
+
+
+const StatsInline = styled.div`
+  display: flex;
+  gap: 16px;
+  align-items: center;
+`;
+
+const StatBadge = styled.div<{ variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info' }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  
+  ${props => {
+    switch (props.variant) {
+      case 'success':
+        return `
+          background: #dcfce7;
+          color: #166534;
+        `;
+      case 'warning':
+        return `
+          background: #fef3c7;
+          color: #92400e;
+        `;
+      case 'danger':
+        return `
+          background: #fee2e2;
+          color: #dc2626;
+        `;
+      case 'info':
+        return `
+          background: #dbeafe;
+          color: #1d4ed8;
+        `;
+      case 'primary':
+      default:
+        return `
+          background: #e0e7ff;
+          color: #3730a3;
+        `;
+    }
+  }}
+`;
+
+const StatValue = styled.span`
+  font-weight: 600;
 `;
 
 const HeaderActions = styled.div`
   display: flex;
   gap: 12px;
   align-items: center;
-`;
-
-const StatsContainer = styled.div`
-  display: flex;
-  gap: 16px;
-  padding: 20px 24px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-`;
-
-const StatCard = styled.div`
-  flex: 1;
-  padding: 16px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  text-align: center;
-`;
-
-const StatValue = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 4px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 `;
 
 const MainContent = styled.div`
@@ -325,7 +345,11 @@ const ReleaseManagementPage: React.FC = () => {
     return (
       <PageContainer>
         <Header>
-          <Title>릴리즈 관리</Title>
+          <HeaderActions>
+            <CreateButton onClick={handleCreateRelease}>
+              + 새 릴리즈
+            </CreateButton>
+          </HeaderActions>
         </Header>
         <LoadingState>
           <div>릴리즈 목록을 불러오는 중...</div>
@@ -338,7 +362,11 @@ const ReleaseManagementPage: React.FC = () => {
     return (
       <PageContainer>
         <Header>
-          <Title>릴리즈 관리</Title>
+          <HeaderActions>
+            <CreateButton onClick={handleCreateRelease}>
+              + 새 릴리즈
+            </CreateButton>
+          </HeaderActions>
         </Header>
         <ErrorState>
           <div>❌ {error}</div>
@@ -354,42 +382,42 @@ const ReleaseManagementPage: React.FC = () => {
   return (
     <PageContainer data-testid="release-management-page">
       <Header>
-        <Title>릴리즈 관리</Title>
+        <TitleSection>
+          {releaseStats && (
+            <StatsInline>
+              <StatBadge variant="primary">
+                <StatValue>{releaseStats.total}</StatValue>
+                전체
+              </StatBadge>
+              <StatBadge variant="warning">
+                <StatValue>{releaseStats.in_progress}</StatValue>
+                진행중
+              </StatBadge>
+              <StatBadge variant="info">
+                <StatValue>{releaseStats.testing}</StatValue>
+                테스트중
+              </StatBadge>
+              <StatBadge variant="primary">
+                <StatValue>{releaseStats.ready}</StatValue>
+                배포준비
+              </StatBadge>
+              <StatBadge variant="success">
+                <StatValue>{releaseStats.deployed}</StatValue>
+                배포완료
+              </StatBadge>
+              <StatBadge variant="success">
+                <StatValue>{releaseStats.completed}</StatValue>
+                완료
+              </StatBadge>
+            </StatsInline>
+          )}
+        </TitleSection>
         <HeaderActions>
           <CreateButton onClick={handleCreateRelease}>
             + 새 릴리즈
           </CreateButton>
         </HeaderActions>
       </Header>
-
-      {releaseStats && (
-        <StatsContainer>
-          <StatCard>
-            <StatValue>{releaseStats.total}</StatValue>
-            <StatLabel>전체 릴리즈</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{releaseStats.in_progress}</StatValue>
-            <StatLabel>진행중</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{releaseStats.testing}</StatValue>
-            <StatLabel>테스트중</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{releaseStats.ready}</StatValue>
-            <StatLabel>배포준비</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{releaseStats.deployed}</StatValue>
-            <StatLabel>배포완료</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>{releaseStats.completed}</StatValue>
-            <StatLabel>완료</StatLabel>
-          </StatCard>
-        </StatsContainer>
-      )}
 
       <MainContent>
         <LeftPanelWrapper>
