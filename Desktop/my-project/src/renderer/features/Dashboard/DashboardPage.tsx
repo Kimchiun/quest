@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import DashboardCharts from './components/DashboardCharts';
 
 // ===== 전문가용 대시보드 스타일 컴포넌트 =====
 const DashboardContainer = styled.div`
@@ -330,19 +331,7 @@ const AnalyticsSection = styled.div`
   margin-top: 24px;
 `;
 
-const ChartCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  padding: 20px;
-`;
 
-const ChartTitle = styled.h4`
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 16px 0;
-`;
 
 // ===== 타입 정의 =====
 type TrendType = 'up' | 'down' | 'stable';
@@ -948,35 +937,7 @@ const DashboardPage: React.FC = () => {
 
   const renderAnalyticsSection = () => (
     <AnalyticsSection>
-      <ChartCard>
-        <ChartTitle>이슈 상태별 분포</ChartTitle>
-        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: '8px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#111827' }}>도넛 차트</div>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>Open: 40% | 진행: 35% | 완료: 25%</div>
-          </div>
-        </div>
-      </ChartCard>
-      
-      <ChartCard>
-        <ChartTitle>Blocker/버그 신규발생 추이</ChartTitle>
-        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: '8px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#111827' }}>라인 차트</div>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>최근 7일간 추이</div>
-          </div>
-        </div>
-      </ChartCard>
-      
-      <ChartCard>
-        <ChartTitle>자동화 커버리지</ChartTitle>
-        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: '8px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#111827' }}>파이 차트</div>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>자동화: 68% | 수동: 32%</div>
-          </div>
-        </div>
-      </ChartCard>
+      <DashboardCharts />
     </AnalyticsSection>
   );
 

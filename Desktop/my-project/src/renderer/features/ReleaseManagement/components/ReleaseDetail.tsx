@@ -15,7 +15,7 @@ const DetailContainer = styled.div`
 `;
 
 const DetailHeader = styled.div`
-  padding: 24px;
+  padding: 9px;
   border-bottom: 1px solid #e5e7eb;
   background: white;
 `;
