@@ -13,6 +13,25 @@ interface ReleaseListProps {
 const ListContainer = styled.div`
   flex: 1;
   overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
 `;
 
 const ReleaseItem = styled.div<{ isSelected: boolean }>`

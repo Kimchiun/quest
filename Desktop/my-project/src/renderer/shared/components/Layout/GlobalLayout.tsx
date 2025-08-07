@@ -54,7 +54,6 @@ const Navigation = styled.nav<{ collapsed: boolean }>`
 const Header = styled.header`
   grid-area: header;
   background: white;
-  border-bottom: 1px solid #e1e5e9;
   padding: 0 30px;
   display: flex;
   align-items: center;

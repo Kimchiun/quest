@@ -112,7 +112,7 @@ const LeftPanel = styled.div<{ isCollapsed: boolean }>`
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
-  overflow: hidden;
+  overflow: ${props => props.isCollapsed ? 'hidden' : 'visible'};
 `;
 
 const RightPanel = styled.div`
