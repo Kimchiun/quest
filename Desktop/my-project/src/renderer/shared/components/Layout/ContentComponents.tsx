@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { NavigationSection } from '../../../store/navigationSlice';
 import TestManagementPage from '../../../features/TestCaseManagement/components/TestManagementPage';
-import NewDashboard from '../../../features/Dashboard/components/NewDashboard';
+import DashboardPage from '../../../features/Dashboard/DashboardPage';
 import ReleaseManagementPage from '../../../features/ReleaseManagement/components/ReleaseManagementPage';
 
 const ContentContainer = styled.div`
@@ -45,11 +45,7 @@ const EmptyStateDescription = styled.p`
 
 // 대시보드 컨텐츠
 const DashboardContent: React.FC = () => {
-  return (
-    <ContentContainer>
-      <NewDashboard />
-    </ContentContainer>
-  );
+  return <DashboardPage />;
 };
 
 // 테스트 관리 컨텐츠

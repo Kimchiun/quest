@@ -4,7 +4,6 @@ import { Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, setMe } from '../store';
 import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
-import DashboardLayout from '../features/Dashboard/components/DashboardLayout';
 // import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 // import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
 import ReleaseManagementPage from '../features/ReleaseManagement/components/ReleaseManagementPage';
@@ -75,7 +74,7 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
           <AccessibilityManager />
           <FeedbackCollector />
           <Routes>
-            <Route path="/dashboard" element={<DashboardLayout />} />
+            <Route path="/dashboard" element={<div>대시보드는 좌측 네비게이션에서 접근하세요.</div>} />
             {/* <Route path="/test-management" element={<QaseTestManagementPage />} /> */}
             <Route path="/test-cases" element={<TestCaseList />} />
             {/* <Route path="/folder-management" element={<FolderManagementPage />} /> */}

@@ -173,6 +173,19 @@ const Toolbar = styled.div`
   height: 36px;
 `;
 
+const ToolbarLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+`;
+
+const ToolbarRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
 const SearchBar = styled.div`
   display: flex;
   align-items: center;
@@ -196,19 +209,99 @@ const SearchInput = styled.input`
   }
 `;
 
-const FilterSelect = styled.select`
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+// 커스텀 드롭다운 컨테이너
+const CustomDropdown = styled.div<{ isOpen: boolean }>`
+  position: relative;
+  min-width: 140px;
+`;
+
+// 드롭다운 버튼
+const DropdownButton = styled.button<{ isOpen: boolean }>`
+  width: 100%;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid ${props => props.isOpen ? '#3b82f6' : '#e5e7eb'};
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
   background: white;
   height: 36px;
-  min-width: 120px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: #d1d5db;
+    background-color: #f9fafb;
+  }
   
   &:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+`;
+
+// 드롭다운 화살표 아이콘
+const DropdownArrow = styled.span<{ isOpen: boolean }>`
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+  transform: rotate(${props => props.isOpen ? '180deg' : '0deg'});
+  
+  &::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #6b7280;
+  }
+`;
+
+// 드롭다운 옵션 리스트
+const DropdownOptions = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  max-height: ${props => props.isOpen ? '200px' : '0'};
+  overflow: hidden;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+`;
+
+// 드롭다운 옵션 아이템
+const DropdownOption = styled.div<{ isSelected: boolean }>`
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: ${props => props.isSelected ? '#1d4ed8' : '#374151'};
+  font-weight: ${props => props.isSelected ? '600' : '400'};
+  background: ${props => props.isSelected ? '#eff6ff' : 'transparent'};
+  transition: all 0.15s ease;
+  
+  &:hover {
+    background-color: ${props => props.isSelected ? '#dbeafe' : '#f3f4f6'};
+  }
+  
+  &:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+  
+  &:last-child {
+    border-radius: 0 0 8px 8px;
   }
 `;
 
@@ -308,6 +401,10 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   
+  // 커스텀 드롭다운 상태
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  
   // RTK Query hooks
   const { data: testCases = [], isLoading, error, refetch } = useGetTestCasesQuery();
   const [deleteTestCase] = useDeleteTestCaseMutation();
@@ -333,6 +430,22 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
   // 컴포넌트 마운트 시 폴더 데이터 로드
   useEffect(() => {
     loadFolders();
+  }, []);
+  
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.custom-dropdown')) {
+        setPriorityDropdownOpen(false);
+        setStatusDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // 폴더 선택 처리 - 고유 ID 기반 단일 선택
@@ -1075,42 +1188,116 @@ const TestManagementPage: React.FC<TestManagementPageProps> = () => {
           </ContentSubtitle>
           
           <Toolbar>
-            <SearchBar>
-              <SearchIcon size={16} color="#6b7280" />
-              <SearchInput
-                placeholder={selectedFolderId ? "폴더 내 테스트 케이스 검색..." : "테스트 케이스 검색..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </SearchBar>
+            <ToolbarLeft>
+              <SearchBar>
+                <SearchIcon size={16} color="#6b7280" />
+                <SearchInput
+                  placeholder={selectedFolderId ? "폴더 내 테스트 케이스 검색..." : "테스트 케이스 검색..."}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </SearchBar>
+            </ToolbarLeft>
             
-            <FilterSelect
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-            >
-              <option value="">모든 우선순위</option>
-              <option value="High">높음</option>
-              <option value="Medium">보통</option>
-              <option value="Low">낮음</option>
-            </FilterSelect>
-            
-            <FilterSelect
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">모든 상태</option>
-              <option value="Active">활성</option>
-              <option value="Archived">보관</option>
-            </FilterSelect>
-            
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              disabled={!selectedFolderId}
-              size="sm"
-            >
-              <PlusIcon size={16} color="white" />
-              새 테스트 케이스
-            </Button>
+            <ToolbarRight>
+              {/* 우선순위 커스텀 드롭다운 */}
+              <CustomDropdown isOpen={priorityDropdownOpen} className="custom-dropdown">
+                <DropdownButton
+                  isOpen={priorityDropdownOpen}
+                  onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
+                >
+                  {priorityFilter || '모든 우선순위'}
+                  <DropdownArrow isOpen={priorityDropdownOpen} />
+                </DropdownButton>
+                <DropdownOptions isOpen={priorityDropdownOpen}>
+                  <DropdownOption
+                    isSelected={priorityFilter === ''}
+                    onClick={() => {
+                      setPriorityFilter('');
+                      setPriorityDropdownOpen(false);
+                    }}
+                  >
+                    모든 우선순위
+                  </DropdownOption>
+                  <DropdownOption
+                    isSelected={priorityFilter === 'High'}
+                    onClick={() => {
+                      setPriorityFilter('High');
+                      setPriorityDropdownOpen(false);
+                    }}
+                  >
+                    높음
+                  </DropdownOption>
+                  <DropdownOption
+                    isSelected={priorityFilter === 'Medium'}
+                    onClick={() => {
+                      setPriorityFilter('Medium');
+                      setPriorityDropdownOpen(false);
+                    }}
+                  >
+                    보통
+                  </DropdownOption>
+                  <DropdownOption
+                    isSelected={priorityFilter === 'Low'}
+                    onClick={() => {
+                      setPriorityFilter('Low');
+                      setPriorityDropdownOpen(false);
+                    }}
+                  >
+                    낮음
+                  </DropdownOption>
+                </DropdownOptions>
+              </CustomDropdown>
+              
+              {/* 상태 커스텀 드롭다운 */}
+              <CustomDropdown isOpen={statusDropdownOpen} className="custom-dropdown">
+                <DropdownButton
+                  isOpen={statusDropdownOpen}
+                  onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                >
+                  {statusFilter || '모든 상태'}
+                  <DropdownArrow isOpen={statusDropdownOpen} />
+                </DropdownButton>
+                <DropdownOptions isOpen={statusDropdownOpen}>
+                  <DropdownOption
+                    isSelected={statusFilter === ''}
+                    onClick={() => {
+                      setStatusFilter('');
+                      setStatusDropdownOpen(false);
+                    }}
+                  >
+                    모든 상태
+                  </DropdownOption>
+                  <DropdownOption
+                    isSelected={statusFilter === 'Active'}
+                    onClick={() => {
+                      setStatusFilter('Active');
+                      setStatusDropdownOpen(false);
+                    }}
+                  >
+                    활성
+                  </DropdownOption>
+                  <DropdownOption
+                    isSelected={statusFilter === 'Archived'}
+                    onClick={() => {
+                      setStatusFilter('Archived');
+                      setStatusDropdownOpen(false);
+                    }}
+                  >
+                    보관
+                  </DropdownOption>
+                </DropdownOptions>
+              </CustomDropdown>
+              
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                disabled={!selectedFolderId}
+                size="sm"
+              >
+                <PlusIcon size={16} color="white" />
+                새 테스트 케이스
+              </Button>
+            </ToolbarRight>
           </Toolbar>
         </ContentHeader>
 

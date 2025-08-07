@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../../store';
 import { setCurrentSection, NavigationSection } from '../../../store/navigationSlice';
+import { logout } from '../../../store';
 import MainContent from './ContentComponents';
 import { DashboardIcon, TestIcon, BugIcon, ChartIcon, SettingsIcon, UserIcon, ReleaseIcon } from '../Icons';
 
@@ -187,13 +188,68 @@ const HeaderActions = styled.div`
   gap: 16px;
 `;
 
-// 사용자 정보
+// 사용자 정보 컨테이너
 const UserInfo = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
   color: #6b7280;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+`;
+
+// 드롭다운 메뉴
+const DropdownMenu = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 180px;
+  z-index: 1000;
+  opacity: ${props => props.isOpen ? '1' : '0'};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-8px)'};
+  transition: all 0.2s ease;
+`;
+
+// 드롭다운 메뉴 아이템
+const DropdownItem = styled.button<{ isLogout?: boolean }>`
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+  color: ${props => props.isLogout ? '#ef4444' : '#374151'};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f9fafb;
+  }
+
+  &:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 8px 8px;
+    border-top: 1px solid #f3f4f6;
+  }
 `;
 
 // 브랜드 영역
@@ -228,6 +284,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
   const currentSection = useSelector((state: RootState) => state.navigation.currentSection);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const getCurrentPageTitle = () => {
     switch (currentSection) {
@@ -291,6 +348,48 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleLogout = () => {
+    // Redux 상태에서 사용자 정보 제거
+    dispatch(logout());
+    
+    // 로컬 스토리지에서 토큰 및 사용자 정보 제거
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('tempToken');
+    
+    // 드롭다운 닫기
+    setIsDropdownOpen(false);
+    
+    // 로그인 페이지로 이동
+    navigate('/login');
+  };
+
+  const handleProfileSettings = () => {
+    // 설정 페이지로 이동 (나중에 구현)
+    navigate('/settings');
+    setIsDropdownOpen(false);
+  };
+
+  // 외부 클릭 감지
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <LayoutContainer sidebarCollapsed={sidebarCollapsed}>
@@ -383,9 +482,19 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       <Header>
         <HeaderTitle>{getCurrentPageTitle()}</HeaderTitle>
         <HeaderActions>
-          <UserInfo>
+          <UserInfo ref={dropdownRef} onClick={toggleDropdown}>
             <UserIcon size={16} color="#6b7280" />
             <span>{user?.username || '사용자'}</span>
+            <DropdownMenu isOpen={isDropdownOpen}>
+              <DropdownItem onClick={handleProfileSettings}>
+                <SettingsIcon size={16} color="#6b7280" />
+                프로필 설정
+              </DropdownItem>
+              <DropdownItem onClick={handleLogout} isLogout={true}>
+                <UserIcon size={16} color="#ef4444" />
+                로그아웃
+              </DropdownItem>
+            </DropdownMenu>
           </UserInfo>
         </HeaderActions>
       </Header>
