@@ -83,6 +83,15 @@ const FolderListContainer = styled.div`
   position: relative;
   min-height: 100px;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  
+  /* 드래그 중일 때 스크롤 방지 */
+  &.dragging {
+    overflow: hidden;
+    pointer-events: auto;
+  }
 `;
 
 const FolderItem = styled.div<{ 
@@ -101,6 +110,10 @@ const FolderItem = styled.div<{
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  user-select: none; /* 텍스트 선택 방지 */
+  -webkit-user-select: none; /* Safari 지원 */
+  -moz-user-select: none; /* Firefox 지원 */
+  -ms-user-select: none; /* IE/Edge 지원 */
   
   background: ${props => {
     if (props.$isDragOver) {
@@ -517,6 +530,10 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
 
   // 마우스 이벤트 핸들러들
   const handleMouseDown = useCallback((e: React.MouseEvent, folderId: number) => {
+    // 기본 동작 방지
+    e.preventDefault();
+    e.stopPropagation();
+    
     const folder = flatFolders.find(f => f.id === folderId);
     if (!folder) return;
     
@@ -532,6 +549,9 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragState.draggedId) return;
+
+    // 드래그 중일 때 기본 스크롤 동작 방지
+    e.preventDefault();
 
     // 마우스 위치 업데이트
     setDragState(prev => ({
@@ -550,10 +570,34 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
     if (!dragState.isDragging) {
       setDragState(prev => ({ ...prev, isDragging: true }));
       console.log('🔄 드래그 시작!', dragState.draggedFolderName);
+      
+      // 드래그 시작 시 body에 스크롤 방지 클래스 추가
+      document.body.style.overflow = 'hidden';
+      document.body.style.userSelect = 'none';
     }
 
-    // 가장 가까운 폴더 요소 찾기
-    const folderElements = document.querySelectorAll('[data-folder-id]');
+    // 컨테이너 영역 내에서만 드래그 처리
+    if (!containerRef.current) return;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const isInContainer = e.clientX >= containerRect.left && 
+                         e.clientX <= containerRect.right && 
+                         e.clientY >= containerRect.top && 
+                         e.clientY <= containerRect.bottom;
+
+    // 컨테이너 영역을 벗어나면 드롭 타겟 초기화
+    if (!isInContainer) {
+      document.body.style.cursor = 'not-allowed';
+      setDragState(prev => ({
+        ...prev,
+        dropTargetId: null,
+        dropType: null,
+      }));
+      return;
+    }
+
+    // 가장 가까운 폴더 요소 찾기 (컨테이너 내에서만)
+    const folderElements = containerRef.current.querySelectorAll('[data-folder-id]');
     let closestElement: HTMLElement | null = null;
     let minDistance = Infinity;
 
@@ -602,8 +646,10 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
   }, [dragState.draggedId, dragState.isDragging, dragState.mouseX, dragState.mouseY, dragState.draggedFolderName, getDropType]);
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
-    // 커서 복원
+    // 커서 복원 및 스크롤 방지 해제
     document.body.style.cursor = 'default';
+    document.body.style.overflow = '';
+    document.body.style.userSelect = '';
     
     if (!dragState.isDragging || !dragState.draggedId || !dragState.dropTargetId || !dragState.dropType) {
       setDragState({
@@ -743,6 +789,8 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
         // 드래그 취소
         if (dragState.isDragging) {
           document.body.style.cursor = 'default';
+          document.body.style.overflow = '';
+          document.body.style.userSelect = '';
           setDragState({
             isDragging: false,
             draggedId: null,
@@ -794,11 +842,22 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [contextMenu.isVisible]);
 
+  // 컴포넌트 언마운트 시 스크롤 방지 해제
+  React.useEffect(() => {
+    return () => {
+      // 컴포넌트가 언마운트될 때 스크롤 방지 해제
+      document.body.style.overflow = '';
+      document.body.style.userSelect = '';
+      document.body.style.cursor = 'default';
+    };
+  }, []);
+
   return (
     <>
       <FolderListContainer 
         ref={containerRef}
         onClick={handleContainerClick}
+        className={dragState.isDragging ? 'dragging' : ''}
       >
         {flatFolders.map((folder) => {
           const isDragOver = dragState.dropTargetId === folder.id;
@@ -825,13 +884,30 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
               $dropType={isDragOver ? dragState.dropType : null}
               onClick={(e) => {
                 e.stopPropagation();
+                // 드래그 중일 때는 클릭 처리하지 않음
+                if (dragState.isDragging) {
+                  return;
+                }
                 handleSelect(folder.id, folder.uniqueId || '');
               }}
-              onDoubleClick={(e) => handleDoubleClick(e, folder.id)}
+              onDoubleClick={(e) => {
+                // 드래그 중일 때는 더블클릭 처리하지 않음
+                if (dragState.isDragging) {
+                  return;
+                }
+                handleDoubleClick(e, folder.id);
+              }}
               onMouseDown={(e) => handleMouseDown(e, folder.id)}
               onMouseEnter={() => setHoveredId(folder.id)}
               onMouseLeave={() => setHoveredId(null)}
-              onContextMenu={(e) => handleContextMenu(e, folder.id)}
+              onContextMenu={(e) => {
+                // 드래그 중일 때는 컨텍스트 메뉴 처리하지 않음
+                if (dragState.isDragging) {
+                  e.preventDefault();
+                  return;
+                }
+                handleContextMenu(e, folder.id);
+              }}
               style={{
                 cursor: dragState.isDragging && dragState.draggedId === folder.id ? 'grabbing' : 'grab'
               }}
@@ -851,6 +927,10 @@ const DraggableFolderList: React.FC<DraggableFolderListProps> = ({
                 $hasChildren={hasChildren}
                 onClick={(e) => {
                   e.stopPropagation();
+                  // 드래그 중일 때는 확장/축소 처리하지 않음
+                  if (dragState.isDragging) {
+                    return;
+                  }
                   if (hasChildren) {
                     setExpandedFolders(prev => {
                       const newSet = new Set(prev);
