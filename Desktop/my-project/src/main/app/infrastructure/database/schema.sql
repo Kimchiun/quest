@@ -42,6 +42,7 @@ END;
 $$ language 'plpgsql';
 
 -- 트리 노드 테이블 트리거
+DROP TRIGGER IF EXISTS update_tree_nodes_updated_at ON tree_nodes;
 CREATE TRIGGER update_tree_nodes_updated_at 
     BEFORE UPDATE ON tree_nodes 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

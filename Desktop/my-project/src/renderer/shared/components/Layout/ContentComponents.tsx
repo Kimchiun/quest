@@ -3,8 +3,9 @@ import styled from 'styled-components';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { NavigationSection } from '../../../store/navigationSlice';
-import TestManagementPage from '../../../features/TestCaseManagement/components/TestManagementPage';
+
 import DashboardPage from '../../../features/Dashboard/DashboardPage';
+import TestManagementV2Page from '../../../features/TestManagementV2/TestManagementV2Page';
 import ReleaseManagementPage from '../../../features/ReleaseManagement/components/ReleaseManagementPage';
 
 const ContentContainer = styled.div`
@@ -48,11 +49,13 @@ const DashboardContent: React.FC = () => {
   return <DashboardPage />;
 };
 
-// 테스트 관리 컨텐츠
-const TestManagementContent: React.FC = () => {
+
+
+// 테스트 관리 v2 컨텐츠
+const TestManagementV2Content: React.FC = () => {
   return (
     <ContentContainer style={{ padding: 0 }}>
-      <TestManagementPage />
+      <TestManagementV2Page />
     </ContentContainer>
   );
 };
@@ -121,8 +124,9 @@ const MainContent: React.FC = () => {
     switch (currentSection) {
       case 'dashboard':
         return <DashboardContent />;
-      case 'test-management':
-        return <TestManagementContent />;
+      case 'test-management-v2':
+        return <TestManagementV2Content />;
+
       case 'release-management':
         return <ReleaseManagementContent />;
       case 'defect-management':

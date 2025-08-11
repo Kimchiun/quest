@@ -289,8 +289,9 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
     switch (currentSection) {
       case 'dashboard':
         return 'Quest - 대시보드';
-      case 'test-management':
+      case 'test-management-v2':
         return 'Quest - 테스트 관리';
+
       case 'release-management':
         return 'Quest - 릴리즈 관리';
       case 'defect-management':
@@ -306,6 +307,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
 
   const handleNavigationClick = (section: NavigationSection) => {
     console.log('🔍 Navigation clicked:', section);
+    console.log('🔍 Current location before navigation:', window.location.href);
     dispatch(setCurrentSection(section));
     
     // 라우팅 처리
@@ -314,10 +316,11 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         console.log('🏠 Navigating to dashboard');
         navigate('/dashboard');
         break;
-      case 'test-management':
-        console.log('🧪 Navigating to test-management');
-        navigate('/test-management');
+      case 'test-management-v2':
+        console.log('🧪 Navigating to test-management-v2');
+        navigate('/test-management-v2');
         break;
+
       case 'release-management':
         console.log('📦 Navigating to release-management');
         navigate('/release-management');
@@ -338,6 +341,11 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         console.log('❓ Unknown section, navigating to dashboard:', section);
         navigate('/dashboard');
     }
+    
+    // 네비게이션 후 현재 위치 확인
+    setTimeout(() => {
+      console.log('🔍 Current location after navigation:', window.location.href);
+    }, 100);
   };
 
   const isActiveSection = (section: NavigationSection) => {
@@ -418,9 +426,10 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
             </NavIcon>
             <NavText collapsed={sidebarCollapsed}>대시보드</NavText>
           </NavItem>
+
           <NavItem 
-            active={isActiveSection('test-management')}
-            onClick={() => handleNavigationClick('test-management')}
+            active={isActiveSection('test-management-v2')}
+            onClick={() => handleNavigationClick('test-management-v2')}
             collapsed={sidebarCollapsed}
             data-title="테스트 관리"
           >

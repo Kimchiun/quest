@@ -70,7 +70,7 @@ module.exports = {
         publicPath: '/',
       },
     ],
-    port: 3000,
+    port: 4000,
     hot: true,
     open: false,
     historyApiFallback: true,

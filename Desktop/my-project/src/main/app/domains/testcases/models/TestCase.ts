@@ -3,10 +3,10 @@ export interface TestCase {
     title: string;
     prereq?: string;
     steps: string[];
-    expected: string;
+    expected?: string;
     priority: 'High' | 'Medium' | 'Low';
-    tags: string[];
-    status: 'Active' | 'Archived';
+    tags?: string[];
+    status: 'Active' | 'Inactive' | 'Deprecated';
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;

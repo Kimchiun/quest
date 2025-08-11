@@ -1,87 +1,74 @@
 export interface Folder {
-  id: number;
-  name: string;
-  description?: string;
-  parentId?: number;
-  sortOrder: number;
-  testcaseCount: number;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  isExpanded?: boolean;
-  isSelected?: boolean;
-  isReadOnly?: boolean;
-  permissions?: {
-    read: boolean;
-    write: boolean;
-    delete: boolean;
-    manage: boolean;
-  };
+    id: number;
+    projectId: number;
+    parentId?: number;
+    name: string;
+    description?: string;
+    orderIndex: number;
+    depth: number;
+    createdBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+    isLocked?: boolean;
+    isArchived?: boolean;
 }
 
-export interface CreateFolderRequest {
-  name: string;
-  description?: string;
-  parentId?: number;
-  sortOrder?: number;
-  testcaseCount?: number;
-  createdBy: string;
-  isExpanded?: boolean;
-  isReadOnly?: boolean;
-  permissions?: {
-    read: boolean;
-    write: boolean;
-    delete: boolean;
-    manage: boolean;
-  };
+export interface FolderTree extends Folder {
+    children?: FolderTree[];
+    testCaseCount?: number;
 }
 
-export interface UpdateFolderRequest {
-  name?: string;
-  description?: string;
-  parentId?: number;
-  sortOrder?: number;
-  testcaseCount?: number;
-  updatedBy: string;
-  isExpanded?: boolean;
-  isReadOnly?: boolean;
-  permissions?: {
-    read: boolean;
-    write: boolean;
-    delete: boolean;
-    manage: boolean;
-  };
+export interface FolderCreateRequest {
+    name: string;
+    parentId?: number;
+    projectId: number;
+    description?: string;
+    orderIndex?: number;
 }
 
-export interface MoveFolderRequest {
-  targetParentId: number;
-  updatedBy: string;
+export interface FolderUpdateRequest {
+    name?: string;
+    parentId?: number;
+    description?: string;
+    orderIndex?: number;
+    isExpanded?: boolean;
 }
 
-export interface FolderTree {
-  id: number;
-  name: string;
-  type: 'folder' | 'testcase';
-  parentId?: number;
-  children?: FolderTree[];
-  sortOrder: number;
-  testcaseCount: number;
-  createdBy?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  isExpanded?: boolean;
-  isSelected?: boolean;
-  isReadOnly?: boolean;
-  permissions?: {
-    read: boolean;
-    write: boolean;
-    delete: boolean;
-    manage: boolean;
-  };
-  // 드래그 앤 드롭 관련
-  isDragging?: boolean;
-  isDropTarget?: boolean;
-  dropZone?: 'before' | 'after' | 'inside' | null;
+export interface FolderMoveRequest {
+    targetParentId?: number;
+    dropType?: 'into' | 'before' | 'after';
+    relativeToId?: number;
+    orderIndex?: number;
+    updatedBy?: string;
 }
 
-export type DropType = 'before' | 'after' | 'inside'; 
+export interface FolderBatchMoveRequest {
+    items: Array<{
+        id: string;
+        targetParentId?: number;
+        dropType: 'into' | 'before' | 'after';
+        relativeToId?: number;
+        orderIndex?: number;
+    }>;
+    idempotencyKey?: string;
+    clientVersion?: string;
+}
+
+export interface FolderBatchMoveResponse {
+    success: Array<{ id: string; folder: any }>;
+    failed: Array<{ id: string; error: string; reason: string }>;
+    totalProcessed: number;
+    successCount: number;
+    failureCount: number;
+}
+
+export interface FolderPermission {
+    id: number;
+    scope: 'project' | 'folder';
+    principalId: string;
+    role: 'VIEW' | 'EDIT' | 'ADMIN';
+    folderId?: number;
+    projectId?: number;
+    createdAt: Date;
+    createdBy: string;
+} 

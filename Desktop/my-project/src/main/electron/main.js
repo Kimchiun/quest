@@ -31,7 +31,7 @@ function createWindow() {
     backgroundColor: '#282c34'
   });
 
-  const loadURL = isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../renderer/app/index.html')}`;
+  const loadURL = isDev ? 'http://localhost:4000' : `file://${path.join(__dirname, '../renderer/app/index.html')}`;
 
   console.log('📡 로드할 URL:', loadURL);
 

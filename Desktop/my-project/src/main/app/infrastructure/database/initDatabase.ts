@@ -57,7 +57,8 @@ export async function initializeDatabase() {
 
     } catch (error) {
         console.error('데이터베이스 초기화 오류:', error);
-        throw error;
+        console.log('⚠️ 데이터베이스 초기화 실패했지만 서버는 계속 실행됩니다.');
+        // 에러를 throw하지 않고 서버가 계속 실행되도록 함
     }
 }
 

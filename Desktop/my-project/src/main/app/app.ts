@@ -5,8 +5,8 @@ import authController from './domains/users/controllers/authController';
 import testCaseController from './domains/testcases/controllers/testCaseController';
 import executionController from './domains/executions/controllers/executionController';
 import treeController from './domains/tree/controllers/treeController';
-import folderController from './domains/folders/controllers/folderController';
-import bulkController from './domains/folders/controllers/bulkController';
+import folderRoutes from './domains/folders/routes/folderRoutes';
+// import bulkController from './domains/folders/controllers/bulkController';
 import releaseRoutes from './domains/releases/routes/releaseRoutes';
 import { errorHandler } from './utils/errorHandler';
 
@@ -31,8 +31,8 @@ app.use('/api/auth', authController);
 app.use('/api/testcases', testCaseController); // 테스트케이스 API 활성화
 app.use('/api/executions', executionController);
 app.use('/api/tree', treeController); // 새로운 트리 API
-app.use('/api/folders', folderController); // 폴더 API
-app.use('/api/bulk', bulkController); // 일괄 작업 API
+app.use('/api/folders', folderRoutes); // 폴더 API
+// app.use('/api/bulk', bulkController); // 일괄 작업 API
 app.use('/api/releases', releaseRoutes); // 릴리즈 관리 API
 
 // 기본 라우트

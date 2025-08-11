@@ -1,132 +1,189 @@
-import { getPgClient, ensurePgConnected } from '../../../infrastructure/database/pgClient';
-import { Folder, CreateFolderRequest, UpdateFolderRequest } from '../types';
+import { Folder, FolderTree } from '../models/Folder';
+// import { pgClient } from '../../../infrastructure/database/pgClient';
 
-export async function createFolder(folderData: CreateFolderRequest): Promise<Folder> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+// 임시 메모리 저장소 (실제로는 PostgreSQL 사용)
+let folders: Folder[] = [
+    {
+        id: 1,
+        projectId: 1,
+        parentId: undefined,
+        name: 'Prerequisites',
+        description: 'Test Environment(환경 요건)',
+        orderIndex: 100,
+        depth: 0,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
+    },
+    {
+        id: 2,
+        projectId: 1,
+        parentId: 1,
+        name: 'Software & Versions',
+        description: '소프트웨어/버전 매트릭스',
+        orderIndex: 100,
+        depth: 1,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
+    },
+    {
+        id: 3,
+        projectId: 1,
+        parentId: 1,
+        name: 'Hardware',
+        description: '장비/디바이스 매트릭스',
+        orderIndex: 200,
+        depth: 1,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
+    },
+    {
+        id: 4,
+        projectId: 1,
+        parentId: undefined,
+        name: 'Installation',
+        description: '설치/빌드/배포 체크(Setup)',
+        orderIndex: 200,
+        depth: 0,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
+    },
+    {
+        id: 5,
+        projectId: 1,
+        parentId: undefined,
+        name: 'Login & Account',
+        description: '인증/세션/보안(AAA)',
+        orderIndex: 300,
+        depth: 0,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
+    },
+    {
+        id: 6,
+        projectId: 1,
+        parentId: 5,
+        name: 'Reset Password',
+        description: '패스워드/2FA 플로우',
+        orderIndex: 100,
+        depth: 1,
+        createdBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isLocked: false,
+        isArchived: false
     }
-    
-    const result = await pgClient.query(
-        `INSERT INTO folders (name, description, parent_id, sort_order, created_by) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [
-            folderData.name,
-            folderData.description,
-            folderData.parentId,
-            folderData.sortOrder || 0,
-            folderData.createdBy
-        ]
-    );
-    return rowToFolder(result.rows[0]);
+];
+
+let nextId = 7;
+
+export async function createFolder(data: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
+    const folder: Folder = {
+        ...data,
+        id: nextId++,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    };
+    folders.push(folder);
+    return folder;
 }
 
 export async function getFolderById(id: number): Promise<Folder | null> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
-    
-    const result = await pgClient.query('SELECT * FROM folders WHERE id = $1', [id]);
-    if (result.rows.length === 0) return null;
-    return rowToFolder(result.rows[0]);
+    return folders.find(f => f.id === id) || null;
 }
 
-export async function updateFolder(id: number, folderData: UpdateFolderRequest): Promise<Folder | null> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
+export async function updateFolder(id: number, data: Partial<Folder> & { updatedBy?: string }): Promise<Folder | null> {
+    const index = folders.findIndex(f => f.id === id);
+    if (index === -1) return null;
     
-    const current = await getFolderById(id);
-    if (!current) return null;
-    
-    const result = await pgClient.query(
-        `UPDATE folders SET name=$1, description=$2, parent_id=$3, sort_order=$4, updated_at=NOW() WHERE id=$5 RETURNING *`,
-        [
-            folderData.name ?? current.name,
-            folderData.description ?? current.description,
-            folderData.parentId ?? current.parentId,
-            folderData.sortOrder ?? current.sortOrder,
-            id
-        ]
-    );
-    
-    if (result.rows.length === 0) return null;
-    return rowToFolder(result.rows[0]);
-}
-
-export async function deleteFolder(id: number): Promise<boolean> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
-    
-    // 하위 폴더들을 먼저 삭제
-    await pgClient.query('DELETE FROM folders WHERE parent_id = $1', [id]);
-    
-    // 테스트케이스들의 폴더 참조 제거
-    await pgClient.query('UPDATE testcases SET folder_id = NULL WHERE folder_id = $1', [id]);
-    
-    // 폴더 삭제
-    const result = await pgClient.query('DELETE FROM folders WHERE id = $1', [id]);
-    return (result.rowCount ?? 0) > 0;
-}
-
-export async function listFolders(): Promise<Folder[]> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
-    
-    const result = await pgClient.query('SELECT * FROM folders ORDER BY sort_order, name');
-    return result.rows.map(rowToFolder);
-}
-
-export async function getFoldersByParentId(parentId?: number): Promise<Folder[]> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
-    
-    const query = parentId 
-        ? 'SELECT * FROM folders WHERE parent_id = $1 ORDER BY sort_order, name'
-        : 'SELECT * FROM folders WHERE parent_id IS NULL ORDER BY sort_order, name';
-    
-    const params = parentId ? [parentId] : [];
-    const result = await pgClient.query(query, params);
-    return result.rows.map(rowToFolder);
-}
-
-export async function addTestCaseToFolder(testCaseId: number, folderId: number): Promise<boolean> {
-    await ensurePgConnected();
-    const pgClient = getPgClient();
-    if (!pgClient) {
-        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
-    }
-    
-    const result = await pgClient.query(
-        'UPDATE testcases SET folder_id = $1 WHERE id = $2',
-        [folderId, testCaseId]
-    );
-    return (result.rowCount ?? 0) > 0;
-}
-
-function rowToFolder(row: any): Folder {
-    return {
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        parentId: row.parent_id,
-        sortOrder: row.sort_order || 0,
-        createdBy: row.created_by,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at
+    folders[index] = {
+        ...folders[index],
+        ...data,
+        updatedAt: new Date()
     };
+    
+    return folders[index];
+}
+
+export async function deleteFolder(id: number, mode: 'soft' | 'hard' = 'soft', deletedBy: string): Promise<boolean> {
+    if (mode === 'soft') {
+        // 소프트 삭제 - 휴지통으로 이동
+        const index = folders.findIndex(f => f.id === id);
+        if (index === -1) return false;
+        
+        // 실제로는 휴지통 테이블에 저장
+        folders.splice(index, 1);
+        return true;
+    } else {
+        // 하드 삭제
+        const index = folders.findIndex(f => f.id === id);
+        if (index === -1) return false;
+        
+        folders.splice(index, 1);
+        return true;
+    }
+}
+
+export async function listFolders(params: {
+    parentId?: number;
+    projectId?: number;
+} = {}): Promise<Folder[]> {
+    let filtered = folders;
+    
+    if (params.parentId !== undefined) {
+        filtered = filtered.filter(f => f.parentId === params.parentId);
+    }
+    
+    if (params.projectId !== undefined) {
+        filtered = filtered.filter(f => f.projectId === params.projectId);
+    }
+    
+    return filtered.sort((a, b) => a.orderIndex - b.orderIndex);
+}
+
+export async function getFolderTree(projectId: number, depth?: number): Promise<FolderTree[]> {
+    const allFolders = await listFolders({ projectId });
+    const folderMap = new Map<number, FolderTree>();
+    const rootFolders: FolderTree[] = [];
+    
+    // 모든 폴더를 맵에 추가
+    allFolders.forEach(folder => {
+        if (depth === undefined || folder.depth <= depth) {
+            folderMap.set(folder.id, {
+                ...folder,
+                children: [],
+                testCaseCount: 0 // 실제로는 테스트케이스 수를 계산
+            });
+        }
+    });
+    
+    // 트리 구조 생성
+    allFolders.forEach(folder => {
+        if (depth === undefined || folder.depth <= depth) {
+            const folderTree = folderMap.get(folder.id)!;
+            
+            if (folder.parentId && folderMap.has(folder.parentId)) {
+                const parent = folderMap.get(folder.parentId)!;
+                parent.children!.push(folderTree);
+            } else {
+                rootFolders.push(folderTree);
+            }
+        }
+    });
+    
+    return rootFolders.sort((a, b) => a.orderIndex - b.orderIndex);
 } 

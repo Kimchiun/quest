@@ -1,10 +1,8 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '../services/api';
-import testCaseReducer from '../features/TestCaseManagement/store/testCaseSlice';
 import executionReducer from '../features/ExecutionManagement/store/executionSlice';
 import commentReducer from '../features/ExecutionManagement/store/commentSlice';
 import notificationReducer from './notificationSlice';
-import selectionReducer from '../features/TestCaseManagement/store/selectionSlice';
 import dashboardLayoutReducer from './dashboardLayoutSlice';
 import animationReducer from './animationSlice';
 import navigationReducer from './navigationSlice';
@@ -37,11 +35,9 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     
     // 기존 슬라이스들
-    testcases: testCaseReducer,
     executions: executionReducer,
     comments: commentReducer,
     notifications: notificationReducer,
-    selection: selectionReducer,
     dashboardLayout: dashboardLayoutReducer,
     animation: animationReducer,
     navigation: navigationReducer,

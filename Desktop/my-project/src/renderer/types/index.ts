@@ -10,18 +10,150 @@ export interface User {
 
 // TestCase Types
 export interface TestCase {
-  id: number;
-  title: string;
-  prereq?: string;
-  steps: string[];
-  expected: string;
-  priority: 'High' | 'Medium' | 'Low';
-  tags?: string[];
-  status: 'Active' | 'Archived';
-  createdBy: number;
+  id: string; // UUID/ShortKey (TC-123 형식)
+  projectId: string;
+  folderId: string;
+  title: string; // 1~200자
+  status: 'Draft' | 'In Review' | 'Ready' | 'Deprecated';
+  type: 'Manual' | 'Automated';
+  priority: 'P0' | 'P1' | 'P2' | 'P3';
+  ownerId?: string;
+  estimate?: number; // 예상 소요 시간 (분)
+  automationId?: string; // 코드/테스트런너 식별자
+  preconditions?: string;
+  steps: TestCaseStep[];
+  datasets: TestCaseDataset[];
+  attachments: TestCaseAttachment[];
+  tags: string[];
+  links: TestCaseLink[];
+  createdBy: string;
   createdAt: Date;
+  updatedBy: string;
   updatedAt: Date;
-  folderId?: number;
+  version: number; // 낙관적 잠금용
+  history?: TestCaseHistory[];
+}
+
+export interface TestCaseStep {
+  index: number;
+  action: string; // text/MD
+  expected: string; // text/MD
+  dataBinding?: { key: string };
+  attachments?: TestCaseAttachment[];
+}
+
+export interface TestCaseDataset {
+  id: string;
+  name: string;
+  values: Record<string, string | number | boolean>;
+  description?: string;
+}
+
+export interface TestCaseAttachment {
+  id: string;
+  name: string;
+  url: string;
+  type: 'image' | 'video' | 'document' | 'other';
+  size: number;
+  uploadedBy: string;
+  uploadedAt: Date;
+}
+
+export interface TestCaseLink {
+  id: string;
+  type: 'requirement' | 'bug' | 'ticket' | 'testcase' | 'checklist';
+  url: string;
+  title: string;
+  description?: string;
+}
+
+export interface TestCaseHistory {
+  id: string;
+  version: number;
+  changes: TestCaseChange[];
+  createdBy: string;
+  createdAt: Date;
+  comment?: string;
+}
+
+export interface TestCaseChange {
+  field: string;
+  oldValue: any;
+  newValue: any;
+}
+
+// 리스트 관련 타입
+export interface TestCaseListColumn {
+  key: string;
+  title: string;
+  width: number;
+  visible: boolean;
+  sortable: boolean;
+  resizable: boolean;
+  minWidth: number;
+  maxWidth: number;
+}
+
+export interface TestCaseListFilter {
+  status?: string[];
+  type?: string[];
+  priority?: string[];
+  owner?: string[];
+  tags?: string[];
+  updatedRange?: {
+    from: Date;
+    to: Date;
+  };
+  hasAttachments?: boolean;
+  hasAutomation?: boolean;
+  hasLinkedDefects?: boolean;
+}
+
+export interface TestCaseListSort {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface TestCaseListState {
+  columns: TestCaseListColumn[];
+  filters: TestCaseListFilter;
+  sort: TestCaseListSort[];
+  searchTerm: string;
+  selectedIds: string[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+// 상세 패널 관련 타입
+export interface TestCaseDetailTab {
+  id: string;
+  title: string;
+  icon: string;
+  component: React.ComponentType<any>;
+}
+
+export interface TestCaseQuickRun {
+  id: string;
+  testCaseId: string;
+  environment: string;
+  browser?: string;
+  device?: string;
+  datasetId?: string;
+  screenshotEnabled: boolean;
+  videoEnabled: boolean;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startedAt: Date;
+  completedAt?: Date;
+  results?: TestCaseRunResult[];
+}
+
+export interface TestCaseRunResult {
+  stepIndex: number;
+  status: 'pass' | 'fail' | 'blocked' | 'skipped';
+  comment?: string;
+  attachments?: TestCaseAttachment[];
+  duration?: number;
 }
 
 // Release Types

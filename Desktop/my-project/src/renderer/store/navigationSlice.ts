@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type NavigationSection = 
   | 'dashboard' 
-  | 'test-management' 
+  | 'test-management-v2' 
   | 'release-management' 
   | 'defect-management' 
   | 'report' 

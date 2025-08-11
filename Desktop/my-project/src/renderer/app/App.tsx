@@ -3,10 +3,11 @@ import { HashRouter as Router } from 'react-router-dom';
 import { Route, Routes, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, setMe } from '../store';
-import TestCaseList from '../features/TestCaseManagement/components/TestCaseList';
+
 // import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
-// import QaseTestManagementPage from '../features/TestCaseManagement/components/QaseTestManagementPage';
+import TestManagementV2Page from '../features/TestManagementV2/TestManagementV2Page';
 import ReleaseManagementPage from '../features/ReleaseManagement/components/ReleaseManagementPage';
+
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from '../shared/theme';
@@ -75,8 +76,9 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
           <FeedbackCollector />
           <Routes>
             <Route path="/dashboard" element={<div>대시보드는 좌측 네비게이션에서 접근하세요.</div>} />
-            {/* <Route path="/test-management" element={<QaseTestManagementPage />} /> */}
-            <Route path="/test-cases" element={<TestCaseList />} />
+
+            <Route path="/test-management-v2" element={<TestManagementV2Page />} />
+
             {/* <Route path="/folder-management" element={<FolderManagementPage />} /> */}
             <Route path="/release-management" element={
               <div>
