@@ -291,7 +291,8 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         return 'Quest - 대시보드';
       case 'test-management-v2':
         return 'Quest - 테스트 관리';
-
+      case 'release-management-v2':
+        return 'Quest - 릴리즈 관리 v2';
       case 'release-management':
         return 'Quest - 릴리즈 관리';
       case 'defect-management':
@@ -320,7 +321,10 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
         console.log('🧪 Navigating to test-management-v2');
         navigate('/test-management-v2');
         break;
-
+      case 'release-management-v2':
+        console.log('📦 Navigating to release-management-v2');
+        navigate('/release-management-v2');
+        break;
       case 'release-management':
         console.log('📦 Navigating to release-management');
         navigate('/release-management');
@@ -437,6 +441,18 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
               <TestIcon size={20} color="white" />
             </NavIcon>
             <NavText collapsed={sidebarCollapsed}>테스트 관리</NavText>
+          </NavItem>
+
+          <NavItem 
+            active={isActiveSection('release-management-v2')}
+            onClick={() => handleNavigationClick('release-management-v2')}
+            collapsed={sidebarCollapsed}
+            data-title="릴리즈 관리 v2"
+          >
+            <NavIcon>
+              <ReleaseIcon size={20} color="white" />
+            </NavIcon>
+            <NavText collapsed={sidebarCollapsed}>릴리즈 관리 v2</NavText>
           </NavItem>
 
           <NavItem 

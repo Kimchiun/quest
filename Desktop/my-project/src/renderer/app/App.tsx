@@ -7,6 +7,7 @@ import { store, RootState, setMe } from '../store';
 // import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 import TestManagementV2Page from '../features/TestManagementV2/TestManagementV2Page';
 import ReleaseManagementPage from '../features/ReleaseManagement/components/ReleaseManagementPage';
+import ReleaseManagementV2Page from '../features/ReleaseManagementV2/ReleaseManagementV2Page';
 
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
@@ -78,6 +79,7 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
             <Route path="/dashboard" element={<div>대시보드는 좌측 네비게이션에서 접근하세요.</div>} />
 
             <Route path="/test-management-v2" element={<TestManagementV2Page />} />
+            <Route path="/release-management-v2" element={<ReleaseManagementV2Page />} />
 
             {/* <Route path="/folder-management" element={<FolderManagementPage />} /> */}
             <Route path="/release-management" element={

@@ -1,23 +1,37 @@
 import { Router } from 'express';
-import { ReleaseController } from '../controllers/releaseController';
+import { releaseController } from '../controllers/releaseController';
 
 const router = Router();
-const releaseController = new ReleaseController();
 
-// 릴리즈 통계 (이 라우트가 /:id 보다 먼저 와야 함)
-router.get('/stats', releaseController.getReleaseStats.bind(releaseController));
+// 기본 CRUD 라우트
+router.get('/', releaseController.getAllReleases);
+router.get('/search', releaseController.searchReleases);
+router.get('/status/:status', releaseController.getReleasesByStatus);
+router.get('/project/:projectId', releaseController.getReleasesByProject);
+router.get('/:id', releaseController.getReleaseById);
+router.post('/', releaseController.createRelease);
+router.put('/:id', releaseController.updateRelease);
+router.delete('/:id', releaseController.deleteRelease);
 
-// 기본 CRUD
-router.get('/', releaseController.getAllReleases.bind(releaseController));
-router.get('/:id', releaseController.getReleaseById.bind(releaseController));
-router.post('/', releaseController.createRelease.bind(releaseController));
-router.put('/:id', releaseController.updateRelease.bind(releaseController));
-router.delete('/:id', releaseController.deleteRelease.bind(releaseController));
+// 통계 및 분석 라우트
+router.get('/:id/statistics', releaseController.getReleaseStatistics);
 
-// 릴리즈 관련 세부 데이터
-router.get('/:id/test-cases', releaseController.getReleaseTestCases.bind(releaseController));
-router.get('/:id/issues', releaseController.getReleaseIssues.bind(releaseController));
-router.get('/:id/change-logs', releaseController.getReleaseChangeLogs.bind(releaseController));
-router.get('/:id/retrospectives', releaseController.getReleaseRetrospectives.bind(releaseController));
+// 게이트 기준 관리
+router.put('/:id/gate-criteria', releaseController.updateGateCriteria);
+
+// 릴리즈 케이스 관리
+router.put('/:releaseId/cases/:caseId', releaseController.updateReleaseCase);
+
+// 실행 결과 관리
+router.post('/:releaseId/runs', releaseController.saveRun);
+
+// 결함 관리
+router.post('/:releaseId/defects', releaseController.addDefectLink);
+
+// 환경 관리
+router.put('/:releaseId/environment', releaseController.updateEnvironment);
+
+// 개발용 라우트
+router.post('/load-initial-data', releaseController.loadInitialData);
 
 export default router;

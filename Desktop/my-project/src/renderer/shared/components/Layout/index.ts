@@ -3,6 +3,7 @@ export { default as ResponsiveLayout } from './ResponsiveLayout';
 export { LayoutProvider, useLayout } from './LayoutContext';
 export { default as withLayout } from './withLayout';
 export { default as MainContentArea } from './MainContentArea';
+export { default as MainContentLayout } from './MainContentLayout';
 
 // 레이아웃 타입들
 export interface LayoutState {

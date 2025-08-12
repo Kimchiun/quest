@@ -1,328 +1,237 @@
-import { Client } from 'pg';
-import { getPgClient } from '../../../infrastructure/database/pgClient';
-import { Release, ReleaseStatus, ReleaseTestCase, ReleaseIssue, ReleaseChangeLog, ReleaseRetrospective } from '../types';
+import { Release, ReleaseScope, ReleaseCase, Run, DefectLink, Environment } from '../entities/release';
+
+// 임시 메모리 저장소 (실제로는 데이터베이스 사용)
+let releases: Release[] = [];
+let nextId = 1;
 
 export class ReleaseRepository {
-  private async getClient(): Promise<Client | null> {
-    return getPgClient();
-  }
-
+  // 모든 릴리즈 조회
   async findAll(): Promise<Release[]> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const query = `
-        SELECT 
-          r.*,
-          COALESCE(tc.test_case_count, 0) as test_case_count,
-          COALESCE(tc.passed_count, 0) as passed_count,
-          COALESCE(tc.failed_count, 0) as failed_count,
-          COALESCE(tc.blocked_count, 0) as blocked_count,
-          COALESCE(i.issue_count, 0) as issue_count,
-          COALESCE(i.bug_count, 0) as bug_count,
-          COALESCE(i.resolved_count, 0) as resolved_count,
-          CASE 
-            WHEN COALESCE(tc.test_case_count, 0) = 0 THEN 0
-            ELSE ROUND((COALESCE(tc.passed_count, 0) * 100.0 / COALESCE(tc.test_case_count, 1)), 2)
-          END as progress_percentage
-        FROM releases r
-        LEFT JOIN (
-          SELECT 
-            release_id,
-            COUNT(*) as test_case_count,
-            COUNT(CASE WHEN status = 'PASSED' THEN 1 END) as passed_count,
-            COUNT(CASE WHEN status = 'FAILED' THEN 1 END) as failed_count,
-            COUNT(CASE WHEN status = 'BLOCKED' THEN 1 END) as blocked_count
-          FROM release_test_cases 
-          GROUP BY release_id
-        ) tc ON r.id = tc.release_id
-        LEFT JOIN (
-          SELECT 
-            release_id,
-            COUNT(*) as issue_count,
-            COUNT(CASE WHEN type = 'BUG' THEN 1 END) as bug_count,
-            COUNT(CASE WHEN status = 'RESOLVED' OR status = 'CLOSED' THEN 1 END) as resolved_count
-          FROM release_issues 
-          GROUP BY release_id
-        ) i ON r.id = i.release_id
-        ORDER BY r.created_at DESC
-      `;
-
-      const result = await client.query(query);
-      return result.rows;
-    } catch (error) {
-      console.error('릴리즈 목록 조회 실패:', error);
-      throw error;
-    }
+    return releases;
   }
 
+  // ID로 릴리즈 조회
   async findById(id: string): Promise<Release | null> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const query = `
-        SELECT 
-          r.*,
-          COALESCE(tc.test_case_count, 0) as test_case_count,
-          COALESCE(tc.passed_count, 0) as passed_count,
-          COALESCE(tc.failed_count, 0) as failed_count,
-          COALESCE(tc.blocked_count, 0) as blocked_count,
-          COALESCE(i.issue_count, 0) as issue_count,
-          COALESCE(i.bug_count, 0) as bug_count,
-          COALESCE(i.resolved_count, 0) as resolved_count,
-          CASE 
-            WHEN COALESCE(tc.test_case_count, 0) = 0 THEN 0
-            ELSE ROUND((COALESCE(tc.passed_count, 0) * 100.0 / COALESCE(tc.test_case_count, 1)), 2)
-          END as progress_percentage
-        FROM releases r
-        LEFT JOIN (
-          SELECT 
-            release_id,
-            COUNT(*) as test_case_count,
-            COUNT(CASE WHEN status = 'PASSED' THEN 1 END) as passed_count,
-            COUNT(CASE WHEN status = 'FAILED' THEN 1 END) as failed_count,
-            COUNT(CASE WHEN status = 'BLOCKED' THEN 1 END) as blocked_count
-          FROM release_test_cases 
-          WHERE release_id = $1
-          GROUP BY release_id
-        ) tc ON r.id = tc.release_id
-        LEFT JOIN (
-          SELECT 
-            release_id,
-            COUNT(*) as issue_count,
-            COUNT(CASE WHEN type = 'BUG' THEN 1 END) as bug_count,
-            COUNT(CASE WHEN status = 'RESOLVED' OR status = 'CLOSED' THEN 1 END) as resolved_count
-          FROM release_issues 
-          WHERE release_id = $1
-          GROUP BY release_id
-        ) i ON r.id = i.release_id
-        WHERE r.id = $1
-      `;
-
-      const result = await client.query(query, [id]);
-      return result.rows[0] || null;
-    } catch (error) {
-      console.error('릴리즈 상세 조회 실패:', error);
-      throw error;
-    }
+    return releases.find(release => release.id === id) || null;
   }
 
-  async create(release: Omit<Release, 'id' | 'created_at' | 'updated_at' | 'test_case_count' | 'passed_count' | 'failed_count' | 'blocked_count' | 'issue_count' | 'bug_count' | 'resolved_count' | 'progress_percentage'>): Promise<Release> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const query = `
-        INSERT INTO releases (
-          name, version, description, status, assignee_id, assignee_name,
-          scheduled_date, deployed_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *
-      `;
-
-      const values = [
-        release.name,
-        release.version,
-        release.description,
-        release.status,
-        release.assignee_id,
-        release.assignee_name,
-        release.scheduled_date,
-        release.deployed_date
-      ];
-
-      const result = await client.query(query, values);
-      const newRelease = result.rows[0];
-      
-      // 생성된 릴리즈의 상세 정보를 다시 조회하여 통계 포함
-      return await this.findById(newRelease.id) as Release;
-    } catch (error) {
-      console.error('릴리즈 생성 실패:', error);
-      throw error;
-    }
+  // 프로젝트별 릴리즈 조회
+  async findByProjectId(projectId: string): Promise<Release[]> {
+    return releases.filter(release => release.projectId === projectId);
   }
 
-  async update(id: string, updates: Partial<Release>): Promise<Release | null> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const setClauses = [];
-      const values = [];
-      let paramIndex = 1;
-
-      if (updates.name !== undefined) {
-        setClauses.push(`name = $${paramIndex++}`);
-        values.push(updates.name);
-      }
-      if (updates.version !== undefined) {
-        setClauses.push(`version = $${paramIndex++}`);
-        values.push(updates.version);
-      }
-      if (updates.description !== undefined) {
-        setClauses.push(`description = $${paramIndex++}`);
-        values.push(updates.description);
-      }
-      if (updates.status !== undefined) {
-        setClauses.push(`status = $${paramIndex++}`);
-        values.push(updates.status);
-      }
-      if (updates.assignee_id !== undefined) {
-        setClauses.push(`assignee_id = $${paramIndex++}`);
-        values.push(updates.assignee_id);
-      }
-      if (updates.assignee_name !== undefined) {
-        setClauses.push(`assignee_name = $${paramIndex++}`);
-        values.push(updates.assignee_name);
-      }
-      if (updates.scheduled_date !== undefined) {
-        setClauses.push(`scheduled_date = $${paramIndex++}`);
-        values.push(updates.scheduled_date);
-      }
-      if (updates.deployed_date !== undefined) {
-        setClauses.push(`deployed_date = $${paramIndex++}`);
-        values.push(updates.deployed_date);
-      }
-
-      if (setClauses.length === 0) {
-        return await this.findById(id);
-      }
-
-      setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
-      values.push(id);
-
-      const query = `
-        UPDATE releases 
-        SET ${setClauses.join(', ')}
-        WHERE id = $${paramIndex}
-        RETURNING *
-      `;
-
-      const result = await client.query(query, values);
-      if ((result.rowCount || 0) === 0) {
-        return null;
-      }
-
-      return await this.findById(id);
-    } catch (error) {
-      console.error('릴리즈 업데이트 실패:', error);
-      throw error;
-    }
+  // 릴리즈 생성
+  async create(releaseData: Omit<Release, 'id' | 'createdAt' | 'updatedAt'>): Promise<Release> {
+    const now = new Date().toISOString();
+    const newRelease: Release = {
+      ...releaseData,
+      id: String(nextId++),
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    releases.push(newRelease);
+    return newRelease;
   }
 
+  // 릴리즈 업데이트
+  async update(id: string, updateData: Partial<Release>): Promise<Release | null> {
+    const index = releases.findIndex(release => release.id === id);
+    if (index === -1) return null;
+
+    releases[index] = {
+      ...releases[index],
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return releases[index];
+  }
+
+  // 릴리즈 삭제
   async delete(id: string): Promise<boolean> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
+    const index = releases.findIndex(release => release.id === id);
+    if (index === -1) return false;
 
-    try {
-      // 관련 데이터 먼저 삭제
-      await client.query('DELETE FROM release_retrospectives WHERE release_id = $1', [id]);
-      await client.query('DELETE FROM release_change_logs WHERE release_id = $1', [id]);
-      await client.query('DELETE FROM release_issues WHERE release_id = $1', [id]);
-      await client.query('DELETE FROM release_test_cases WHERE release_id = $1', [id]);
-      
-      // 릴리즈 삭제
-      const result = await client.query('DELETE FROM releases WHERE id = $1', [id]);
-      return (result.rowCount || 0) > 0;
-    } catch (error) {
-      console.error('릴리즈 삭제 실패:', error);
-      throw error;
-    }
+    releases.splice(index, 1);
+    return true;
   }
 
-  // 릴리즈 테스트 케이스 관련 메서드들
-  async findTestCasesByReleaseId(releaseId: string): Promise<ReleaseTestCase[]> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const query = `
-        SELECT * FROM release_test_cases 
-        WHERE release_id = $1 
-        ORDER BY created_at DESC
-      `;
-      const result = await client.query(query, [releaseId]);
-      return result.rows;
-    } catch (error) {
-      console.error('릴리즈 테스트 케이스 조회 실패:', error);
-      throw error;
-    }
+  // 상태별 릴리즈 조회
+  async findByStatus(status: Release['status']): Promise<Release[]> {
+    return releases.filter(release => release.status === status);
   }
 
-  // 릴리즈 이슈 관련 메서드들
-  async findIssuesByReleaseId(releaseId: string): Promise<ReleaseIssue[]> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
-
-    try {
-      const query = `
-        SELECT * FROM release_issues 
-        WHERE release_id = $1 
-        ORDER BY created_at DESC
-      `;
-      const result = await client.query(query, [releaseId]);
-      return result.rows;
-    } catch (error) {
-      console.error('릴리즈 이슈 조회 실패:', error);
-      throw error;
-    }
+  // 검색어로 릴리즈 조회
+  async search(query: string): Promise<Release[]> {
+    const lowerQuery = query.toLowerCase();
+    return releases.filter(release => 
+      release.name.toLowerCase().includes(lowerQuery) ||
+      release.description.toLowerCase().includes(lowerQuery) ||
+      release.version.toLowerCase().includes(lowerQuery) ||
+      release.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+    );
   }
 
-  // 릴리즈 변경 로그 관련 메서드들
-  async findChangeLogsByReleaseId(releaseId: string): Promise<ReleaseChangeLog[]> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
+  // 릴리즈 스코프 업데이트
+  async updateScope(releaseId: string, scope: ReleaseScope): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
 
-    try {
-      const query = `
-        SELECT * FROM release_change_logs 
-        WHERE release_id = $1 
-        ORDER BY created_at DESC
-      `;
-      const result = await client.query(query, [releaseId]);
-      return result.rows;
-    } catch (error) {
-      console.error('릴리즈 변경 로그 조회 실패:', error);
-      throw error;
-    }
+    // 실제로는 ReleaseScope 엔티티를 업데이트하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
   }
 
-  // 릴리즈 회고 관련 메서드들
-  async findRetrospectivesByReleaseId(releaseId: string): Promise<ReleaseRetrospective[]> {
-    const client = await this.getClient();
-    if (!client) {
-      throw new Error('데이터베이스 연결을 할 수 없습니다.');
-    }
+  // 릴리즈 케이스 추가
+  async addCase(releaseId: string, releaseCase: ReleaseCase): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
 
-    try {
-      const query = `
-        SELECT * FROM release_retrospectives 
-        WHERE release_id = $1 
-        ORDER BY created_at DESC
-      `;
-      const result = await client.query(query, [releaseId]);
-      return result.rows;
-    } catch (error) {
-      console.error('릴리즈 회고 조회 실패:', error);
-      throw error;
+    // 실제로는 ReleaseCase를 추가하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
+  }
+
+  // 릴리즈 케이스 업데이트
+  async updateCase(releaseId: string, caseId: string, updates: Partial<ReleaseCase>): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    // 실제로는 ReleaseCase를 업데이트하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
+  }
+
+  // 실행 결과 저장
+  async saveRun(releaseId: string, run: Run): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    // 실제로는 Run을 저장하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
+  }
+
+  // 결함 링크 추가
+  async addDefectLink(releaseId: string, defectLink: DefectLink): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    // 실제로는 DefectLink를 추가하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
+  }
+
+  // 환경 정보 업데이트
+  async updateEnvironment(releaseId: string, environment: Environment): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    // 실제로는 Environment를 업데이트하는 로직이 필요
+    return this.update(releaseId, { updatedAt: new Date().toISOString() });
+  }
+
+  // 게이트 기준 업데이트
+  async updateGateCriteria(releaseId: string, gateCriteria: Release['settings']['gateCriteria']): Promise<Release | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    return this.update(releaseId, {
+      settings: {
+        ...release.settings,
+        gateCriteria
+      }
+    });
+  }
+
+  // 통계 정보 조회
+  async getStatistics(releaseId: string): Promise<{
+    totalCases: number;
+    passedCases: number;
+    failedCases: number;
+    blockedCases: number;
+    notRunCases: number;
+    passRate: number;
+    progress: number;
+  } | null> {
+    const release = await this.findById(releaseId);
+    if (!release) return null;
+
+    // 임시 통계 데이터 (실제로는 ReleaseCase 데이터를 기반으로 계산)
+    return {
+      totalCases: 127,
+      passedCases: 108,
+      failedCases: 19,
+      blockedCases: 3,
+      notRunCases: 15,
+      passRate: 85,
+      progress: 88
+    };
+  }
+
+  // 초기 데이터 로드 (개발용)
+  async loadInitialData(): Promise<void> {
+    if (releases.length > 0) return; // 이미 데이터가 있으면 스킵
+
+    const initialReleases: Omit<Release, 'id' | 'createdAt' | 'updatedAt'>[] = [
+      {
+        projectId: '1',
+        name: '2024.12.0 릴리즈',
+        version: '2024.12.0',
+        description: '2024년 12월 정기 릴리즈',
+        status: 'Active',
+        startAt: '2024-12-01',
+        endAt: '2024-12-15',
+        owners: ['user1'],
+        watchers: ['user2', 'user3'],
+        tags: ['정기', '중요'],
+        createdBy: 'user1',
+        updatedBy: 'user1',
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      },
+      {
+        projectId: '1',
+        name: '2024.11.1 핫픽스',
+        version: '2024.11.1',
+        description: '긴급 버그 수정 릴리즈',
+        status: 'Complete',
+        startAt: '2024-11-15',
+        endAt: '2024-11-20',
+        owners: ['user2'],
+        watchers: ['user1'],
+        tags: ['핫픽스', '긴급'],
+        createdBy: 'user2',
+        updatedBy: 'user2',
+        settings: {
+          gateCriteria: {
+            minPassRate: 90,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 100,
+              P2: 95
+            }
+          },
+          autoSyncScope: false,
+          allowReopen: true
+        }
+      }
+    ];
+
+    for (const releaseData of initialReleases) {
+      await this.create(releaseData);
     }
   }
 }
+
+export const releaseRepository = new ReleaseRepository();
