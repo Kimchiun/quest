@@ -19,7 +19,7 @@ const Header = styled.div<{ isCollapsed: boolean }>`
   display: flex;
   align-items: center;
   justify-content: ${props => props.isCollapsed ? 'center' : 'space-between'};
-  height: ${props => props.isCollapsed ? '40px' : '56px'};
+  height: 56px;
   flex-shrink: 0;
   box-sizing: border-box;
   gap: 8px;
@@ -74,6 +74,8 @@ const ToggleIcon = styled.div`
   border-bottom: 4px solid transparent;
 `;
 
+
+
 interface FolderTreePanelProps {
   folders: FolderTree[];
   selectedFolder: FolderTree | null;
@@ -83,6 +85,8 @@ interface FolderTreePanelProps {
   onRename: (folderId: number, newName: string) => void;
   onDelete: (folderId: number) => void;
   onCollapse?: (collapsed: boolean) => void;
+  expandedFolders: Set<number>;
+  setExpandedFolders: React.Dispatch<React.SetStateAction<Set<number>>>;
 }
 
 const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
@@ -93,9 +97,15 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   onFolderMove,
   onRename,
   onDelete,
-  onCollapse
+  onCollapse,
+  expandedFolders,
+  setExpandedFolders
 }) => {
-  const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
+
+  // 폴더 목록이 변경되어도 확장 상태 유지
+  React.useEffect(() => {
+    console.log('📁 FolderTreePanel - 현재 확장된 폴더들:', Array.from(expandedFolders));
+  }, [expandedFolders, folders]);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleToggleExpand = (folderId: number) => {
@@ -129,22 +139,22 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
 
       return (
         <div key={folder.id}>
-          <FolderTreeItem
-            folder={folder}
-            depth={depth}
-            isExpanded={isExpanded}
-            isSelected={isSelected}
-            hasChildren={hasChildren}
-            onToggleExpand={() => handleToggleExpand(folder.id)}
-            onClick={() => handleFolderClick(folder)}
-            onCreateSubFolder={() => {
-              console.log('📁 onCreateSubFolder 호출됨:', folder.name, 'ID:', folder.id);
-              onCreateFolder(folder.id);
-            }}
-            onMove={onFolderMove}
-            onRename={onRename}
-            onDelete={onDelete}
-          />
+                      <FolderTreeItem
+              folder={folder}
+              depth={depth}
+              isExpanded={isExpanded}
+              isSelected={isSelected}
+              hasChildren={hasChildren}
+              onToggleExpand={() => handleToggleExpand(folder.id)}
+              onClick={() => handleFolderClick(folder)}
+              onCreateSubFolder={() => {
+                console.log('📁 onCreateSubFolder 호출됨:', folder.name, 'ID:', folder.id);
+                onCreateFolder(folder.id);
+              }}
+              onMove={onFolderMove}
+              onRename={onRename}
+              onDelete={onDelete}
+            />
           {isExpanded && hasChildren && (
             <div style={{ marginLeft: 16 }}>
               {renderFolderTree(folder.children!, depth + 1)}

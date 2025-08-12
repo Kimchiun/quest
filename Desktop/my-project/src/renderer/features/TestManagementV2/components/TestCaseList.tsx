@@ -72,33 +72,35 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
 const ListContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  min-height: 300px; /* 최소 높이 추가 */
+  background: #ffffff;
+  min-height: 300px;
 `;
 
 const TestCaseItem = styled.div<{ isSelected?: boolean }>`
   display: flex;
   align-items: center;
-  padding: 12px;
-  border: 1px solid ${props => props.isSelected ? '#3b82f6' : '#e5e7eb'};
-  border-radius: 8px;
-  margin-bottom: 8px;
-  background: ${props => props.isSelected ? '#eff6ff' : '#ffffff'};
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  background: ${props => props.isSelected ? '#f8fafc' : '#ffffff'};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
 
   &:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    background: ${props => props.isSelected ? '#f1f5f9' : '#f9fafb'};
+  }
+
+  &:last-child {
+    border-bottom: none;
   }
 `;
 
-const TestCaseIcon = styled.div`
-  width: 14px;
-  height: 14px;
-  background: #6b7280;
-  border-radius: 2px;
-  margin-right: 12px;
+const TestCaseId = styled.div`
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 60px;
+  margin-right: 16px;
 `;
 
 const TestCaseContent = styled.div`
@@ -111,9 +113,7 @@ const TestCaseTitle = styled.div`
   font-weight: 500;
   color: #111827;
   margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
 `;
 
 const TestCaseMeta = styled.div`
@@ -195,7 +195,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
     const mockData: { [key: number]: any[] } = {
       1: [ // Login & Account
         {
-          id: 101,
+          id: 'TC-001',
           title: '로그인 기능 테스트',
           priority: 'High' as const,
           status: 'Active' as const,
@@ -216,7 +216,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 1
         },
         {
-          id: 102,
+          id: 'TC-002',
           title: '비밀번호 재설정 테스트',
           priority: 'Medium' as const,
           status: 'Active' as const,
@@ -238,7 +238,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 1
         },
         {
-          id: 103,
+          id: 'TC-003',
           title: '회원가입 유효성 검사',
           priority: 'Low' as const,
           status: 'Inactive' as const,
@@ -261,7 +261,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
       ],
       2: [ // User Management
         {
-          id: 201,
+          id: 'TC-004',
           title: '사용자 프로필 수정',
           priority: 'High' as const,
           status: 'Active' as const,
@@ -280,7 +280,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 2
         },
         {
-          id: 202,
+          id: 'TC-005',
           title: '사용자 권한 관리',
           priority: 'High' as const,
           status: 'Active' as const,
@@ -302,7 +302,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
       ],
       3: [ // Dashboard
         {
-          id: 301,
+          id: 'TC-006',
           title: '대시보드 위젯 표시',
           priority: 'Medium' as const,
           status: 'Active' as const,
@@ -312,7 +312,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 3
         },
         {
-          id: 302,
+          id: 'TC-007',
           title: '차트 데이터 업데이트',
           priority: 'Low' as const,
           status: 'Active' as const,
@@ -324,7 +324,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
       ],
       4: [ // Settings
         {
-          id: 401,
+          id: 'TC-008',
           title: '시스템 설정 변경',
           priority: 'Medium' as const,
           status: 'Active' as const,
@@ -336,7 +336,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
       ],
       5: [ // Reports
         {
-          id: 501,
+          id: 'TC-009',
           title: '월간 리포트 생성',
           priority: 'High' as const,
           status: 'Active' as const,
@@ -346,7 +346,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 5
         },
         {
-          id: 502,
+          id: 'TC-010',
           title: '통계 데이터 내보내기',
           priority: 'Medium' as const,
           status: 'Active' as const,
@@ -356,7 +356,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           folderId: 5
         },
         {
-          id: 503,
+          id: 'TC-011',
           title: 'PDF 리포트 생성',
           priority: 'Low' as const,
           status: 'Inactive' as const,
@@ -386,7 +386,20 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
   }
 
   // 선택된 폴더에 해당하는 테스트케이스만 필터링
-  const filteredTestCases = testCases.filter(tc => tc.folderId === selectedFolder?.id);
+  const filteredTestCases = testCases.filter(tc => {
+    const tcFolderId = typeof tc.folderId === 'string' ? parseInt(tc.folderId) : tc.folderId;
+    const selectedFolderId = selectedFolder?.id;
+    
+    console.log('🔍 테스트케이스 필터링:', {
+      testCaseId: tc.id,
+      testCaseTitle: tc.title,
+      tcFolderId,
+      selectedFolderId,
+      isMatch: tcFolderId === selectedFolderId
+    });
+    
+    return tcFolderId === selectedFolderId;
+  });
   
   // 실제 테스트케이스가 없으면 해당 폴더의 mock 데이터 사용
   const mockTestCases = getMockTestCases(selectedFolder.id);
@@ -436,7 +449,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
             isSelected={selectedTestCase?.id === testCase.id}
             onClick={() => onTestCaseSelect?.(testCase)}
           >
-            <TestCaseIcon />
+            <TestCaseId>{testCase.id}</TestCaseId>
             <TestCaseContent>
               <TestCaseTitle>{testCase.title}</TestCaseTitle>
               <TestCaseMeta>

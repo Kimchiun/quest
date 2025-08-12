@@ -297,7 +297,7 @@ interface FolderTreeItemProps {
   depth: number;
   isExpanded: boolean;
   isSelected: boolean;
-  hasChildren: boolean;
+    hasChildren: boolean;
   onToggleExpand: () => void;
   onClick: () => void;
   onCreateSubFolder: () => void;
@@ -551,11 +551,7 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
     onClick();
   };
 
-  const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('➕ + 버튼 클릭됨:', folder.name, 'ID:', folder.id);
-    onCreateSubFolder();
-  };
+
 
   // 우클릭 컨텍스트 메뉴 처리
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -656,7 +652,7 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         
         <FolderIcon />
         
-        <TextContainer>
+                <TextContainer>
           {isEditing ? (
             <input
               type="text"
@@ -682,7 +678,11 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         
         <AddButton
           className="add-button"
-          onClick={handleAddClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('➕ + 버튼 클릭됨:', folder.name, 'ID:', folder.id);
+            onCreateSubFolder();
+          }}
         >
           +
         </AddButton>

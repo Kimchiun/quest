@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import FolderMoveModal from './FolderMoveModal';
 
 const DetailPanelContainer = styled.div<{ isOpen: boolean; width: number }>`
   width: ${props => props.isOpen ? `${props.width}px` : '0px'};
   border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
   background: #ffffff;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   position: relative;
+  height: 100%;
+  max-height: 100%;
+  align-self: stretch;
 `;
 
 const ResizeHandle = styled.div`
@@ -38,6 +43,9 @@ const DetailHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
 `;
 
 const DetailTitle = styled.h3`
@@ -66,6 +74,8 @@ const DetailContent = styled.div`
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100% - 56px); /* 헤더 높이(56px)를 제외한 최대 높이 */
 `;
 
 const EditButton = styled.button`
@@ -96,6 +106,22 @@ const BackButton = styled.button`
   
   &:hover {
     background: #4b5563;
+  }
+`;
+
+const MoveButton = styled.button`
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-right: 8px;
+  
+  &:hover {
+    background: #059669;
   }
 `;
 
@@ -404,6 +430,8 @@ interface TestCaseDetailPanelProps {
   width?: number;
   onResizeStart?: (e: React.MouseEvent) => void;
   onUpdate?: (updatedTestCase: any) => void;
+  onMoveToFolder?: (testCaseId: string, targetFolderId: string) => void;
+  folders?: any[];
 }
 
 const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
@@ -412,11 +440,14 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
   onClose,
   width = 400,
   onResizeStart,
-  onUpdate
+  onUpdate,
+  onMoveToFolder,
+  folders = []
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTestCase, setEditedTestCase] = useState<any>(null);
   const [steps, setSteps] = useState<string[]>([]);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
 
   useEffect(() => {
     if (testCase) {
@@ -460,6 +491,12 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
       handleCancel();
     }
     onClose();
+  };
+
+  const handleMoveToFolder = (targetFolderId: string) => {
+    if (onMoveToFolder && testCase) {
+      onMoveToFolder(testCase.id, targetFolderId);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -507,18 +544,23 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
       )}
               <DetailHeader>
           <DetailTitle>테스트케이스 상세</DetailTitle>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {isEditing ? (
-              <BackButton onClick={handleCancel}>
-                뒤로가기
-              </BackButton>
-            ) : (
-              <EditButton onClick={handleEdit}>
-                편집
-              </EditButton>
-            )}
-            <CloseButton onClick={handleClose}>&times;</CloseButton>
-          </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                    {isEditing ? (
+                      <BackButton onClick={handleCancel}>
+                        뒤로가기
+                      </BackButton>
+                    ) : (
+                      <>
+                        <EditButton onClick={handleEdit}>
+                          편집
+                        </EditButton>
+                        <MoveButton onClick={() => setIsMoveModalOpen(true)}>
+                          이동
+                        </MoveButton>
+                      </>
+                    )}
+                    <CloseButton onClick={handleClose}>&times;</CloseButton>
+                  </div>
         </DetailHeader>
       
       <DetailContent>
@@ -763,6 +805,15 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
           </>
         )}
       </DetailContent>
+      
+      <FolderMoveModal
+        isOpen={isMoveModalOpen}
+        onClose={() => setIsMoveModalOpen(false)}
+        onMove={handleMoveToFolder}
+        currentFolderId={testCase?.folderId || ''}
+        folders={folders}
+        testCaseTitle={testCase?.title || ''}
+      />
     </DetailPanelContainer>
   );
 };
