@@ -190,186 +190,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
     testCasesLength: testCases.length,
     selectedTestCase: selectedTestCase?.title
   });
-  // 폴더별 임시 테스트케이스 데이터
-  const getMockTestCases = (folderId: number) => {
-    const mockData: { [key: number]: any[] } = {
-      1: [ // Login & Account
-        {
-          id: 'TC-001',
-          title: '로그인 기능 테스트',
-          priority: 'High' as const,
-          status: 'Active' as const,
-          type: 'Functional' as const,
-          description: '사용자가 올바른 자격 증명으로 로그인할 수 있는지 확인합니다.',
-          steps: [
-            '1. 로그인 페이지에 접속합니다.',
-            '2. 유효한 이메일 주소를 입력합니다.',
-            '3. 올바른 비밀번호를 입력합니다.',
-            '4. 로그인 버튼을 클릭합니다.',
-            '5. 대시보드 페이지로 리디렉션되는지 확인합니다.'
-          ],
-          preconditions: '사용자가 등록된 계정을 가지고 있어야 합니다.',
-          expectedResult: '사용자가 성공적으로 로그인되어 대시보드 페이지로 이동합니다.',
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-01-20'),
-          folderId: 1
-        },
-        {
-          id: 'TC-002',
-          title: '비밀번호 재설정 테스트',
-          priority: 'Medium' as const,
-          status: 'Active' as const,
-          type: 'Functional' as const,
-          description: '사용자가 비밀번호를 재설정할 수 있는지 확인합니다.',
-          steps: [
-            '1. 로그인 페이지에서 "비밀번호 찾기" 링크를 클릭합니다.',
-            '2. 등록된 이메일 주소를 입력합니다.',
-            '3. 재설정 이메일 발송 버튼을 클릭합니다.',
-            '4. 이메일로 전송된 재설정 링크를 클릭합니다.',
-            '5. 새 비밀번호를 입력하고 확인합니다.',
-            '6. 새 비밀번호로 로그인할 수 있는지 확인합니다.'
-          ],
-          preconditions: '사용자가 등록된 이메일 주소를 기억하고 있어야 합니다.',
-          expectedResult: '비밀번호가 성공적으로 재설정되고 새 비밀번호로 로그인할 수 있습니다.',
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-16'),
-          updatedAt: new Date('2024-01-18'),
-          folderId: 1
-        },
-        {
-          id: 'TC-003',
-          title: '회원가입 유효성 검사',
-          priority: 'Low' as const,
-          status: 'Inactive' as const,
-          type: 'Functional' as const,
-          description: '회원가입 시 입력 데이터의 유효성을 검사합니다.',
-          steps: [
-            '1. 회원가입 페이지에 접속합니다.',
-            '2. 잘못된 이메일 형식을 입력합니다.',
-            '3. 8자 미만의 비밀번호를 입력합니다.',
-            '4. 회원가입 버튼을 클릭합니다.',
-            '5. 적절한 오류 메시지가 표시되는지 확인합니다.'
-          ],
-          preconditions: '회원가입 페이지가 정상적으로 로드되어야 합니다.',
-          expectedResult: '입력 오류에 대한 적절한 유효성 검사 메시지가 표시됩니다.',
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-17'),
-          updatedAt: new Date('2024-01-19'),
-          folderId: 1
-        }
-      ],
-      2: [ // User Management
-        {
-          id: 'TC-004',
-          title: '사용자 프로필 수정',
-          priority: 'High' as const,
-          status: 'Active' as const,
-          type: 'Functional' as const,
-          description: '사용자가 자신의 프로필 정보를 수정할 수 있는지 확인합니다.',
-          steps: [
-            '1. 사용자 프로필 페이지에 접속합니다.',
-            '2. "프로필 편집" 버튼을 클릭합니다.',
-            '3. 이름을 새로운 값으로 변경합니다.',
-            '4. 저장 버튼을 클릭합니다.',
-            '5. 변경사항이 반영되는지 확인합니다.'
-          ],
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-10'),
-          updatedAt: new Date('2024-01-15'),
-          folderId: 2
-        },
-        {
-          id: 'TC-005',
-          title: '사용자 권한 관리',
-          priority: 'High' as const,
-          status: 'Active' as const,
-          type: 'Functional' as const,
-          description: '관리자가 사용자 권한을 변경할 수 있는지 확인합니다.',
-          steps: [
-            '1. 관리자 대시보드에 접속합니다.',
-            '2. 사용자 관리 메뉴를 클릭합니다.',
-            '3. 대상 사용자를 선택합니다.',
-            '4. 권한을 "관리자"로 변경합니다.',
-            '5. 변경사항을 저장합니다.',
-            '6. 사용자가 관리자 권한을 갖는지 확인합니다.'
-          ],
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-12'),
-          updatedAt: new Date('2024-01-16'),
-          folderId: 2
-        }
-      ],
-      3: [ // Dashboard
-        {
-          id: 'TC-006',
-          title: '대시보드 위젯 표시',
-          priority: 'Medium' as const,
-          status: 'Active' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-08'),
-          updatedAt: new Date('2024-01-14'),
-          folderId: 3
-        },
-        {
-          id: 'TC-007',
-          title: '차트 데이터 업데이트',
-          priority: 'Low' as const,
-          status: 'Active' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-09'),
-          updatedAt: new Date('2024-01-13'),
-          folderId: 3
-        }
-      ],
-      4: [ // Settings
-        {
-          id: 'TC-008',
-          title: '시스템 설정 변경',
-          priority: 'Medium' as const,
-          status: 'Active' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-05'),
-          updatedAt: new Date('2024-01-11'),
-          folderId: 4
-        }
-      ],
-      5: [ // Reports
-        {
-          id: 'TC-009',
-          title: '월간 리포트 생성',
-          priority: 'High' as const,
-          status: 'Active' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-03'),
-          updatedAt: new Date('2024-01-09'),
-          folderId: 5
-        },
-        {
-          id: 'TC-010',
-          title: '통계 데이터 내보내기',
-          priority: 'Medium' as const,
-          status: 'Active' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-04'),
-          updatedAt: new Date('2024-01-10'),
-          folderId: 5
-        },
-        {
-          id: 'TC-011',
-          title: 'PDF 리포트 생성',
-          priority: 'Low' as const,
-          status: 'Inactive' as const,
-          createdBy: 'admin',
-          createdAt: new Date('2024-01-06'),
-          updatedAt: new Date('2024-01-12'),
-          folderId: 5
-        }
-      ]
-    };
-    
-    return mockData[folderId] || [];
-  };
+
 
   if (!selectedFolder) {
     return (
@@ -401,22 +222,15 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
     return tcFolderId === selectedFolderId;
   });
   
-  // 실제 테스트케이스가 없으면 해당 폴더의 mock 데이터 사용
-  const mockTestCases = getMockTestCases(selectedFolder.id);
-  const displayTestCases = filteredTestCases.length > 0 ? filteredTestCases : mockTestCases;
-  
   console.log('🔍 TestCaseList 데이터 분석:', {
     testCasesLength: testCases.length,
     filteredTestCasesLength: filteredTestCases.length,
-    mockTestCasesLength: mockTestCases.length,
-    displayTestCasesLength: displayTestCases.length,
     selectedFolderId: selectedFolder?.id,
-    selectedFolderName: selectedFolder?.name,
-    usingMockData: filteredTestCases.length === 0
+    selectedFolderName: selectedFolder?.name
   });
   
-  // 실제 테스트케이스가 없고 mock 데이터도 없는 경우에만 빈 상태 표시
-  if (displayTestCases.length === 0) {
+  // 테스트케이스가 없는 경우 빈 상태 표시
+  if (filteredTestCases.length === 0) {
     console.log('⚠️ TestCaseList: 빈 상태 표시됨 - 테스트케이스가 전혀 없음');
     return (
       <Container>
@@ -438,12 +252,12 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
     );
   }
 
-  console.log('✅ TestCaseList: 테스트케이스 목록 렌더링 시작', displayTestCases.length, '개');
+  console.log('✅ TestCaseList: 테스트케이스 목록 렌더링 시작', filteredTestCases.length, '개');
   
   return (
     <Container>
       <ListContainer>
-        {displayTestCases.map((testCase) => (
+        {filteredTestCases.map((testCase) => (
           <TestCaseItem 
             key={testCase.id}
             isSelected={selectedTestCase?.id === testCase.id}
