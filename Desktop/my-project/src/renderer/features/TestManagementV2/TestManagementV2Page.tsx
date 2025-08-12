@@ -6,12 +6,14 @@ import TestCaseList from './components/TestCaseList';
 import Toolbar from './components/Toolbar';
 import TestCaseCreateModal from './components/TestCaseCreateModal';
 import TestCaseDetailPanel from './components/TestCaseDetailPanel';
+import FolderCreateModal from './components/FolderCreateModal';
 
 
 const Container = styled.div`
   display: flex;
   height: 100vh;
   background: #ffffff;
+  overflow: hidden; /* 전체 컨테이너의 스크롤 방지 */
 `;
 
 const TreePanel = styled.div<{ isCollapsed: boolean; width: number }>`
@@ -32,6 +34,7 @@ const ContentPanel = styled.div`
   flex-direction: row;
   overflow: hidden;
   min-width: 0;
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 함 */
 `;
 
 const ListPanel = styled.div`
@@ -40,6 +43,7 @@ const ListPanel = styled.div`
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 함 */
   border-top: 1px solid #e5e7eb;
 `;
 
@@ -73,6 +77,7 @@ const TestManagementV2Page: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [isFolderCreateModalOpen, setIsFolderCreateModalOpen] = useState(false);
   const [testCases, setTestCases] = useState<any[]>([]);
   const [selectedTestCase, setSelectedTestCase] = useState<any>(null);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -183,6 +188,44 @@ const TestManagementV2Page: React.FC = () => {
     } catch (error) {
       console.error('폴더 생성 오류:', error);
       alert('폴더 생성에 실패했습니다. 다시 시도해 주세요.');
+    }
+  };
+
+  const handleCreateRootFolder = () => {
+    setIsFolderCreateModalOpen(true);
+  };
+
+  const handleCreateRootFolderSubmit = async (folderName: string) => {
+    try {
+      console.log('📁 상위 폴더 생성:', folderName);
+
+      const response = await fetch('http://localhost:3001/api/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: folderName,
+          parentId: null, // 상위 폴더는 parentId가 null
+          projectId: 1
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('폴더 생성에 실패했습니다.');
+      }
+
+      const newFolder = await response.json();
+      console.log('📁 새 상위 폴더 생성됨:', newFolder);
+
+      // 폴더 목록 새로고침
+      await loadFolderTree();
+
+      // 새로 생성된 폴더를 선택
+      setSelectedFolder(newFolder);
+    } catch (error) {
+      console.error('상위 폴더 생성 오류:', error);
+      throw error; // 모달에서 에러 처리를 위해 다시 throw
     }
   };
 
@@ -592,6 +635,7 @@ const TestManagementV2Page: React.FC = () => {
           onCollapse={handleTreeCollapse}
           expandedFolders={expandedFolders}
           setExpandedFolders={setExpandedFolders}
+          onCreateRootFolder={handleCreateRootFolder}
         />
         {!isTreeCollapsed && (
           <ResizeHandle
@@ -634,7 +678,11 @@ const TestManagementV2Page: React.FC = () => {
         selectedFolderId={selectedFolder?.id}
       />
       
-
+      <FolderCreateModal
+        isOpen={isFolderCreateModalOpen}
+        onClose={() => setIsFolderCreateModalOpen(false)}
+        onCreateFolder={handleCreateRootFolderSubmit}
+      />
       
     </Container>
   );

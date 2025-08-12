@@ -2,94 +2,9 @@ import { Folder, FolderTree } from '../models/Folder';
 // import { pgClient } from '../../../infrastructure/database/pgClient';
 
 // 임시 메모리 저장소 (실제로는 PostgreSQL 사용)
-let folders: Folder[] = [
-    {
-        id: 1,
-        projectId: 1,
-        parentId: undefined,
-        name: 'Prerequisites',
-        description: 'Test Environment(환경 요건)',
-        orderIndex: 100,
-        depth: 0,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    },
-    {
-        id: 2,
-        projectId: 1,
-        parentId: 1,
-        name: 'Software & Versions',
-        description: '소프트웨어/버전 매트릭스',
-        orderIndex: 100,
-        depth: 1,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    },
-    {
-        id: 3,
-        projectId: 1,
-        parentId: 1,
-        name: 'Hardware',
-        description: '장비/디바이스 매트릭스',
-        orderIndex: 200,
-        depth: 1,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    },
-    {
-        id: 4,
-        projectId: 1,
-        parentId: undefined,
-        name: 'Installation',
-        description: '설치/빌드/배포 체크(Setup)',
-        orderIndex: 200,
-        depth: 0,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    },
-    {
-        id: 5,
-        projectId: 1,
-        parentId: undefined,
-        name: 'Login & Account',
-        description: '인증/세션/보안(AAA)',
-        orderIndex: 300,
-        depth: 0,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    },
-    {
-        id: 6,
-        projectId: 1,
-        parentId: 5,
-        name: 'Reset Password',
-        description: '패스워드/2FA 플로우',
-        orderIndex: 100,
-        depth: 1,
-        createdBy: 'system',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        isArchived: false
-    }
-];
+let folders: Folder[] = [];
 
-let nextId = 7;
+let nextId = 1;
 
 export async function createFolder(data: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
     const folder: Folder = {

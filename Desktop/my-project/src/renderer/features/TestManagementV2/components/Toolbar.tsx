@@ -33,24 +33,39 @@ const SearchInput = styled.input`
   }
 `;
 
-const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
+const Button = styled.button<{ variant?: 'primary' | 'secondary'; disabled?: boolean }>`
   padding: 8px 16px;
-  border: 1px solid ${props => props.variant === 'primary' ? '#3b82f6' : '#d1d5db'};
+  border: 1px solid ${props => {
+    if (props.disabled) return '#e5e7eb';
+    return props.variant === 'primary' ? '#3b82f6' : '#d1d5db';
+  }};
   border-radius: 6px;
-  background: ${props => props.variant === 'primary' ? '#3b82f6' : '#ffffff'};
-  color: ${props => props.variant === 'primary' ? '#ffffff' : '#374151'};
+  background: ${props => {
+    if (props.disabled) return '#f9fafb';
+    return props.variant === 'primary' ? '#3b82f6' : '#ffffff';
+  }};
+  color: ${props => {
+    if (props.disabled) return '#9ca3af';
+    return props.variant === 'primary' ? '#ffffff' : '#374151';
+  }};
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.2s;
 
   &:hover {
-    background: ${props => props.variant === 'primary' ? '#2563eb' : '#f9fafb'};
-    border-color: ${props => props.variant === 'primary' ? '#2563eb' : '#9ca3af'};
+    background: ${props => {
+      if (props.disabled) return '#f9fafb';
+      return props.variant === 'primary' ? '#2563eb' : '#f9fafb';
+    }};
+    border-color: ${props => {
+      if (props.disabled) return '#e5e7eb';
+      return props.variant === 'primary' ? '#2563eb' : '#9ca3af';
+    }};
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 `;
@@ -98,6 +113,32 @@ const Spacer = styled.div`
   flex: 1;
 `;
 
+const NoFolderMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #dc2626;
+  white-space: nowrap;
+`;
+
+const WarningIcon = styled.div`
+  width: 16px;
+  height: 16px;
+  background: #dc2626;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+`;
+
 interface ToolbarProps {
   selectedFolder: FolderTree | null;
   onCreateTestCase: () => void;
@@ -108,7 +149,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onCreateTestCase
 }) => {
   const handleCreateTestCase = () => {
-    onCreateTestCase();
+    if (selectedFolder) {
+      onCreateTestCase();
+    }
   };
 
   return (
@@ -127,7 +170,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
       
       <Spacer />
       
-      {selectedFolder && (
+      {selectedFolder ? (
         <FolderInfo>
           <FolderIcon />
           <span>{selectedFolder.name}</span>
@@ -135,9 +178,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <span>({selectedFolder.testCaseCount}개)</span>
           )}
         </FolderInfo>
+      ) : (
+        <NoFolderMessage>
+          <WarningIcon>!</WarningIcon>
+          <span>폴더를 선택해주세요</span>
+        </NoFolderMessage>
       )}
       
-      <Button variant="primary" onClick={handleCreateTestCase}>
+      <Button 
+        variant="primary" 
+        onClick={handleCreateTestCase}
+        disabled={!selectedFolder}
+        title={!selectedFolder ? "테스트케이스를 생성하려면 폴더를 선택해주세요" : "새 테스트케이스 생성"}
+      >
         새 테스트케이스
       </Button>
     </ToolbarContainer>

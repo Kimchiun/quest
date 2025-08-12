@@ -15,6 +15,7 @@ const DetailPanelContainer = styled.div<{ isOpen: boolean; width: number }>`
   height: 100%;
   max-height: 100%;
   align-self: stretch;
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 함 */
 `;
 
 const ResizeHandle = styled.div`
@@ -75,7 +76,8 @@ const DetailContent = styled.div`
   padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(100% - 56px); /* 헤더 높이(56px)를 제외한 최대 높이 */
+  height: 0; /* flex: 1과 함께 사용하여 남은 공간을 모두 차지하도록 함 */
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 함 */
 `;
 
 const EditButton = styled.button`

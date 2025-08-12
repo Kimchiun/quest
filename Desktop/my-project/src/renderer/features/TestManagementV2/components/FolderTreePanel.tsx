@@ -26,6 +26,14 @@ const Header = styled.div<{ isCollapsed: boolean }>`
   min-width: 0; /* 추가: flex 아이템이 축소될 수 있도록 */
 `;
 
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+
 const Title = styled.h2<{ isCollapsed: boolean }>`
   margin: 0;
   font-size: 16px;
@@ -39,7 +47,32 @@ const Title = styled.h2<{ isCollapsed: boolean }>`
   min-width: 0; /* 추가: 텍스트가 축소될 수 있도록 */
 `;
 
+const AddRootFolderButton = styled.button`
+  width: 24px;
+  height: 24px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
 
+  &:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    background: #1d4ed8;
+    transform: scale(0.95);
+  }
+`;
 
 const TreeContainer = styled.div<{ isCollapsed: boolean }>`
   flex: 1;
@@ -74,8 +107,6 @@ const ToggleIcon = styled.div`
   border-bottom: 4px solid transparent;
 `;
 
-
-
 interface FolderTreePanelProps {
   folders: FolderTree[];
   selectedFolder: FolderTree | null;
@@ -87,6 +118,7 @@ interface FolderTreePanelProps {
   onCollapse?: (collapsed: boolean) => void;
   expandedFolders: Set<number>;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Set<number>>>;
+  onCreateRootFolder: () => void;
 }
 
 const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
@@ -99,7 +131,8 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   onDelete,
   onCollapse,
   expandedFolders,
-  setExpandedFolders
+  setExpandedFolders,
+  onCreateRootFolder
 }) => {
 
   // 폴더 목록이 변경되어도 확장 상태 유지
@@ -123,12 +156,12 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
     onFolderSelect(folder);
   };
 
-
-
   const handleToggleCollapse = () => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
-    onCollapse?.(newCollapsedState);
+    if (onCollapse) {
+      onCollapse(newCollapsedState);
+    }
   };
 
   const renderFolderTree = (folderList: FolderTree[], depth: number = 0): React.ReactNode => {
@@ -171,7 +204,17 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
         <ToggleButton isCollapsed={isCollapsed} onClick={handleToggleCollapse}>
           <ToggleIcon />
         </ToggleButton>
-        <Title isCollapsed={isCollapsed}>폴더 구조</Title>
+        <HeaderLeft>
+          <Title isCollapsed={isCollapsed}>폴더 구조</Title>
+          {!isCollapsed && (
+            <AddRootFolderButton
+              onClick={onCreateRootFolder}
+              title="새 폴더 생성"
+            >
+              +
+            </AddRootFolderButton>
+          )}
+        </HeaderLeft>
       </Header>
       <TreeContainer isCollapsed={isCollapsed}>
         {folders.length === 0 ? (

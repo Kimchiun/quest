@@ -1,5 +1,28 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useRef, useEffect } from 'react';
+import styled, { keyframes } from 'styled-components';
+
+// 애니메이션 정의
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
+
+const slideUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -7,113 +30,201 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const ModalContainer = styled.div`
   background: white;
-  border-radius: 8px;
-  padding: 24px;
-  width: 600px;
+  border-radius: 16px;
+  padding: 32px;
+  width: 700px;
   max-width: 90vw;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: ${slideUp} 0.3s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
 `;
 
 const ModalTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.025em;
 `;
 
 const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  color: #6b7280;
-  padding: 4px;
-  border-radius: 4px;
+  color: #64748b;
+  font-size: 18px;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+    transform: scale(1.05);
   }
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 `;
 
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 `;
 
 const Label = styled.label`
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
+  margin-bottom: 4px;
 `;
 
 const Input = styled.input`
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 14px;
   outline: none;
+  transition: all 0.2s ease;
+  background: #ffffff;
 
   &:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
   }
 `;
 
 const TextArea = styled.textarea`
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 14px;
   outline: none;
   resize: vertical;
   min-height: 80px;
+  transition: all 0.2s ease;
+  background: #ffffff;
 
   &:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
 `;
 
-const Select = styled.select`
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
+// 커스텀 드롭다운 컴포넌트
+const DropdownContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const DropdownButton = styled.button<{ isOpen: boolean }>`
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
   font-size: 14px;
-  outline: none;
+  text-align: left;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  color: #374151;
+
+  &:hover {
+    border-color: #d1d5db;
+  }
 
   &:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  ${props => props.isOpen && `
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  `}
+`;
+
+const DropdownArrow = styled.span<{ isOpen: boolean }>`
+  transition: transform 0.2s ease;
+  transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+  color: #6b7280;
+`;
+
+const DropdownMenu = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  transition: all 0.2s ease;
+`;
+
+const DropdownItem = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: #374151;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &:first-child {
+    border-radius: 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 6px 6px;
   }
 `;
 
@@ -121,32 +232,175 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  padding: 8px 16px;
-  border: 1px solid ${props => props.variant === 'primary' ? '#3b82f6' : '#d1d5db'};
-  border-radius: 6px;
+  padding: 12px 24px;
+  border: 2px solid ${props => props.variant === 'primary' ? '#3b82f6' : '#e5e7eb'};
+  border-radius: 8px;
   background: ${props => props.variant === 'primary' ? '#3b82f6' : '#ffffff'};
   color: ${props => props.variant === 'primary' ? '#ffffff' : '#374151'};
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: ${props => props.variant === 'primary' ? '#2563eb' : '#f9fafb'};
-    border-color: ${props => props.variant === 'primary' ? '#2563eb' : '#9ca3af'};
+    background: ${props => props.variant === 'primary' ? '#2563eb' : '#f8fafc'};
+    border-color: ${props => props.variant === 'primary' ? '#2563eb' : '#d1d5db'};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
   }
 `;
+
+const StepContainer = styled.div`
+  margin-bottom: 16px;
+`;
+
+const StepHeader = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+`;
+
+const StepNumber = styled.div`
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+`;
+
+const StepContent = styled.div`
+  flex: 1;
+`;
+
+const StepActions = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+`;
+
+const ActionButton = styled.button<{ variant?: 'danger' | 'secondary' }>`
+  padding: 6px 12px;
+  border: 1px solid ${props => props.variant === 'danger' ? '#fecaca' : '#e5e7eb'};
+  border-radius: 6px;
+  background: ${props => props.variant === 'danger' ? '#fef2f2' : '#f9fafb'};
+  color: ${props => props.variant === 'danger' ? '#dc2626' : '#6b7280'};
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => props.variant === 'danger' ? '#fee2e2' : '#f3f4f6'};
+    border-color: ${props => props.variant === 'danger' ? '#fca5a5' : '#d1d5db'};
+  }
+`;
+
+const AddStepButton = styled.button`
+  background: #f8fafc;
+  color: #374151;
+  border: 2px dashed #d1d5db;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #9ca3af;
+    color: #1f2937;
+  }
+`;
+
+const FormRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+`;
+
+// 커스텀 드롭다운 컴포넌트
+interface CustomDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}
+
+const CustomDropdown: React.FC<CustomDropdownProps> = ({
+  value,
+  onChange,
+  options,
+  placeholder = "선택하세요"
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(option => option.value === value);
+
+  return (
+    <DropdownContainer ref={dropdownRef}>
+      <DropdownButton
+        type="button"
+        isOpen={isOpen}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{selectedOption ? selectedOption.label : placeholder}</span>
+        <DropdownArrow isOpen={isOpen}>▼</DropdownArrow>
+      </DropdownButton>
+      <DropdownMenu isOpen={isOpen}>
+        {options.map((option) => (
+          <DropdownItem
+            key={option.value}
+            onClick={() => {
+              onChange(option.value);
+              setIsOpen(false);
+            }}
+          >
+            {option.label}
+          </DropdownItem>
+        ))}
+      </DropdownMenu>
+    </DropdownContainer>
+  );
+};
 
 interface TestCase {
   title: string;
@@ -276,48 +530,48 @@ const TestCaseCreateModal: React.FC<TestCaseCreateModalProps> = ({
             />
           </FormGroup>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="priority">우선순위</Label>
-              <Select
-                id="priority"
+          <FormRow>
+            <FormGroup>
+              <Label>우선순위</Label>
+              <CustomDropdown
                 value={formData.priority}
-                onChange={(e) => handleInputChange('priority', e.target.value as 'High' | 'Medium' | 'Low')}
-              >
-                <option value="High">높음</option>
-                <option value="Medium">보통</option>
-                <option value="Low">낮음</option>
-              </Select>
+                onChange={(value) => handleInputChange('priority', value as 'High' | 'Medium' | 'Low')}
+                options={[
+                  { value: 'High', label: '높음' },
+                  { value: 'Medium', label: '보통' },
+                  { value: 'Low', label: '낮음' }
+                ]}
+              />
             </FormGroup>
 
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="type">유형</Label>
-              <Select
-                id="type"
+            <FormGroup>
+              <Label>유형</Label>
+              <CustomDropdown
                 value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value as 'Functional' | 'Non-Functional' | 'Integration' | 'Unit' | 'Regression')}
-              >
-                <option value="Functional">Functional</option>
-                <option value="Non-Functional">Non-Functional</option>
-                <option value="Integration">Integration</option>
-                <option value="Unit">Unit</option>
-                <option value="Regression">Regression</option>
-              </Select>
+                onChange={(value) => handleInputChange('type', value as 'Functional' | 'Non-Functional' | 'Integration' | 'Unit' | 'Regression')}
+                options={[
+                  { value: 'Functional', label: 'Functional' },
+                  { value: 'Non-Functional', label: 'Non-Functional' },
+                  { value: 'Integration', label: 'Integration' },
+                  { value: 'Unit', label: 'Unit' },
+                  { value: 'Regression', label: 'Regression' }
+                ]}
+              />
             </FormGroup>
 
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="status">상태</Label>
-              <Select
-                id="status"
+            <FormGroup>
+              <Label>상태</Label>
+              <CustomDropdown
                 value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value as 'Active' | 'Inactive' | 'Deprecated')}
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Deprecated">Deprecated</option>
-              </Select>
+                onChange={(value) => handleInputChange('status', value as 'Active' | 'Inactive' | 'Deprecated')}
+                options={[
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Inactive', label: 'Inactive' },
+                  { value: 'Deprecated', label: 'Deprecated' }
+                ]}
+              />
             </FormGroup>
-          </div>
+          </FormRow>
 
           <FormGroup>
             <Label htmlFor="preconditions">사전 조건</Label>
@@ -332,25 +586,10 @@ const TestCaseCreateModal: React.FC<TestCaseCreateModalProps> = ({
           <FormGroup>
             <Label>테스트 단계</Label>
             {formData.steps.map((step, index) => (
-              <div key={index} style={{ marginBottom: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <span style={{
-                    background: '#f3f4f6',
-                    color: '#374151',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    flexShrink: 0,
-                    marginTop: '2px'
-                  }}>
-                    {index + 1}
-                  </span>
-                  <div style={{ flex: 1 }}>
+              <StepContainer key={index}>
+                <StepHeader>
+                  <StepNumber>{index + 1}</StepNumber>
+                  <StepContent>
                     <TextArea
                       value={step}
                       onChange={(e) => handleStepChange(index, e.target.value)}
@@ -358,44 +597,23 @@ const TestCaseCreateModal: React.FC<TestCaseCreateModalProps> = ({
                       style={{ minHeight: '60px' }}
                     />
                     {formData.steps.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeStep(index)}
-                        style={{
-                          background: '#fee2e2',
-                          color: '#dc2626',
-                          border: 'none',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          marginTop: '4px'
-                        }}
-                      >
-                        삭제
-                      </button>
+                      <StepActions>
+                        <ActionButton
+                          type="button"
+                          variant="danger"
+                          onClick={() => removeStep(index)}
+                        >
+                          삭제
+                        </ActionButton>
+                      </StepActions>
                     )}
-                  </div>
-                </div>
-              </div>
+                  </StepContent>
+                </StepHeader>
+              </StepContainer>
             ))}
-            <button
-              type="button"
-              onClick={addStep}
-              style={{
-                background: '#f3f4f6',
-                color: '#374151',
-                border: '1px dashed #d1d5db',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                width: '100%',
-                marginTop: '8px'
-              }}
-            >
+            <AddStepButton type="button" onClick={addStep}>
               + 단계 추가
-            </button>
+            </AddStepButton>
           </FormGroup>
 
           <FormGroup>
