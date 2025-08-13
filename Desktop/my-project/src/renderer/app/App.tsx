@@ -6,7 +6,7 @@ import { store, RootState, setMe } from '../store';
 
 // import FolderManagementPage from '../features/FolderManagement/components/FolderManagementPage';
 import TestManagementV2Page from '../features/TestManagementV2/TestManagementV2Page';
-import ReleaseManagementPage from '../features/ReleaseManagement/components/ReleaseManagementPage';
+
 import ReleaseManagementV2Page from '../features/ReleaseManagementV2/ReleaseManagementV2Page';
 
 import NotificationBadge from '../features/ExecutionManagement/components/NotificationBadge';
@@ -82,17 +82,7 @@ const AppRoutes: React.FC<{ isLoggedIn: boolean; onLogin: () => void }> = ({ isL
             <Route path="/release-management-v2" element={<ReleaseManagementV2Page />} />
 
             {/* <Route path="/folder-management" element={<FolderManagementPage />} /> */}
-            <Route path="/release-management" element={
-              <div>
-                {console.log('🎯 ReleaseManagementPage 라우트 렌더링')}
-                <div style={{ padding: '20px', background: 'white', color: 'black' }}>
-                  <h1>릴리즈 관리 페이지 테스트</h1>
-                  <p>이 텍스트가 보인다면 라우트는 정상 작동합니다.</p>
-                  <p>현재 시간: {new Date().toLocaleString()}</p>
-                </div>
-                <ReleaseManagementPage />
-              </div>
-            } />
+
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </ResponsiveLayout>

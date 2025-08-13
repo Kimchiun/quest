@@ -6,7 +6,7 @@ import { NavigationSection } from '../../../store/navigationSlice';
 
 import DashboardPage from '../../../features/Dashboard/DashboardPage';
 import TestManagementV2Page from '../../../features/TestManagementV2/TestManagementV2Page';
-import ReleaseManagementPage from '../../../features/ReleaseManagement/components/ReleaseManagementPage';
+
 import ReleaseManagementV2Page from '../../../features/ReleaseManagementV2/ReleaseManagementV2Page';
 
 const ContentContainer = styled.div`
@@ -70,14 +70,7 @@ const ReleaseManagementV2Content: React.FC = () => {
   );
 };
 
-// 릴리즈 관리 컨텐츠
-const ReleaseManagementContent: React.FC = () => {
-  return (
-    <ContentContainer style={{ padding: 0 }}>
-      <ReleaseManagementPage />
-    </ContentContainer>
-  );
-};
+
 
 // 결함 관리 컨텐츠
 const DefectManagementContent: React.FC = () => {
@@ -138,8 +131,7 @@ const MainContent: React.FC = () => {
         return <TestManagementV2Content />;
       case 'release-management-v2':
         return <ReleaseManagementV2Content />;
-      case 'release-management':
-        return <ReleaseManagementContent />;
+
       case 'defect-management':
         return <DefectManagementContent />;
       case 'report':
