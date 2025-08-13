@@ -1,741 +1,678 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import ExecutionBoard from './ExecutionBoard';
-
-// 타입 정의
-interface Release {
-  id: string;
-  projectId: string;
-  name: string;
-  version: string;
-  description: string;
-  status: 'Draft' | 'Active' | 'Complete' | 'Archived';
-  startAt: string;
-  endAt: string;
-  owners: string[];
-  watchers: string[];
-  tags: string[];
-  createdBy: string;
-  createdAt: string;
-  updatedBy: string;
-  updatedAt: string;
-  settings: {
-    gateCriteria: {
-      minPassRate: number;
-      maxFailCritical: number;
-      zeroBlockers: boolean;
-      coverageByPriority: {
-        P0: number;
-        P1: number;
-        P2: number;
-      };
-    };
-    autoSyncScope: boolean;
-    allowReopen: boolean;
-  };
-}
+import Button from '@/shared/components/Button';
 
 interface ReleaseDetailPageProps {
-  release: Release;
-  onBack: () => void;
+  release: {
+    id: string;
+    name: string;
+    version: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    progress: number;
+    passRate: number;
+    blockers: number;
+  };
+  currentTab: string;
+  onBackToList?: () => void;
 }
 
-// 스타일 컴포넌트
-const Container = styled.div`
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f9fafb;
+const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentTab, onBackToList }) => {
+  const [activeTab, setActiveTab] = useState(currentTab);
+
+  // 아이콘 렌더링 함수
+  const renderIcon = (iconType: string) => {
+    switch (iconType) {
+      case 'edit':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        );
+      case 'build':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+        );
+      case 'check':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20,6 9,17 4,12" />
+          </svg>
+        );
+      case 'rocket':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+          </svg>
+        );
+      default:
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12,6 12,12 16,14" />
+          </svg>
+        );
+    }
+  };
+
+  const tabs = [
+    { id: 'overview', label: '개요' },
+    { id: 'testplan', label: '테스트 계획' },
+    { id: 'execution', label: '실행' },
+    { id: 'settings', label: '설정 및 감사' }
+  ];
+
+  const kpiData = [
+    { label: '계획됨', value: '100', color: 'blue' },
+    { label: '실행됨', value: '60', color: 'green' },
+    { label: '통과', value: '51', color: 'green' },
+    { label: '실패', value: '5', color: 'red' },
+    { label: '차단됨', value: '2', color: 'orange' },
+    { label: '건너뜀', value: '2', color: 'gray' },
+    { label: '통과율', value: '85%', color: 'blue' },
+    { label: '미해결 결함', value: '10', color: 'red' },
+    { label: '자동 커버리지', value: '70%', color: 'purple' }
+  ];
+
+  const chartData = [
+    {
+      title: '상태 분포',
+      value: '60/100',
+      trend: '+10%',
+      trendColor: 'green',
+      type: 'bar',
+      data: ['통과', '실패', '차단됨', '건너뜀']
+    },
+    {
+      title: '실행 트렌드',
+      value: '60%',
+      trend: '-5%',
+      trendColor: 'red',
+      type: 'line',
+      data: ['1주차', '2주차', '3주차', '4주차']
+    },
+    {
+      title: '우선순위별 통과/실패',
+      value: '85%',
+      trend: '+15%',
+      trendColor: 'green',
+      type: 'bar',
+      data: ['높음', '보통', '낮음']
+    },
+    {
+      title: '결함 심각도',
+      value: '10',
+      trend: '-2%',
+      trendColor: 'red',
+      type: 'bar',
+      data: ['치명적', '주요', '부차적', '사소함']
+    },
+    {
+      title: '이슈 리드타임',
+      value: '70%',
+      trend: '+8%',
+      trendColor: 'green',
+      type: 'line',
+      data: ['1주차', '2주차', '3주차', '4주차']
+    }
+  ];
+
+  const timelineData = [
+    { event: '테스트 계획', date: '2024-07-15', icon: 'edit' },
+    { event: '빌드 1.2.3', date: '2024-07-20', icon: 'build' },
+    { event: '빌드 1.2.4', date: '2024-07-25', icon: 'build' },
+    { event: '승인', date: '2024-08-01', icon: 'check' },
+    { event: '릴리즈 1.2.3', date: '2024-08-05', icon: 'rocket' }
+  ];
+
+  return (
+    <PageContainer>
+      {/* 상단 네비게이션 바 */}
+
+
+      {/* 릴리즈 헤더 섹션 */}
+      <ReleaseHeader>
+        <HeaderLeft>
+          <BackButton onClick={onBackToList}>
+            ← 릴리즈 목록으로
+          </BackButton>
+          <ReleaseTitle>{release.name}</ReleaseTitle>
+          <ReleaseMetadata>
+            버전 {release.version} • 상태: {release.status} • 기간: 2024년 3분기
+          </ReleaseMetadata>
+        </HeaderLeft>
+        <HeaderRight>
+          <OpenExecutionButton>실행 보드 열기</OpenExecutionButton>
+        </HeaderRight>
+      </ReleaseHeader>
+
+      {/* 진행률 섹션 */}
+      <ProgressSection>
+        <ProgressLeft>
+          <ProgressLabel>실행됨 / 계획됨</ProgressLabel>
+          <ProgressBar>
+            <ProgressFill width={release.progress} />
+          </ProgressBar>
+          <ProgressText>{release.progress}%</ProgressText>
+          <ProgressMetrics>
+            통과율: {release.passRate}% • 차단: {release.blockers}
+          </ProgressMetrics>
+        </ProgressLeft>
+        <ProgressRight>
+          <ActionButton>범위 동기화</ActionButton>
+          <ActionButton>보고서</ActionButton>
+          <SignOffButton>승인</SignOffButton>
+        </ProgressRight>
+      </ProgressSection>
+
+      {/* 탭 네비게이션 */}
+      <TabNavigation>
+        {tabs.map(tab => (
+          <TabButton
+            key={tab.id}
+            active={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </TabButton>
+        ))}
+      </TabNavigation>
+
+      {/* 콘텐츠 영역 */}
+      <ContentArea>
+        {activeTab === 'overview' && (
+          <OverviewContent>
+            {/* KPI 섹션 */}
+            <Section>
+              <SectionTitle>주요 성과 지표</SectionTitle>
+              <KPIGrid>
+                {kpiData.map((kpi, index) => (
+                  <KPICard key={index}>
+                    <KPILabel>{kpi.label}</KPILabel>
+                    <KPIValue color={kpi.color}>{kpi.value}</KPIValue>
+                  </KPICard>
+                ))}
+              </KPIGrid>
+            </Section>
+
+            {/* 차트 섹션 */}
+            <Section>
+              <SectionTitle>차트</SectionTitle>
+              <ChartGrid>
+                {chartData.map((chart, index) => (
+                  <ChartCard key={index}>
+                    <ChartHeader>
+                      <ChartTitle>{chart.title}</ChartTitle>
+                      <ChartValue>{chart.value}</ChartValue>
+                    </ChartHeader>
+                    <ChartTrend color={chart.trendColor}>
+                      {chart.trend}
+                    </ChartTrend>
+                    <ChartVisual>
+                      {chart.type === 'bar' ? (
+                        <BarChart>
+                          {chart.data.map((item, i) => (
+                            <Bar key={i} height={60 + Math.random() * 40} />
+                          ))}
+                        </BarChart>
+                      ) : (
+                        <LineChart>
+                          <Line />
+                        </LineChart>
+                      )}
+                    </ChartVisual>
+                  </ChartCard>
+                ))}
+              </ChartGrid>
+            </Section>
+
+            {/* 타임라인 섹션 */}
+            <Section>
+              <SectionTitle>타임라인</SectionTitle>
+              <TimelineContainer>
+                {timelineData.map((item, index) => (
+                  <TimelineItem key={index}>
+                    <TimelineIcon>{renderIcon(item.icon)}</TimelineIcon>
+                    <TimelineContent>
+                      <TimelineEvent>{item.event} <span>{item.date}</span></TimelineEvent>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </TimelineContainer>
+            </Section>
+          </OverviewContent>
+        )}
+
+        {activeTab === 'testplan' && (
+          <TabContent>
+            <h3>테스트 계획</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>범위</h4>
+                <p>테스트 범위 정의 및 요구사항 관리</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>결함</h4>
+                <p>결함 분석 및 우선순위 설정</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>분석</h4>
+                <p>테스트 분석 및 보고서</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>환경</h4>
+                <p>테스트 환경 구성 및 설정</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>담당자</h4>
+                <p>테스트 담당자 배정 및 역할 정의</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>일정</h4>
+                <p>테스트 일정 계획 및 조정</p>
+              </div>
+              <div style={{ padding: '20px', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+                <h4>승인</h4>
+                <p>테스트 계획 승인 프로세스</p>
+              </div>
+            </div>
+          </TabContent>
+        )}
+
+        {activeTab === 'execution' && (
+          <TabContent>
+            <h3>실행 콘텐츠</h3>
+            <p>테스트 실행 세부사항 및 결과가 여기에 표시됩니다.</p>
+          </TabContent>
+        )}
+
+        {activeTab === 'settings' && (
+          <TabContent>
+            <h3>설정 및 감사 콘텐츠</h3>
+            <p>설정 및 감사 추적이 여기에 표시됩니다.</p>
+          </TabContent>
+        )}
+      </ContentArea>
+    </PageContainer>
+  );
+};
+
+// Styled Components
+const PageContainer = styled.div`
+  width: 100%;
+  min-height: 100vh;
+  background: ${({ theme }) => theme.color.surface.primary};
 `;
 
-const Header = styled.div`
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 16px 24px;
+
+
+const ReleaseHeader = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: flex-start;
+  padding: ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.color.surface.primary};
 `;
 
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  color: #6b7280;
-  transition: all 0.2s;
+const HeaderRight = styled.div``;
 
+const BackButton = styled(Button)`
+  background: ${({ theme }) => theme.color.surface.primary};
+  color: ${({ theme }) => theme.color.text.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  cursor: pointer;
+  margin-right: ${({ theme }) => theme.spacing.md};
+  
   &:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: ${({ theme }) => theme.color.surface.secondary};
   }
 `;
 
-const HeaderTitle = styled.h1`
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
+const ReleaseTitle = styled.h1`
+  font-size: ${({ theme }) => theme.typography.h1.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h1.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+  margin: 0 0 ${({ theme }) => theme.spacing.sm} 0;
 `;
 
-const HeaderActions = styled.div`
+const ReleaseMetadata = styled.div`
+  font-size: ${({ theme }) => theme.typography.body.fontSize};
+  color: ${({ theme }) => theme.color.text.secondary};
+`;
+
+const OpenExecutionButton = styled(Button)`
+  background: ${({ theme }) => theme.color.primary[600]};
+  color: white;
+  border: none;
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  cursor: pointer;
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.primary[700]};
+  }
+`;
+
+const ProgressSection = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.color.surface.primary};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+`;
+
+const ProgressLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
-const StatusBadge = styled.span<{ status: string }>`
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  background: ${props => {
-    switch (props.status) {
-      case 'Draft': return '#fef3c7';
-      case 'Active': return '#dbeafe';
-      case 'Complete': return '#d1fae5';
-      case 'Archived': return '#f3f4f6';
-      default: return '#f3f4f6';
-    }
-  }};
-  color: ${props => {
-    switch (props.status) {
-      case 'Draft': return '#92400e';
-      case 'Active': return '#1e40af';
-      case 'Complete': return '#065f46';
-      case 'Archived': return '#6b7280';
-      default: return '#6b7280';
-    }
-  }};
-`;
-
-const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  padding: 8px 16px;
-  border: 1px solid ${props => props.variant === 'primary' ? '#3b82f6' : '#d1d5db'};
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: ${props => props.variant === 'primary' ? '#3b82f6' : 'white'};
-  color: ${props => props.variant === 'primary' ? 'white' : '#374151'};
-
-  &:hover {
-    background: ${props => props.variant === 'primary' ? '#2563eb' : '#f9fafb'};
-  }
-`;
-
-const Content = styled.div`
-  flex: 1;
+const ProgressRight = styled.div`
   display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const ProgressLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
+  color: ${({ theme }) => theme.color.text.secondary};
+  white-space: nowrap;
+`;
+
+const ProgressBar = styled.div`
+  width: 200px;
+  height: 8px;
+  background: ${({ theme }) => theme.color.surface.secondary};
+  border-radius: ${({ theme }) => theme.radius.pill};
   overflow: hidden;
 `;
 
-const TabContainer = styled.div`
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0 24px;
+const ProgressFill = styled.div<{ width: number }>`
+  width: ${props => props.width}%;
+  height: 100%;
+  background: ${({ theme }) => theme.color.primary[600]};
+  border-radius: ${({ theme }) => theme.radius.pill};
+  transition: width 0.3s ease;
 `;
 
-const TabList = styled.div`
-  display: flex;
-  gap: 0;
+const ProgressText = styled.span`
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+  min-width: 40px;
 `;
 
-const Tab = styled.button<{ isActive: boolean }>`
-  padding: 12px 16px;
-  border: none;
-  background: none;
-  font-size: 14px;
-  font-weight: 500;
+const ProgressMetrics = styled.span`
+  font-size: ${({ theme }) => theme.typography.body.fontSize};
+  color: ${({ theme }) => theme.color.text.secondary};
+`;
+
+const ActionButton = styled(Button)`
+  background: ${({ theme }) => theme.color.surface.primary};
+  color: ${({ theme }) => theme.color.text.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   cursor: pointer;
-  color: ${props => props.isActive ? '#3b82f6' : '#6b7280'};
-  border-bottom: 2px solid ${props => props.isActive ? '#3b82f6' : 'transparent'};
-  transition: all 0.2s;
-
+  
   &:hover {
-    color: ${props => props.isActive ? '#3b82f6' : '#374151'};
+    background: ${({ theme }) => theme.color.surface.secondary};
+  }
+`;
+
+const SignOffButton = styled(Button)`
+  background: ${({ theme }) => theme.color.primary[600]};
+  color: white;
+  border: none;
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  cursor: pointer;
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.primary[700]};
+  }
+`;
+
+const TabNavigation = styled.div`
+  display: flex;
+  background: ${({ theme }) => theme.color.surface.primary};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+  padding: 0 ${({ theme }) => theme.spacing.xl};
+`;
+
+const TabButton = styled.button<{ active?: boolean }>`
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: transparent;
+  border: none;
+  color: ${({ theme, active }) => active ? theme.color.primary[600] : theme.color.text.secondary};
+  font-weight: ${({ theme, active }) => active ? theme.typography.label.fontWeight : 'normal'};
+  cursor: pointer;
+  border-bottom: 2px solid ${({ theme, active }) => active ? theme.color.primary[600] : 'transparent'};
+  transition: all ${({ theme }) => theme.motion.fast} ease;
+  
+  &:hover {
+    color: ${({ theme }) => theme.color.primary[600]};
+  }
+`;
+
+const ContentArea = styled.div`
+  padding: ${({ theme }) => theme.spacing.xl};
+`;
+
+const OverviewContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.xl};
+`;
+
+const Section = styled.div``;
+
+const SectionTitle = styled.h2`
+  font-size: ${({ theme }) => theme.typography.h2.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h2.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+  margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
+`;
+
+const KPIGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const KPICard = styled.div`
+  background: ${({ theme }) => theme.color.surface.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  border-radius: ${({ theme }) => theme.radius.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  box-shadow: ${({ theme }) => theme.elevation[1]};
+`;
+
+const KPILabel = styled.div`
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
+  color: ${({ theme }) => theme.color.text.secondary};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const KPIValue = styled.div<{ color: string }>`
+  font-size: ${({ theme }) => theme.typography.h2.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h2.fontWeight};
+  color: ${({ theme, color }) => {
+    switch (color) {
+      case 'green': return theme.color.success[600];
+      case 'red': return theme.color.danger[600];
+      case 'orange': return theme.color.warning[600];
+      case 'blue': return theme.color.primary[600];
+      case 'purple': return theme.color.secondary[600];
+      default: return theme.color.text.primary;
+    }
+  }};
+`;
+
+const ChartGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+const ChartCard = styled.div`
+  background: ${({ theme }) => theme.color.surface.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  border-radius: ${({ theme }) => theme.radius.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  box-shadow: ${({ theme }) => theme.elevation[1]};
+`;
+
+const ChartHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+const ChartTitle = styled.div`
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+`;
+
+const ChartValue = styled.div`
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+`;
+
+const ChartTrend = styled.div<{ color: string }>`
+  font-size: ${({ theme }) => theme.typography.body.fontSize};
+  color: ${({ theme, color }) => color === 'green' ? theme.color.success[600] : theme.color.danger[600]};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const ChartVisual = styled.div`
+  height: 100px;
+  display: flex;
+  align-items: end;
+  gap: ${({ theme }) => theme.spacing.xs};
+`;
+
+const BarChart = styled.div`
+  display: flex;
+  align-items: end;
+  gap: ${({ theme }) => theme.spacing.xs};
+  width: 100%;
+  height: 100%;
+`;
+
+const Bar = styled.div<{ height: number }>`
+  flex: 1;
+  height: ${props => props.height}%;
+  background: ${({ theme }) => theme.color.surface.secondary};
+  border-radius: ${({ theme }) => theme.radius.sm};
+  min-height: 20px;
+`;
+
+const LineChart = styled.div`
+  width: 100%;
+  height: 100%;
+  position: relative;
+`;
+
+const Line = styled.div`
+  width: 100%;
+  height: 2px;
+  background: ${({ theme }) => theme.color.text.primary};
+  position: absolute;
+  bottom: 20px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: linear-gradient(45deg, transparent 30%, ${({ theme }) => theme.color.surface.secondary} 30%, ${({ theme }) => theme.color.surface.secondary} 70%, transparent 70%);
+  }
+`;
+
+const TimelineContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const TimelineItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const TimelineIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  background: ${({ theme }) => theme.color.surface.secondary};
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.color.primary[600]};
+  flex-shrink: 0;
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+const TimelineContent = styled.div``;
+
+const TimelineEvent = styled.div`
+  font-size: ${({ theme }) => theme.typography.body.fontSize};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  color: ${({ theme }) => theme.color.text.primary};
+  
+  span:last-child {
+    color: ${({ theme }) => theme.color.text.secondary};
+    margin-left: ${({ theme }) => theme.spacing.sm};
   }
 `;
 
 const TabContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-`;
-
-const TabPanel = styled.div<{ isActive: boolean }>`
-  display: ${props => props.isActive ? 'block' : 'none'};
-`;
-
-const Card = styled.div`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-`;
-
-const CardTitle = styled.h3`
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-`;
-
-const StatCard = styled.div`
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 16px;
-  text-align: center;
-`;
-
-const StatValue = styled.div`
-  font-size: 24px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 4px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const ProgressBar = styled.div<{ progress: number }>`
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-
-  &::after {
-    content: '';
-    display: block;
-    height: 100%;
-    width: ${props => props.progress}%;
-    background: #10b981;
-    transition: width 0.3s ease;
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.color.surface.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  border-radius: ${({ theme }) => theme.radius.md};
+  
+  h3 {
+    margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
+    color: ${({ theme }) => theme.color.text.primary};
+  }
+  
+  p {
+    color: ${({ theme }) => theme.color.text.secondary};
+    margin: 0;
   }
 `;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-`;
-
-const TableHeader = styled.th`
-  text-align: left;
-  padding: 12px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const TableCell = styled.td`
-  padding: 12px;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 14px;
-  color: #374151;
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 40px 20px;
-  color: #6b7280;
-`;
-
-const EmptyStateIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 16px;
-`;
-
-const EmptyStateTitle = styled.h3`
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #374151;
-`;
-
-const EmptyStateDescription = styled.p`
-  margin: 0;
-  font-size: 14px;
-`;
-
-const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({
-  release,
-  onBack
-}) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [testCases, setTestCases] = useState([
-    {
-      id: '1',
-      name: '사용자 로그인 테스트',
-      description: '올바른 자격 증명으로 로그인이 성공하는지 확인',
-      priority: 'P0' as const,
-      status: 'Not Run' as const,
-      assignee: 'tester1',
-      estimatedTime: 30,
-      actualTime: undefined,
-      lastUpdated: new Date().toISOString(),
-      tags: ['login', 'regression']
-    },
-    {
-      id: '2',
-      name: '상품 검색 기능 테스트',
-      description: '검색어 입력 시 관련 상품이 올바르게 표시되는지 확인',
-      priority: 'P1' as const,
-      status: 'In Progress' as const,
-      assignee: 'tester2',
-      estimatedTime: 45,
-      actualTime: 30,
-      lastUpdated: new Date().toISOString(),
-      tags: ['search', 'ui']
-    },
-    {
-      id: '3',
-      name: '결제 프로세스 테스트',
-      description: '신용카드 결제가 정상적으로 처리되는지 확인',
-      priority: 'P0' as const,
-      status: 'Blocked' as const,
-      assignee: 'tester1',
-      estimatedTime: 60,
-      actualTime: undefined,
-      lastUpdated: new Date().toISOString(),
-      tags: ['payment', 'critical']
-    },
-    {
-      id: '4',
-      name: '장바구니 기능 테스트',
-      description: '상품을 장바구니에 추가하고 수량을 변경하는 기능 확인',
-      priority: 'P2' as const,
-      status: 'Passed' as const,
-      assignee: 'tester3',
-      estimatedTime: 30,
-      actualTime: 25,
-      lastUpdated: new Date().toISOString(),
-      tags: ['cart', 'ui']
-    },
-    {
-      id: '5',
-      name: '회원가입 테스트',
-      description: '새 사용자 등록 프로세스가 정상적으로 작동하는지 확인',
-      priority: 'P1' as const,
-      status: 'Failed' as const,
-      assignee: 'tester2',
-      estimatedTime: 40,
-      actualTime: 35,
-      lastUpdated: new Date().toISOString(),
-      tags: ['registration', 'regression']
-    }
-  ]);
-
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'scope', label: 'Scope' },
-    { id: 'execution', label: 'Execution' },
-    { id: 'defects', label: 'Defects' },
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'environments', label: 'Environments' },
-    { id: 'people', label: 'People' },
-    { id: 'schedule', label: 'Schedule' },
-    { id: 'signoff', label: 'Sign-off' },
-    { id: 'settings', label: 'Settings & Audit' }
-  ];
-
-  const getProgressPercentage = () => {
-    // 임시 계산 로직
-    return Math.floor(Math.random() * 100);
-  };
-
-  const handleTestCaseUpdate = (testCaseId: string, updates: any) => {
-    setTestCases(prev => 
-      prev.map(testCase => 
-        testCase.id === testCaseId 
-          ? { ...testCase, ...updates, lastUpdated: new Date().toISOString() }
-          : testCase
-      )
-    );
-  };
-
-  const renderOverviewTab = () => (
-    <TabPanel isActive={activeTab === 'overview'}>
-      <Grid>
-        <StatCard>
-          <StatValue>85%</StatValue>
-          <StatLabel>통과율</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>127</StatValue>
-          <StatLabel>총 테스트 케이스</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>108</StatValue>
-          <StatLabel>통과</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>19</StatValue>
-          <StatLabel>실패</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>0</StatValue>
-          <StatLabel>블로커</StatLabel>
-        </StatCard>
-        <StatCard>
-          <StatValue>3</StatValue>
-          <StatLabel>Critical</StatLabel>
-        </StatCard>
-      </Grid>
-
-      <Card>
-        <CardTitle>진행 상황</CardTitle>
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '14px', color: '#374151' }}>전체 진행률</span>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-              {getProgressPercentage()}%
-            </span>
-          </div>
-          <ProgressBar progress={getProgressPercentage()} />
-        </div>
-      </Card>
-
-      <Card>
-        <CardTitle>릴리즈 정보</CardTitle>
-        <Table>
-          <tbody>
-            <tr>
-              <TableHeader>이름</TableHeader>
-              <TableCell>{release.name}</TableCell>
-            </tr>
-            <tr>
-              <TableHeader>버전</TableHeader>
-              <TableCell>{release.version}</TableCell>
-            </tr>
-            <tr>
-              <TableHeader>설명</TableHeader>
-              <TableCell>{release.description}</TableCell>
-            </tr>
-            <tr>
-              <TableHeader>상태</TableHeader>
-              <TableCell>
-                <StatusBadge status={release.status}>
-                  {release.status}
-                </StatusBadge>
-              </TableCell>
-            </tr>
-            <tr>
-              <TableHeader>기간</TableHeader>
-              <TableCell>{release.startAt} ~ {release.endAt}</TableCell>
-            </tr>
-            <tr>
-              <TableHeader>생성일</TableHeader>
-              <TableCell>{new Date(release.createdAt).toLocaleDateString()}</TableCell>
-            </tr>
-          </tbody>
-        </Table>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderScopeTab = () => (
-    <TabPanel isActive={activeTab === 'scope'}>
-      <Card>
-        <CardTitle>스코프 요약</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          이 릴리즈에 포함된 테스트 케이스들의 개요입니다.
-        </p>
-        
-        <Grid>
-          <StatCard>
-            <StatValue>127</StatValue>
-            <StatLabel>총 테스트 케이스</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>15</StatValue>
-            <StatLabel>폴더</StatLabel>
-          </StatCard>
-          <StatCard>
-            <StatValue>8</StatValue>
-            <StatLabel>태그</StatLabel>
-          </StatCard>
-        </Grid>
-
-        <EmptyState>
-          <EmptyStateIcon>📋</EmptyStateIcon>
-          <EmptyStateTitle>스코프 상세 정보</EmptyStateTitle>
-          <EmptyStateDescription>
-            포함된 테스트 케이스들의 상세 목록이 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderExecutionTab = () => (
-    <TabPanel isActive={activeTab === 'execution'}>
-      <Card>
-        <CardTitle>실행 보드</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          테스트 실행 상태를 관리하는 칼럼형 보드입니다. 드래그 앤 드롭으로 상태를 변경할 수 있습니다.
-        </p>
-        
-        <ExecutionBoard
-          testCases={testCases}
-          onTestCaseUpdate={handleTestCaseUpdate}
-        />
-      </Card>
-    </TabPanel>
-  );
-
-  const renderDefectsTab = () => (
-    <TabPanel isActive={activeTab === 'defects'}>
-      <Card>
-        <CardTitle>결함 관리</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          이 릴리즈와 관련된 결함들을 관리합니다.
-        </p>
-        
-        <EmptyState>
-          <EmptyStateIcon>🐛</EmptyStateIcon>
-          <EmptyStateTitle>결함 목록</EmptyStateTitle>
-          <EmptyStateDescription>
-            릴리즈와 연결된 결함들이 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderAnalyticsTab = () => (
-    <TabPanel isActive={activeTab === 'analytics'}>
-      <Card>
-        <CardTitle>분석 및 차트</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          릴리즈 진행 상황에 대한 다양한 차트와 분석을 제공합니다.
-        </p>
-        
-        <EmptyState>
-          <EmptyStateIcon>📊</EmptyStateIcon>
-          <EmptyStateTitle>분석 차트</EmptyStateTitle>
-          <EmptyStateDescription>
-            진행률, 통과율, 결함 트렌드 등의 차트가 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderEnvironmentsTab = () => (
-    <TabPanel isActive={activeTab === 'environments'}>
-      <Card>
-        <CardTitle>테스트 환경</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          이 릴리즈에서 사용되는 테스트 환경들을 관리합니다.
-        </p>
-        
-        <EmptyState>
-          <EmptyStateIcon>🖥️</EmptyStateIcon>
-          <EmptyStateTitle>환경 관리</EmptyStateTitle>
-          <EmptyStateDescription>
-            Chrome, Firefox, Safari 등의 테스트 환경 정보가 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderPeopleTab = () => (
-    <TabPanel isActive={activeTab === 'people'}>
-      <Card>
-        <CardTitle>담당자 및 관찰자</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          이 릴리즈와 관련된 사람들을 관리합니다.
-        </p>
-        
-        <Table>
-          <thead>
-            <tr>
-              <TableHeader>역할</TableHeader>
-              <TableHeader>사용자</TableHeader>
-              <TableHeader>이메일</TableHeader>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <TableCell>소유자</TableCell>
-              <TableCell>{release.owners.join(', ') || '미지정'}</TableCell>
-              <TableCell>-</TableCell>
-            </tr>
-            <tr>
-              <TableCell>관찰자</TableCell>
-              <TableCell>{release.watchers.join(', ') || '없음'}</TableCell>
-              <TableCell>-</TableCell>
-            </tr>
-          </tbody>
-        </Table>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderScheduleTab = () => (
-    <TabPanel isActive={activeTab === 'schedule'}>
-      <Card>
-        <CardTitle>일정 관리</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          릴리즈 일정과 마일스톤을 관리합니다.
-        </p>
-        
-        <EmptyState>
-          <EmptyStateIcon>📅</EmptyStateIcon>
-          <EmptyStateTitle>일정 및 마일스톤</EmptyStateTitle>
-          <EmptyStateDescription>
-            릴리즈 일정과 주요 마일스톤이 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderSignoffTab = () => (
-    <TabPanel isActive={activeTab === 'signoff'}>
-      <Card>
-        <CardTitle>사인오프</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          릴리즈 완료를 위한 사인오프 프로세스를 관리합니다.
-        </p>
-        
-        <EmptyState>
-          <EmptyStateIcon>✍️</EmptyStateIcon>
-          <EmptyStateTitle>사인오프 프로세스</EmptyStateTitle>
-          <EmptyStateDescription>
-            게이트 기준 충족 여부와 사인오프 상태가 여기에 표시됩니다.
-          </EmptyStateDescription>
-        </EmptyState>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderSettingsTab = () => (
-    <TabPanel isActive={activeTab === 'settings'}>
-      <Card>
-        <CardTitle>설정 및 감사</CardTitle>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          릴리즈 설정과 변경 이력을 관리합니다.
-        </p>
-        
-        <Table>
-          <tbody>
-            <tr>
-              <TableHeader>게이트 기준</TableHeader>
-              <TableCell>
-                최소 통과율: {release.settings.gateCriteria.minPassRate}%<br/>
-                최대 Critical 실패: {release.settings.gateCriteria.maxFailCritical}<br/>
-                Blocker = 0: {release.settings.gateCriteria.zeroBlockers ? '예' : '아니오'}
-              </TableCell>
-            </tr>
-            <tr>
-              <TableHeader>자동 동기화</TableHeader>
-              <TableCell>{release.settings.autoSyncScope ? '활성화' : '비활성화'}</TableCell>
-            </tr>
-            <tr>
-              <TableHeader>재오픈 허용</TableHeader>
-              <TableCell>{release.settings.allowReopen ? '허용' : '금지'}</TableCell>
-            </tr>
-          </tbody>
-        </Table>
-      </Card>
-    </TabPanel>
-  );
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return renderOverviewTab();
-      case 'scope':
-        return renderScopeTab();
-      case 'execution':
-        return renderExecutionTab();
-      case 'defects':
-        return renderDefectsTab();
-      case 'analytics':
-        return renderAnalyticsTab();
-      case 'environments':
-        return renderEnvironmentsTab();
-      case 'people':
-        return renderPeopleTab();
-      case 'schedule':
-        return renderScheduleTab();
-      case 'signoff':
-        return renderSignoffTab();
-      case 'settings':
-        return renderSettingsTab();
-      default:
-        return renderOverviewTab();
-    }
-  };
-
-  return (
-    <Container>
-      <Header>
-        <HeaderLeft>
-          <BackButton onClick={onBack}>←</BackButton>
-          <HeaderTitle>{release.name}</HeaderTitle>
-        </HeaderLeft>
-        <HeaderActions>
-          <StatusBadge status={release.status}>
-            {release.status}
-          </StatusBadge>
-          <ActionButton variant="secondary">편집</ActionButton>
-          <ActionButton variant="primary">실행</ActionButton>
-        </HeaderActions>
-      </Header>
-
-      <TabContainer>
-        <TabList>
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.id}
-              isActive={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </Tab>
-          ))}
-        </TabList>
-      </TabContainer>
-
-      <Content>
-        <TabContent>
-          {renderTabContent()}
-        </TabContent>
-      </Content>
-    </Container>
-  );
-};
 
 export default ReleaseDetailPage;
