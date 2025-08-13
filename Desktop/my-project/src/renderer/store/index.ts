@@ -6,7 +6,7 @@ import notificationReducer from './notificationSlice';
 import dashboardLayoutReducer from './dashboardLayoutSlice';
 import animationReducer from './animationSlice';
 import navigationReducer from './navigationSlice';
-import releaseReducer from '../features/ReleaseManagement/store/releaseSlice';
+
 import { undoRedoMiddleware } from './undoRedoMiddleware';
 
 export type UserRole = 'ADMIN' | 'QA' | 'DEV' | 'PM';
@@ -42,7 +42,7 @@ export const store = configureStore({
     animation: animationReducer,
     navigation: navigationReducer,
     users: userSlice.reducer,
-    releases: releaseReducer
+
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
