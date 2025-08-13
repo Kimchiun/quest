@@ -1,0 +1,67 @@
+Express 서버가 포트 3001에서 실행 중입니다.
+PostgreSQL 연결: 성공
+Elasticsearch 연결: 실패
+🔄 데이터베이스 초기화 시작...
+PostgreSQL 연결: 성공
+데이터베이스 스키마 초기화 완료
+📦 릴리즈 관리 마이그레이션 실행 중...
+❌ 릴리즈 마이그레이션 실패: error: new row for relation "release_test_cases" violates check constraint "release_test_cases_status_check"
+    at /Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/node_modules/pg/lib/client.js:545:17
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/src/main/app/infrastructure/database/initDatabase.ts:110:9)
+    at async initializeDatabase (/Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/src/main/app/infrastructure/database/initDatabase.ts:26:9)
+    at async Server.<anonymous> (/Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/src/main/index.ts:27:13) {
+  length: 464,
+  severity: 'ERROR',
+  code: '23514',
+  detail: 'Failing row contains (7282d6b1-c77b-4087-bc2a-4e7e07d72aef, a034f102-6ba9-4c2e-b456-6f19b0e2f6b5, null, 대시보드 렌더링 테스트, IN_PROGRESS, null, 테스터B, null, 2025-08-12 13:41:59.081459+09, 2025-08-12 13:41:59.081459+09).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'release_test_cases',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'release_test_cases_status_check',
+  file: 'execMain.c',
+  line: '1943',
+  routine: 'ExecConstraints'
+}
+✅ 테스트용 사용자 이미 존재함: admin@test.com
+✅ defects 테이블 확인됨
+✅ attachments 테이블 확인됨
+✅ activity_logs 테이블 확인됨
+✅ comments 테이블 확인됨
+✅ releases 테이블 확인됨
+✅ release_test_cases 테이블 확인됨
+✅ release_issues 테이블 확인됨
+📊 결함 데이터: 60개
+📊 활동 로그: 100개
+📊 코멘트: 80개
+✅ 데이터베이스 초기화 완료
+🔐 로그인 요청 받음
+📥 요청 본문: { username: 'admin@test.com', password: 'password123' }
+📥 요청 헤더: {
+  host: 'localhost:3001',
+  connection: 'keep-alive',
+  'content-length': '54',
+  'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114"',
+  accept: 'application/json, text/plain, */*',
+  'content-type': 'application/json',
+  'sec-ch-ua-mobile': '?0',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.289 Electron/25.9.8 Safari/537.36',
+  'sec-ch-ua-platform': '"macOS"',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:4000/',
+  'accept-encoding': 'gzip, deflate, br',
+  'accept-language': 'ko'
+}
+✅ 인증 성공: admin@test.com
+📤 응답 데이터: {
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDEsInVzZXJuYW1lIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NTQ5NzM3NDUsImV4cCI6MTc1NTA2MDE0NX0.iLxYL8YzOhlOo8Gj_bO37ITgX09ldJg9HsUGD1rRKCw',
+  user: { id: 41, username: 'admin@test.com', role: 'ADMIN' }
+}

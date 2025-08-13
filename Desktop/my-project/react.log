@@ -1,0 +1,24 @@
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: http://localhost:4000/
+<i> [webpack-dev-server] On Your Network (IPv4): http://10.1.1.163:4000/
+<i> [webpack-dev-server] On Your Network (IPv6): http://[fe80::1]:4000/
+<i> [webpack-dev-server] Content not from webpack is served from '/Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/dist/renderer/app, /Users/3i-a1-2021-017/Documents/itms-desktop/Desktop/my-project/public' directory
+<i> [webpack-dev-server] 404s will fallback to '/index.html'
+asset bundle.js 3.46 MiB [emitted] (name: main)
+asset index.html 751 bytes [emitted]
+runtime modules 29.2 KiB 15 modules
+orphan modules 917 bytes [orphan] 2 modules
+modules by path ./node_modules/ 2.56 MiB 150 modules
+modules by path ./src/renderer/ 367 KiB
+  modules by path ./src/renderer/features/ 292 KiB 28 modules
+  modules by path ./src/renderer/shared/ 41.9 KiB 11 modules
+  modules by path ./src/renderer/store/*.ts 9.91 KiB 6 modules
+  modules by path ./src/renderer/app/*.tsx 8.79 KiB
+    ./src/renderer/app/index.tsx 649 bytes [built] [code generated]
+    ./src/renderer/app/App.tsx 8.16 KiB [built] [code generated]
+  modules by path ./src/renderer/utils/*.ts 6.15 KiB
+    ./src/renderer/utils/connectionTest.ts 2.01 KiB [built] [code generated]
+    ./src/renderer/utils/axios.ts 4.14 KiB [built] [code generated]
+  ./src/renderer/services/api.ts 8.78 KiB [built] [code generated]
+webpack 5.101.0 compiled successfully in 2137 ms
+<i> [webpack-dev-server] Gracefully shutting down. To force exit, press ^C again. Please wait...
