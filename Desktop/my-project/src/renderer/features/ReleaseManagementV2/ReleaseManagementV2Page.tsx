@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import MainContentLayout from '@/shared/components/Layout/MainContentLayout';
 import Button from '@/shared/components/Button';
 import SearchControl from '@/shared/components/Layout/ControlComponents';
 import ViewToggle from '@/shared/components/Layout/ViewToggle';
@@ -107,6 +106,7 @@ const ReleaseManagementV2Page: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('updatedAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleReleaseSelect = (releaseId: string) => {
     setSelectedReleases(prev => 
@@ -221,19 +221,9 @@ const ReleaseManagementV2Page: React.FC = () => {
                 onDeleteRelease={handleDeleteRelease}
               />
             )}
-          </TableSection>
+            
 
-          <PaginationSection>
-            <PaginationContainer>
-              <PaginationButton>‹</PaginationButton>
-              <PaginationPage>1</PaginationPage>
-              <PaginationPage>2</PaginationPage>
-              <PaginationPage>3</PaginationPage>
-              <PaginationEllipsis>...</PaginationEllipsis>
-              <PaginationPage>10</PaginationPage>
-              <PaginationButton>›</PaginationButton>
-            </PaginationContainer>
-          </PaginationSection>
+          </TableSection>
         </PageContainer>
       </ListView>
 
@@ -243,72 +233,26 @@ const ReleaseManagementV2Page: React.FC = () => {
         isEntering={currentView === 'detail'}
       >
         {selectedRelease && (
-          <ReleaseDetailPage
-            release={selectedRelease}
-            currentTab={currentTab}
-            onBackToList={handleBackToList}
-          />
+                       <DetailPageWrapper ref={containerRef}>
+               <ReleaseDetailPage
+                 release={selectedRelease}
+                 currentTab={currentTab}
+                 onBackToList={handleBackToList}
+               />
+             </DetailPageWrapper>
         )}
       </DetailView>
     </PageWrapper>
-  );
-
-  return (
-    <PageContainer>
-      <PageHeader>
-        <HeaderLeft>
-          <PageTitle>Releases</PageTitle>
-          <ViewControls>
-            <ViewIcon active={viewMode === 'table'}>☰</ViewIcon>
-            <ViewIcon active={viewMode === 'card'}>⊞</ViewIcon>
-            <ViewIcon>🔍</ViewIcon>
-            <ViewIcon>↕</ViewIcon>
-          </ViewControls>
-        </HeaderLeft>
-        <HeaderRight>
-          <MyOwnedButton>
-            <PersonIcon>👤</PersonIcon>
-            My Owned/Participating
-          </MyOwnedButton>
-        </HeaderRight>
-      </PageHeader>
-      
-      <TableSection>
-        <ReleaseTableView
-          releases={sortedReleases}
-          selectedReleases={selectedReleases}
-          onSelectRelease={handleReleaseSelect}
-          onSelectAll={handleSelectAll}
-          onViewRelease={handleViewRelease}
-          onEditRelease={handleEditRelease}
-          onDeleteRelease={handleDeleteRelease}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
-      </TableSection>
-      
-      <PaginationSection>
-        <PaginationContainer>
-          <PaginationButton>‹</PaginationButton>
-          <PaginationPage active>1</PaginationPage>
-          <PaginationPage>2</PaginationPage>
-          <PaginationPage>3</PaginationPage>
-          <PaginationEllipsis>...</PaginationEllipsis>
-          <PaginationPage>10</PaginationPage>
-          <PaginationButton>›</PaginationButton>
-        </PaginationContainer>
-      </PaginationSection>
-    </PageContainer>
   );
 };
 
 const PageContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100%;
   background: ${({ theme }) => theme.color.surface.primary};
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 전체 페이지 스크롤 방지 */
 `;
 
 const PageHeader = styled.div`
@@ -395,14 +339,16 @@ const PersonIcon = styled.span`
 const TableSection = styled.div`
   flex: 1;
   padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
-  overflow: auto;
+  overflow: hidden; /* 스크롤바 제거 */
+  min-height: 400px; /* 최소 높이 보장 */
 `;
 
 const PaginationSection = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  margin-top: ${({ theme }) => theme.spacing.md};
   border-top: 1px solid ${({ theme }) => theme.color.border.primary};
   background: ${({ theme }) => theme.color.surface.primary};
 `;
@@ -467,9 +413,49 @@ const PaginationEllipsis = styled.span`
 // 애니메이션을 위한 styled components
 const PageWrapper = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100%;
   position: relative;
   overflow: hidden;
+  
+  /* 스크롤바 완전 숨김 */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Firefox */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+`;
+
+const DetailPageWrapper = styled.div`
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.color.border.primary} transparent;
+  
+  /* 부드러운 스크롤을 위한 추가 설정 */
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: ${({ theme }) => theme.color.border.primary};
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: ${({ theme }) => theme.color.text.secondary};
+  }
 `;
 
 const ListView = styled.div<{ isVisible: boolean; isEntering: boolean }>`
@@ -483,6 +469,38 @@ const ListView = styled.div<{ isVisible: boolean; isEntering: boolean }>`
   });
   transition: transform ${({ theme }) => theme.motion.normal} cubic-bezier(0.4, 0, 0.2, 1);
   z-index: ${({ isVisible }) => isVisible ? 2 : 1};
+  overflow: hidden;
+  visibility: ${({ isVisible }) => isVisible ? 'visible' : 'hidden'};
+  pointer-events: ${({ isVisible }) => isVisible ? 'auto' : 'none'};
+  display: ${({ isVisible }) => isVisible ? 'block' : 'none'};
+  
+  /* 모든 스크롤바 완전 숨김 - 더 강력한 설정 */
+  &::-webkit-scrollbar { 
+    display: none !important; 
+    width: 0 !important;
+    height: 0 !important;
+  }
+  &::-webkit-scrollbar-track { display: none !important; }
+  &::-webkit-scrollbar-thumb { display: none !important; }
+  &::-webkit-scrollbar-corner { display: none !important; }
+  
+  /* Firefox */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  
+  /* 모든 자식 요소의 스크롤바도 숨김 */
+  * {
+    &::-webkit-scrollbar { 
+      display: none !important; 
+      width: 0 !important;
+      height: 0 !important;
+    }
+    &::-webkit-scrollbar-track { display: none !important; }
+    &::-webkit-scrollbar-thumb { display: none !important; }
+    &::-webkit-scrollbar-corner { display: none !important; }
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
 `;
 
 const DetailView = styled.div<{ isVisible: boolean; isEntering: boolean }>`
@@ -496,6 +514,37 @@ const DetailView = styled.div<{ isVisible: boolean; isEntering: boolean }>`
   });
   transition: transform ${({ theme }) => theme.motion.normal} cubic-bezier(0.4, 0, 0.2, 1);
   z-index: ${({ isVisible }) => isVisible ? 2 : 1};
+  overflow: hidden;
+  visibility: ${({ isVisible }) => isVisible ? 'visible' : 'hidden'};
+  pointer-events: ${({ isVisible }) => isVisible ? 'auto' : 'none'};
+  
+  /* 모든 스크롤바 완전 숨김 - 더 강력한 설정 */
+  &::-webkit-scrollbar { 
+    display: none !important; 
+    width: 0 !important;
+    height: 0 !important;
+  }
+  &::-webkit-scrollbar-track { display: none !important; }
+  &::-webkit-scrollbar-thumb { display: none !important; }
+  &::-webkit-scrollbar-corner { display: none !important; }
+  
+  /* Firefox */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  
+  /* 모든 자식 요소의 스크롤바도 숨김 */
+  * {
+    &::-webkit-scrollbar { 
+      display: none !important; 
+      width: 0 !important;
+      height: 0 !important;
+    }
+    &::-webkit-scrollbar-track { display: none !important; }
+    &::-webkit-scrollbar-thumb { display: none !important; }
+    &::-webkit-scrollbar-corner { display: none !important; }
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
 `;
 
 export default ReleaseManagementV2Page;

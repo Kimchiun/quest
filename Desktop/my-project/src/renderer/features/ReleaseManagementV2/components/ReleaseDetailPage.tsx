@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import Button from '@/shared/components/Button';
 
@@ -20,6 +20,43 @@ interface ReleaseDetailPageProps {
 
 const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentTab, onBackToList }) => {
   const [activeTab, setActiveTab] = useState(currentTab);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 부드러운 스크롤 효과
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let isScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      
+      if (isScrolling) return;
+      
+      isScrolling = true;
+      const delta = e.deltaY;
+      const scrollAmount = Math.abs(delta) > 50 ? delta * 0.5 : delta;
+      
+      container.scrollBy({
+        top: scrollAmount,
+        behavior: 'smooth'
+      });
+
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 150);
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
 
   // 아이콘 렌더링 함수
   const renderIcon = (iconType: string) => {
@@ -249,6 +286,60 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
                 ))}
               </TimelineContainer>
             </Section>
+
+            {/* 추가 콘텐츠 섹션 - 스크롤 테스트용 */}
+            <Section>
+              <SectionTitle>추가 정보</SectionTitle>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>릴리즈 상세 정보</h4>
+                <p>이 섹션은 스크롤이 제대로 작동하는지 확인하기 위한 추가 콘텐츠입니다.</p>
+                <p>릴리즈 {release.name}의 상세한 정보와 관련 문서들이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>관련 문서</h4>
+                <p>릴리즈와 관련된 모든 문서와 참고 자료들이 여기에 나열됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>팀 멤버</h4>
+                <p>이 릴리즈에 참여하는 팀 멤버들의 정보와 역할이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>결함 추적</h4>
+                <p>릴리즈와 관련된 모든 결함과 이슈들이 여기에 추적됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>테스트 결과</h4>
+                <p>모든 테스트 실행 결과와 상세한 분석이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>성능 지표</h4>
+                <p>릴리즈의 성능 지표와 벤치마크 결과가 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>보안 검사</h4>
+                <p>보안 검사 결과와 취약점 분석이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>배포 계획</h4>
+                <p>릴리즈 배포 계획과 일정이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>롤백 계획</h4>
+                <p>문제 발생 시 롤백 계획과 절차가 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>문서화</h4>
+                <p>릴리즈 관련 모든 문서와 가이드가 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>승인 이력</h4>
+                <p>릴리즈 승인 과정과 이력이 여기에 표시됩니다.</p>
+              </div>
+              <div style={{ padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4>최종 확인</h4>
+                <p>릴리즈 최종 확인 사항들이 여기에 표시됩니다.</p>
+              </div>
+            </Section>
           </OverviewContent>
         )}
 
@@ -311,6 +402,7 @@ const PageContainer = styled.div`
   width: 100%;
   min-height: 100vh;
   background: ${({ theme }) => theme.color.surface.primary};
+  overflow: hidden;
 `;
 
 
@@ -478,6 +570,9 @@ const TabButton = styled.button<{ active?: boolean }>`
 
 const ContentArea = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
+  padding-bottom: ${({ theme }) => theme.spacing.xl};
+  height: auto;
+  min-height: 150vh;
 `;
 
 const OverviewContent = styled.div`
