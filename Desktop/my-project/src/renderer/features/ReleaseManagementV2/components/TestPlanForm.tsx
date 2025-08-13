@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import Button from '@/shared/components/Button';
 
 interface TestPlanFormProps {
   onSave?: (data: any) => void;
@@ -9,6 +8,7 @@ interface TestPlanFormProps {
 }
 
 const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport }) => {
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
     projectName: 'Quest - 지능형 테스트 관리 시스템',
     scope: '',
@@ -70,6 +70,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
 
   const handleSave = () => {
     onSave?.(formData);
+    setIsEditMode(false); // 저장 후 수정 모드 종료
   };
 
   return (
@@ -77,9 +78,16 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
       <TestPlanHeader>
         <TestPlanTitle>테스트 계획</TestPlanTitle>
         <TestPlanActions>
-          <ActionButton variant="outline" onClick={onPreview}>미리보기</ActionButton>
-          <ActionButton variant="outline" onClick={onExport}>내보내기</ActionButton>
-          <ActionButton onClick={handleSave}>저장</ActionButton>
+          {!isEditMode ? (
+            <ActionButton onClick={() => setIsEditMode(true)}>수정</ActionButton>
+          ) : (
+            <>
+              <ActionButton onClick={() => setIsEditMode(false)}>취소</ActionButton>
+              <ActionButton onClick={handleSave}>저장</ActionButton>
+            </>
+          )}
+          <ActionButton onClick={onPreview}>미리보기</ActionButton>
+          <ActionButton onClick={onExport}>내보내기</ActionButton>
         </TestPlanActions>
       </TestPlanHeader>
 
@@ -97,6 +105,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 value={formData.projectName}
                 onChange={(e) => setFormData({...formData, projectName: e.target.value})}
                 placeholder="테스트 대상 제품 또는 서비스명을 입력하세요"
+                disabled={!isEditMode}
               />
             </FormGroup>
             <FormGroup>
@@ -106,6 +115,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 onChange={(e) => setFormData({...formData, scope: e.target.value})}
                 placeholder="• 사용자 인증 및 권한 관리&#10;• 테스트 케이스 관리&#10;• 테스트 실행 및 결과 기록&#10;• 결함 관리 및 추적&#10;• 대시보드 및 보고서&#10;• 외부 시스템 연동"
                 rows={6}
+                disabled={!isEditMode}
               />
             </FormGroup>
           </SectionContent>
@@ -129,6 +139,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                       ...formData, 
                       schedule: {...formData.schedule, startDate: e.target.value}
                     })}
+                    disabled={!isEditMode}
                   />
                   <DateSeparator>~</DateSeparator>
                   <DateInput 
@@ -138,6 +149,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                       ...formData, 
                       schedule: {...formData.schedule, endDate: e.target.value}
                     })}
+                    disabled={!isEditMode}
                   />
                 </DateRangeContainer>
               </FormGroup>
@@ -148,22 +160,132 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <thead>
                   <tr>
                     <th>단계</th>
-                    <th>기간</th>
+                    <th style={{ width: '200px' }}>기간</th>
                     <th>작업 내용</th>
                     <th>테스트 방법</th>
+                    <th style={{ width: '60px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {formData.schedule.phases.map((phase, index) => (
                     <tr key={index}>
-                      <td>{phase.name}</td>
-                      <td>{phase.startDate} ~ {phase.endDate}</td>
-                      <td>{phase.description}</td>
-                      <td>{phase.method}</td>
+                      <td>
+                        <FormInput 
+                          value={phase.name}
+                          onChange={(e) => {
+                            const newPhases = [...formData.schedule.phases];
+                            newPhases[index] = { ...phase, name: e.target.value };
+                            setFormData({
+                              ...formData,
+                              schedule: { ...formData.schedule, phases: newPhases }
+                            });
+                          }}
+                          disabled={!isEditMode}
+                        />
+                      </td>
+                      <td style={{ width: '200px' }}>
+                        <DateRangeContainer>
+                          <DateInput 
+                            type="date" 
+                            value={phase.startDate}
+                            onChange={(e) => {
+                              const newPhases = [...formData.schedule.phases];
+                              newPhases[index] = { ...phase, startDate: e.target.value };
+                              setFormData({
+                                ...formData,
+                                schedule: { ...formData.schedule, phases: newPhases }
+                              });
+                            }}
+                            disabled={!isEditMode}
+                          />
+                          <DateSeparator>~</DateSeparator>
+                          <DateInput 
+                            type="date" 
+                            value={phase.endDate}
+                            onChange={(e) => {
+                              const newPhases = [...formData.schedule.phases];
+                              newPhases[index] = { ...phase, endDate: e.target.value };
+                              setFormData({
+                                ...formData,
+                                schedule: { ...formData.schedule, phases: newPhases }
+                              });
+                            }}
+                            disabled={!isEditMode}
+                          />
+                        </DateRangeContainer>
+                      </td>
+                      <td>
+                        <FormTextarea 
+                          value={phase.description}
+                          onChange={(e) => {
+                            const newPhases = [...formData.schedule.phases];
+                            newPhases[index] = { ...phase, description: e.target.value };
+                            setFormData({
+                              ...formData,
+                              schedule: { ...formData.schedule, phases: newPhases }
+                            });
+                          }}
+                          rows={3}
+                          disabled={!isEditMode}
+                        />
+                      </td>
+                      <td>
+                        <FormTextarea 
+                          value={phase.method}
+                          onChange={(e) => {
+                            const newPhases = [...formData.schedule.phases];
+                            newPhases[index] = { ...phase, method: e.target.value };
+                            setFormData({
+                              ...formData,
+                              schedule: { ...formData.schedule, phases: newPhases }
+                            });
+                          }}
+                          rows={3}
+                          disabled={!isEditMode}
+                        />
+                      </td>
+                      <td style={{ width: '60px', textAlign: 'center' }}>
+                        {isEditMode && (
+                          <DeleteButton 
+                            onClick={() => {
+                              const newPhases = formData.schedule.phases.filter((_, i) => i !== index);
+                              setFormData({
+                                ...formData,
+                                schedule: { ...formData.schedule, phases: newPhases }
+                              });
+                            }}
+                            title="삭제"
+                          >
+                            ×
+                          </DeleteButton>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </ScheduleTable>
+              {isEditMode && (
+                <AddButton 
+                  onClick={() => {
+                    const newPhase = {
+                      name: '새 단계',
+                      startDate: '2024-08-01',
+                      endDate: '2024-08-03',
+                      description: '작업 내용을 입력하세요',
+                      method: '테스트 방법을 입력하세요'
+                    };
+                    setFormData({
+                      ...formData,
+                      schedule: {
+                        ...formData.schedule,
+                        phases: [...formData.schedule.phases, newPhase]
+                      }
+                    });
+                  }}
+                >
+                  + 단계 추가
+                </AddButton>
+              )}
             </FormGroup>
           </SectionContent>
         </TestPlanSection>
@@ -181,10 +303,73 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <RoleList>
                   {formData.responsibilities.planning.map((person, index) => (
                     <RoleItem key={index}>
-                      <RoleName>{person.name}</RoleName>
-                      <RoleEmail>{person.email}</RoleEmail>
+                      <FormInput 
+                        value={person.name}
+                        onChange={(e) => {
+                          const newPlanning = [...formData.responsibilities.planning];
+                          newPlanning[index] = { ...person, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              planning: newPlanning
+                            }
+                          });
+                        }}
+                        placeholder="이름"
+                        disabled={!isEditMode}
+                      />
+                      <FormInput 
+                        value={person.email}
+                        onChange={(e) => {
+                          const newPlanning = [...formData.responsibilities.planning];
+                          newPlanning[index] = { ...person, email: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              planning: newPlanning
+                            }
+                          });
+                        }}
+                        placeholder="이메일"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newPlanning = formData.responsibilities.planning.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              responsibilities: {
+                                ...formData.responsibilities,
+                                planning: newPlanning
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
                     </RoleItem>
                   ))}
+                  {isEditMode && (
+                    <AddButton 
+                      onClick={() => {
+                        const newPerson = { name: '', email: '' };
+                        setFormData({
+                          ...formData,
+                          responsibilities: {
+                            ...formData.responsibilities,
+                            planning: [...formData.responsibilities.planning, newPerson]
+                          }
+                        });
+                      }}
+                    >
+                      + 기획 담당자 추가
+                    </AddButton>
+                  )}
                 </RoleList>
               </ResponsibilityCard>
               <ResponsibilityCard>
@@ -192,10 +377,73 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <RoleList>
                   {formData.responsibilities.development.map((person, index) => (
                     <RoleItem key={index}>
-                      <RoleName>{person.name}</RoleName>
-                      <RoleEmail>{person.email}</RoleEmail>
+                      <FormInput 
+                        value={person.name}
+                        onChange={(e) => {
+                          const newDevelopment = [...formData.responsibilities.development];
+                          newDevelopment[index] = { ...person, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              development: newDevelopment
+                            }
+                          });
+                        }}
+                        placeholder="이름"
+                        disabled={!isEditMode}
+                      />
+                      <FormInput 
+                        value={person.email}
+                        onChange={(e) => {
+                          const newDevelopment = [...formData.responsibilities.development];
+                          newDevelopment[index] = { ...person, email: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              development: newDevelopment
+                            }
+                          });
+                        }}
+                        placeholder="이메일"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newDevelopment = formData.responsibilities.development.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              responsibilities: {
+                                ...formData.responsibilities,
+                                development: newDevelopment
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
                     </RoleItem>
                   ))}
+                  {isEditMode && (
+                    <AddButton 
+                      onClick={() => {
+                        const newPerson = { name: '', email: '' };
+                        setFormData({
+                          ...formData,
+                          responsibilities: {
+                            ...formData.responsibilities,
+                            development: [...formData.responsibilities.development, newPerson]
+                          }
+                        });
+                      }}
+                    >
+                      + 개발 담당자 추가
+                    </AddButton>
+                  )}
                 </RoleList>
               </ResponsibilityCard>
               <ResponsibilityCard>
@@ -203,10 +451,73 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <RoleList>
                   {formData.responsibilities.design.map((person, index) => (
                     <RoleItem key={index}>
-                      <RoleName>{person.name}</RoleName>
-                      <RoleEmail>{person.email}</RoleEmail>
+                      <FormInput 
+                        value={person.name}
+                        onChange={(e) => {
+                          const newDesign = [...formData.responsibilities.design];
+                          newDesign[index] = { ...person, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              design: newDesign
+                            }
+                          });
+                        }}
+                        placeholder="이름"
+                        disabled={!isEditMode}
+                      />
+                      <FormInput 
+                        value={person.email}
+                        onChange={(e) => {
+                          const newDesign = [...formData.responsibilities.design];
+                          newDesign[index] = { ...person, email: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              design: newDesign
+                            }
+                          });
+                        }}
+                        placeholder="이메일"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newDesign = formData.responsibilities.design.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              responsibilities: {
+                                ...formData.responsibilities,
+                                design: newDesign
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
                     </RoleItem>
                   ))}
+                  {isEditMode && (
+                    <AddButton 
+                      onClick={() => {
+                        const newPerson = { name: '', email: '' };
+                        setFormData({
+                          ...formData,
+                          responsibilities: {
+                            ...formData.responsibilities,
+                            design: [...formData.responsibilities.design, newPerson]
+                          }
+                        });
+                      }}
+                    >
+                      + 디자인 담당자 추가
+                    </AddButton>
+                  )}
                 </RoleList>
               </ResponsibilityCard>
               <ResponsibilityCard>
@@ -214,10 +525,73 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <RoleList>
                   {formData.responsibilities.publishing.map((person, index) => (
                     <RoleItem key={index}>
-                      <RoleName>{person.name}</RoleName>
-                      <RoleEmail>{person.email}</RoleEmail>
+                      <FormInput 
+                        value={person.name}
+                        onChange={(e) => {
+                          const newPublishing = [...formData.responsibilities.publishing];
+                          newPublishing[index] = { ...person, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              publishing: newPublishing
+                            }
+                          });
+                        }}
+                        placeholder="이름"
+                        disabled={!isEditMode}
+                      />
+                      <FormInput 
+                        value={person.email}
+                        onChange={(e) => {
+                          const newPublishing = [...formData.responsibilities.publishing];
+                          newPublishing[index] = { ...person, email: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              publishing: newPublishing
+                            }
+                          });
+                        }}
+                        placeholder="이메일"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newPublishing = formData.responsibilities.publishing.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              responsibilities: {
+                                ...formData.responsibilities,
+                                publishing: newPublishing
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
                     </RoleItem>
                   ))}
+                  {isEditMode && (
+                    <AddButton 
+                      onClick={() => {
+                        const newPerson = { name: '', email: '' };
+                        setFormData({
+                          ...formData,
+                          responsibilities: {
+                            ...formData.responsibilities,
+                            publishing: [...formData.responsibilities.publishing, newPerson]
+                          }
+                        });
+                      }}
+                    >
+                      + 퍼블리싱 담당자 추가
+                    </AddButton>
+                  )}
                 </RoleList>
               </ResponsibilityCard>
               <ResponsibilityCard>
@@ -225,10 +599,73 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <RoleList>
                   {formData.responsibilities.qa.map((person, index) => (
                     <RoleItem key={index}>
-                      <RoleName>{person.name}</RoleName>
-                      <RoleEmail>{person.email}</RoleEmail>
+                      <FormInput 
+                        value={person.name}
+                        onChange={(e) => {
+                          const newQA = [...formData.responsibilities.qa];
+                          newQA[index] = { ...person, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              qa: newQA
+                            }
+                          });
+                        }}
+                        placeholder="이름"
+                        disabled={!isEditMode}
+                      />
+                      <FormInput 
+                        value={person.email}
+                        onChange={(e) => {
+                          const newQA = [...formData.responsibilities.qa];
+                          newQA[index] = { ...person, email: e.target.value };
+                          setFormData({
+                            ...formData,
+                            responsibilities: {
+                              ...formData.responsibilities,
+                              qa: newQA
+                            }
+                          });
+                        }}
+                        placeholder="이메일"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newQA = formData.responsibilities.qa.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              responsibilities: {
+                                ...formData.responsibilities,
+                                qa: newQA
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
                     </RoleItem>
                   ))}
+                  {isEditMode && (
+                    <AddButton 
+                      onClick={() => {
+                        const newPerson = { name: '', email: '' };
+                        setFormData({
+                          ...formData,
+                          responsibilities: {
+                            ...formData.responsibilities,
+                            qa: [...formData.responsibilities.qa, newPerson]
+                          }
+                        });
+                      }}
+                    >
+                      + QA 담당자 추가
+                    </AddButton>
+                  )}
                 </RoleList>
               </ResponsibilityCard>
             </ResponsibilityGrid>
@@ -247,14 +684,74 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
               <LinkList>
                 {formData.references.documents.map((doc, index) => (
                   <LinkItem key={index}>
-                    <LinkInput 
+                    <FormInput 
                       value={doc.url}
+                      onChange={(e) => {
+                        const newDocuments = [...formData.references.documents];
+                        newDocuments[index] = { ...doc, url: e.target.value };
+                        setFormData({
+                          ...formData,
+                          references: {
+                            ...formData.references,
+                            documents: newDocuments
+                          }
+                        });
+                      }}
                       placeholder="https://docs.quest.com/requirements"
+                      disabled={!isEditMode}
                     />
-                    <LinkLabel>{doc.label}</LinkLabel>
+                    <FormInput 
+                      value={doc.label}
+                      onChange={(e) => {
+                        const newDocuments = [...formData.references.documents];
+                        newDocuments[index] = { ...doc, label: e.target.value };
+                        setFormData({
+                          ...formData,
+                          references: {
+                            ...formData.references,
+                            documents: newDocuments
+                          }
+                        });
+                      }}
+                      placeholder="문서명"
+                      disabled={!isEditMode}
+                    />
+                    {isEditMode && (
+                      <DeleteButton 
+                        onClick={() => {
+                          const newDocuments = formData.references.documents.filter((_, i) => i !== index);
+                          setFormData({
+                            ...formData,
+                            references: {
+                              ...formData.references,
+                              documents: newDocuments
+                            }
+                          });
+                        }}
+                        title="삭제"
+                      >
+                        ×
+                      </DeleteButton>
+                    )}
                   </LinkItem>
                 ))}
               </LinkList>
+              {isEditMode && (
+                <AddButton 
+                  onClick={() => {
+                    const newDoc = { url: '', label: '' };
+                  setFormData({
+                    ...formData,
+                    references: {
+                      ...formData.references,
+                      documents: [...formData.references.documents, newDoc]
+                    }
+                  });
+                }}
+              >
+                + 문서 링크 추가
+              </AddButton>
+              )}
             </FormGroup>
             <FormGroup>
               <FormLabel>이슈 리포트 경로</FormLabel>
@@ -282,25 +779,172 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <EnvironmentTitle>웹 브라우저</EnvironmentTitle>
                 <DeviceList>
                   {formData.environments.browsers.map((browser, index) => (
-                    <DeviceItem key={index}>{browser}</DeviceItem>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <FormInput 
+                        value={browser}
+                        onChange={(e) => {
+                          const newBrowsers = [...formData.environments.browsers];
+                          newBrowsers[index] = e.target.value;
+                          setFormData({
+                            ...formData,
+                            environments: {
+                              ...formData.environments,
+                              browsers: newBrowsers
+                            }
+                          });
+                        }}
+                        placeholder="Chrome 120+"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newBrowsers = formData.environments.browsers.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              environments: {
+                                ...formData.environments,
+                                browsers: newBrowsers
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
+                    </div>
                   ))}
                 </DeviceList>
+                {isEditMode && (
+                  <AddButton 
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        environments: {
+                          ...formData.environments,
+                          browsers: [...formData.environments.browsers, '']
+                        }
+                      });
+                    }}
+                  >
+                    + 브라우저 추가
+                  </AddButton>
+                )}
               </EnvironmentCard>
               <EnvironmentCard>
                 <EnvironmentTitle>모바일 (iOS)</EnvironmentTitle>
                 <DeviceList>
                   {formData.environments.ios.map((device, index) => (
-                    <DeviceItem key={index}>{device}</DeviceItem>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <FormInput 
+                        value={device}
+                        onChange={(e) => {
+                          const newIOS = [...formData.environments.ios];
+                          newIOS[index] = e.target.value;
+                          setFormData({
+                            ...formData,
+                            environments: {
+                              ...formData.environments,
+                              ios: newIOS
+                            }
+                          });
+                        }}
+                        placeholder="iPhone 15 Pro (iOS 17)"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newIOS = formData.environments.ios.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              environments: {
+                                ...formData.environments,
+                                ios: newIOS
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
+                    </div>
                   ))}
                 </DeviceList>
+                {isEditMode && (
+                  <AddButton 
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        environments: {
+                          ...formData.environments,
+                          ios: [...formData.environments.ios, '']
+                        }
+                      });
+                    }}
+                  >
+                    + iOS 디바이스 추가
+                  </AddButton>
+                )}
               </EnvironmentCard>
               <EnvironmentCard>
                 <EnvironmentTitle>모바일 (Android)</EnvironmentTitle>
                 <DeviceList>
                   {formData.environments.android.map((device, index) => (
-                    <DeviceItem key={index}>{device}</DeviceItem>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <FormInput 
+                        value={device}
+                        onChange={(e) => {
+                          const newAndroid = [...formData.environments.android];
+                          newAndroid[index] = e.target.value;
+                          setFormData({
+                            ...formData,
+                            environments: {
+                              ...formData.environments,
+                              android: newAndroid
+                            }
+                          });
+                        }}
+                        placeholder="Samsung Galaxy S24 (Android 14)"
+                        disabled={!isEditMode}
+                      />
+                      {isEditMode && (
+                        <DeleteButton 
+                          onClick={() => {
+                            const newAndroid = formData.environments.android.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              environments: {
+                                ...formData.environments,
+                                android: newAndroid
+                              }
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      )}
+                    </div>
                   ))}
                 </DeviceList>
+                {isEditMode && (
+                  <AddButton 
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        environments: {
+                          ...formData.environments,
+                          android: [...formData.environments.android, '']
+                        }
+                      });
+                    }}
+                  >
+                    + Android 디바이스 추가
+                  </AddButton>
+                )}
               </EnvironmentCard>
             </EnvironmentGrid>
           </SectionContent>
@@ -320,19 +964,129 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                   <th>영향도</th>
                   <th>발생 확률</th>
                   <th>대응 방안</th>
+                  {isEditMode && <th style={{ width: '60px' }}></th>}
                 </tr>
               </thead>
               <tbody>
                 {formData.risks.map((risk, index) => (
                   <tr key={index}>
-                    <td>{risk.name}</td>
-                    <td><RiskLevel impact={risk.impact}>{risk.impact === 'high' ? '높음' : risk.impact === 'medium' ? '보통' : '낮음'}</RiskLevel></td>
-                    <td><RiskLevel impact={risk.probability}>{risk.probability === 'high' ? '높음' : risk.probability === 'medium' ? '보통' : '낮음'}</RiskLevel></td>
-                    <td>{risk.mitigation}</td>
+                    <td>
+                      <FormInput 
+                        value={risk.name}
+                        onChange={(e) => {
+                          const newRisks = [...formData.risks];
+                          newRisks[index] = { ...risk, name: e.target.value };
+                          setFormData({
+                            ...formData,
+                            risks: newRisks
+                          });
+                        }}
+                        placeholder="리스크명"
+                        disabled={!isEditMode}
+                      />
+                    </td>
+                    <td>
+                      <select 
+                        value={risk.impact}
+                        onChange={(e) => {
+                          const newRisks = [...formData.risks];
+                          newRisks[index] = { ...risk, impact: e.target.value };
+                          setFormData({
+                            ...formData,
+                            risks: newRisks
+                          });
+                        }}
+                        style={{
+                          padding: '8px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          width: '100%'
+                        }}
+                        disabled={!isEditMode}
+                      >
+                        <option value="high">높음</option>
+                        <option value="medium">보통</option>
+                        <option value="low">낮음</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select 
+                        value={risk.probability}
+                        onChange={(e) => {
+                          const newRisks = [...formData.risks];
+                          newRisks[index] = { ...risk, probability: e.target.value };
+                          setFormData({
+                            ...formData,
+                            risks: newRisks
+                          });
+                        }}
+                        style={{
+                          padding: '8px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          width: '100%'
+                        }}
+                        disabled={!isEditMode}
+                      >
+                        <option value="high">높음</option>
+                        <option value="medium">보통</option>
+                        <option value="low">낮음</option>
+                      </select>
+                    </td>
+                    <td>
+                      <FormTextarea 
+                        value={risk.mitigation}
+                        onChange={(e) => {
+                          const newRisks = [...formData.risks];
+                          newRisks[index] = { ...risk, mitigation: e.target.value };
+                          setFormData({
+                            ...formData,
+                            risks: newRisks
+                          });
+                        }}
+                        placeholder="대응 방안"
+                        rows={2}
+                        disabled={!isEditMode}
+                      />
+                    </td>
+                    {isEditMode && (
+                      <td style={{ textAlign: 'center' }}>
+                        <DeleteButton 
+                          onClick={() => {
+                            const newRisks = formData.risks.filter((_, i) => i !== index);
+                            setFormData({
+                              ...formData,
+                              risks: newRisks
+                            });
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </DeleteButton>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </RiskTable>
+            {isEditMode && (
+              <AddButton 
+                onClick={() => {
+                  const newRisk = {
+                    name: '',
+                    impact: 'medium',
+                    probability: 'medium',
+                    mitigation: ''
+                  };
+                  setFormData({
+                    ...formData,
+                    risks: [...formData.risks, newRisk]
+                  });
+                }}
+              >
+                + 리스크 추가
+              </AddButton>
+            )}
           </SectionContent>
         </TestPlanSection>
 
@@ -346,11 +1100,80 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
             <ApproachGrid>
               {formData.approach.strategies.map((strategy, index) => (
                 <ApproachCard key={index}>
-                  <ApproachTitle>{strategy.name}</ApproachTitle>
-                  <ApproachDescription>{strategy.description}</ApproachDescription>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <FormInput 
+                      value={strategy.name}
+                      onChange={(e) => {
+                        const newStrategies = [...formData.approach.strategies];
+                        newStrategies[index] = { ...strategy, name: e.target.value };
+                        setFormData({
+                          ...formData,
+                          approach: {
+                            ...formData.approach,
+                            strategies: newStrategies
+                          }
+                        });
+                      }}
+                      placeholder="전략명"
+                      disabled={!isEditMode}
+                    />
+                    {isEditMode && (
+                      <DeleteButton 
+                        onClick={() => {
+                          const newStrategies = formData.approach.strategies.filter((_, i) => i !== index);
+                          setFormData({
+                            ...formData,
+                            approach: {
+                              ...formData.approach,
+                              strategies: newStrategies
+                            }
+                          });
+                        }}
+                        title="삭제"
+                      >
+                        ×
+                      </DeleteButton>
+                    )}
+                  </div>
+                  <FormTextarea 
+                    value={strategy.description}
+                    onChange={(e) => {
+                      const newStrategies = [...formData.approach.strategies];
+                      newStrategies[index] = { ...strategy, description: e.target.value };
+                      setFormData({
+                        ...formData,
+                        approach: {
+                          ...formData.approach,
+                          strategies: newStrategies
+                        }
+                      });
+                    }}
+                    placeholder="전략 설명"
+                    rows={3}
+                    disabled={!isEditMode}
+                  />
                 </ApproachCard>
               ))}
             </ApproachGrid>
+            {isEditMode && (
+              <AddButton 
+                onClick={() => {
+                  const newStrategy = {
+                    name: '',
+                    description: ''
+                  };
+                  setFormData({
+                    ...formData,
+                    approach: {
+                      ...formData.approach,
+                      strategies: [...formData.approach.strategies, newStrategy]
+                    }
+                  });
+                }}
+              >
+                + 테스트 전략 추가
+              </AddButton>
+            )}
             <FormGroup>
               <FormLabel>예외 사항 처리 방식</FormLabel>
               <FormTextarea 
@@ -361,6 +1184,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 })}
                 placeholder="• 네트워크 오류 시 자동 재시도&#10;• 데이터베이스 연결 실패 시 폴백 처리&#10;• 권한 없는 사용자 접근 시 차단&#10;• 잘못된 입력 데이터 검증"
                 rows={4}
+                disabled={!isEditMode}
               />
             </FormGroup>
           </SectionContent>
@@ -376,15 +1200,39 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
             <NotesGrid>
               <NotesCard>
                 <NotesTitle>테스트 범위 제한</NotesTitle>
-                <NotesContent>{formData.notes.limitations}</NotesContent>
+                <FormTextarea 
+                  value={formData.notes.limitations}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    notes: {...formData.notes, limitations: e.target.value}
+                  })}
+                  placeholder="• 보안 테스트는 별도 전문팀에서 진행&#10;• 성능 테스트는 스테이징 환경에서만 진행&#10;• 접근성 테스트는 WCAG 2.1 AA 기준 적용"
+                  rows={4}
+                />
               </NotesCard>
               <NotesCard>
                 <NotesTitle>제외된 영역</NotesTitle>
-                <NotesContent>{formData.notes.exclusions}</NotesContent>
+                <FormTextarea 
+                  value={formData.notes.exclusions}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    notes: {...formData.notes, exclusions: e.target.value}
+                  })}
+                  placeholder="• 백엔드 API 단위 테스트&#10;• 데이터베이스 마이그레이션&#10;• 외부 시스템 연동 (별도 계획)"
+                  rows={4}
+                />
               </NotesCard>
               <NotesCard>
                 <NotesTitle>가정 (Assumptions)</NotesTitle>
-                <NotesContent>{formData.notes.assumptions}</NotesContent>
+                <FormTextarea 
+                  value={formData.notes.assumptions}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    notes: {...formData.notes, assumptions: e.target.value}
+                  })}
+                  placeholder="• 개발팀이 테스트 환경을 사전에 구성&#10;• 테스트 데이터는 별도로 제공&#10;• 결함 수정은 2일 이내 완료"
+                  rows={4}
+                />
               </NotesCard>
             </NotesGrid>
           </SectionContent>
@@ -412,8 +1260,8 @@ const TestPlanHeader = styled.div`
 `;
 
 const TestPlanTitle = styled.h2`
-  font-size: ${({ theme }) => theme.typography.heading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.heading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h2.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h2.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0;
 `;
@@ -423,9 +1271,18 @@ const TestPlanActions = styled.div`
   gap: ${({ theme }) => theme.spacing.md};
 `;
 
-const ActionButton = styled(Button)`
+const ActionButton = styled.button`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
   font-size: ${({ theme }) => theme.typography.body.fontSize};
+  background: ${({ theme }) => theme.color.primary[600]};
+  color: white;
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  cursor: pointer;
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.primary[700]};
+  }
 `;
 
 const TestPlanFormContainer = styled.div`
@@ -456,7 +1313,7 @@ const SectionNumber = styled.div`
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: ${({ theme }) => theme.color.primary.main};
+  background: ${({ theme }) => theme.color.primary[600]};
   color: white;
   border-radius: 50%;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -464,8 +1321,8 @@ const SectionNumber = styled.div`
 `;
 
 const SectionTitle = styled.h3`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0;
 `;
@@ -506,8 +1363,15 @@ const FormInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.primary.main};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.primary.light};
+    border-color: ${({ theme }) => theme.color.primary[600]};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.primary[100]};
+  }
+  
+  &:disabled {
+    background: ${({ theme }) => theme.color.surface.secondary};
+    color: ${({ theme }) => theme.color.text.secondary};
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 `;
 
@@ -524,8 +1388,15 @@ const FormTextarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.primary.main};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.primary.light};
+    border-color: ${({ theme }) => theme.color.primary[600]};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.primary[100]};
+  }
+  
+  &:disabled {
+    background: ${({ theme }) => theme.color.surface.secondary};
+    color: ${({ theme }) => theme.color.text.secondary};
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 `;
 
@@ -581,8 +1452,8 @@ const ResponsibilityCard = styled.div`
 `;
 
 const RoleTitle = styled.h4`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
 `;
@@ -605,7 +1476,7 @@ const RoleName = styled.span`
 `;
 
 const RoleEmail = styled.span`
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   color: ${({ theme }) => theme.color.text.secondary};
 `;
 
@@ -626,7 +1497,7 @@ const LinkInput = styled(FormInput)`
 `;
 
 const LinkLabel = styled.span`
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   color: ${({ theme }) => theme.color.text.secondary};
 `;
 
@@ -645,8 +1516,8 @@ const EnvironmentCard = styled.div`
 `;
 
 const EnvironmentTitle = styled.h4`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
 `;
@@ -709,17 +1580,17 @@ const RiskTable = styled.table`
 const RiskLevel = styled.span<{ impact: string }>`
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
   border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   background: ${({ theme, impact }) => 
-    impact === 'high' ? theme.color.error.light :
-    impact === 'medium' ? theme.color.warning.light :
-    theme.color.success.light
+    impact === 'high' ? theme.color.danger[100] :
+    impact === 'medium' ? theme.color.warning[100] :
+    theme.color.success[100]
   };
   color: ${({ theme, impact }) => 
-    impact === 'high' ? theme.color.error.main :
-    impact === 'medium' ? theme.color.warning.main :
-    theme.color.success.main
+    impact === 'high' ? theme.color.danger[600] :
+    impact === 'medium' ? theme.color.warning[600] :
+    theme.color.success[600]
   };
 `;
 
@@ -738,8 +1609,8 @@ const ApproachCard = styled.div`
 `;
 
 const ApproachTitle = styled.h4`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0 0 ${({ theme }) => theme.spacing.sm} 0;
 `;
@@ -748,6 +1619,40 @@ const ApproachDescription = styled.p`
   color: ${({ theme }) => theme.color.text.secondary};
   font-size: ${({ theme }) => theme.typography.body.fontSize};
   margin: 0;
+`;
+
+const AddButton = styled.button`
+  background: ${({ theme }) => theme.color.primary[600]};
+  color: white;
+  border: none;
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  cursor: pointer;
+  margin-top: ${({ theme }) => theme.spacing.md};
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.primary[700]};
+  }
+`;
+
+const DeleteButton = styled.button`
+  background: ${({ theme }) => theme.color.danger[600]};
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.danger[700]};
+  }
 `;
 
 const NotesGrid = styled.div`
@@ -764,8 +1669,8 @@ const NotesCard = styled.div`
 `;
 
 const NotesTitle = styled.h4`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
 `;

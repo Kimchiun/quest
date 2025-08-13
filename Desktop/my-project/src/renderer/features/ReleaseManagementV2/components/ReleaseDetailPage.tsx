@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import Button from '@/shared/components/Button';
 import TestPlanForm from './TestPlanForm';
 
 interface ReleaseDetailPageProps {
@@ -21,43 +20,37 @@ interface ReleaseDetailPageProps {
 
 const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentTab, onBackToList }) => {
   const [activeTab, setActiveTab] = useState(currentTab);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [testPlanData, setTestPlanData] = useState(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 부드러운 스크롤 효과
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  // 기본 스크롤 사용 (커스텀 휠 핸들러 제거)
 
-    let isScrolling = false;
-    let scrollTimeout: NodeJS.Timeout;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
+  // 테스트 계획 저장 함수
+  const handleTestPlanSave = async (data: any) => {
+    try {
+      setSaveStatus('saving');
       
-      if (isScrolling) return;
+      // 실제 저장 로직 (API 호출 등)
+      // 여기서는 시뮬레이션을 위해 setTimeout 사용
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      isScrolling = true;
-      const delta = e.deltaY;
-      const scrollAmount = Math.abs(delta) > 50 ? delta * 0.5 : delta;
+      setTestPlanData(data);
+      setSaveStatus('success');
       
-      container.scrollBy({
-        top: scrollAmount,
-        behavior: 'smooth'
-      });
-
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        isScrolling = false;
-      }, 150);
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    
-    return () => {
-      container.removeEventListener('wheel', handleWheel);
-      clearTimeout(scrollTimeout);
-    };
-  }, []);
+      // 3초 후 상태 초기화
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      
+      console.log('테스트 계획 저장 완료:', data);
+    } catch (error) {
+      setSaveStatus('error');
+      console.error('테스트 계획 저장 실패:', error);
+      
+      // 3초 후 상태 초기화
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
 
   // 아이콘 렌더링 함수
   const renderIcon = (iconType: string) => {
@@ -136,43 +129,48 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 
   return (
     <PageContainer ref={containerRef}>
-      {/* 헤더 */}
-      <ReleaseHeader>
-        <HeaderLeft>
-          <BackButton onClick={onBackToList}>
-            ← 목록으로
-          </BackButton>
-          <div>
-            <ReleaseTitle>{release.name}</ReleaseTitle>
-            <ReleaseMetadata>
-              버전 {release.version} • {release.status} • {release.startDate} ~ {release.endDate}
-            </ReleaseMetadata>
-          </div>
-        </HeaderLeft>
-        <HeaderRight>
-          <OpenExecutionButton>실행 열기</OpenExecutionButton>
-        </HeaderRight>
-      </ReleaseHeader>
+      {/* 페이지 헤더 영역 */}
+      <PageHeader collapsed={isHeaderCollapsed}>
+        {/* 헤더 */}
+        <ReleaseHeader collapsed={isHeaderCollapsed}>
+          <HeaderLeft>
+            <div>
+              <ReleaseTitle>{release.name}</ReleaseTitle>
+              <ReleaseMetadata>
+                버전 {release.version} • {release.status} • {release.startDate} ~ {release.endDate}
+              </ReleaseMetadata>
+            </div>
+          </HeaderLeft>
+          <HeaderRight>
+            <BackButton onClick={onBackToList}>
+              ← 목록으로
+            </BackButton>
+            <CollapseButton onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}>
+              {isHeaderCollapsed ? '▼' : '▲'}
+            </CollapseButton>
+          </HeaderRight>
+        </ReleaseHeader>
 
-      {/* 진행률 섹션 */}
-      <ProgressSection>
-        <ProgressLeft>
-          <ProgressBar>
-            <ProgressFill width={release.progress} />
-          </ProgressBar>
-          <ProgressText>{release.progress}%</ProgressText>
-          <ProgressMetrics>
-            통과율: {release.passRate}% • 차단: {release.blockers}
-          </ProgressMetrics>
-        </ProgressLeft>
-        <ProgressRight>
-          <ActionButton>범위 동기화</ActionButton>
-          <ActionButton>보고서</ActionButton>
-          <SignOffButton>승인</SignOffButton>
-        </ProgressRight>
-      </ProgressSection>
+        {/* 진행률 섹션 */}
+        <AnimatedProgressSection collapsed={isHeaderCollapsed}>
+          <ProgressLeft>
+            <ProgressBar>
+              <ProgressFill width={release.progress} />
+            </ProgressBar>
+            <ProgressText>{release.progress}%</ProgressText>
+            <ProgressMetrics>
+              통과율: {release.passRate}% • 차단: {release.blockers}
+            </ProgressMetrics>
+          </ProgressLeft>
+          <ProgressRight>
+            <ActionButton>범위 동기화</ActionButton>
+            <ActionButton>보고서</ActionButton>
+            <SignOffButton>승인</SignOffButton>
+          </ProgressRight>
+        </AnimatedProgressSection>
+      </PageHeader>
 
-      {/* 탭 네비게이션 */}
+      {/* 탭 네비게이션 - 항상 보임 */}
       <TabNavigation>
         {tabs.map(tab => (
           <TabButton
@@ -185,8 +183,8 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
         ))}
       </TabNavigation>
 
-      {/* 콘텐츠 영역 */}
-      <ContentArea>
+      {/* 스크롤 가능한 콘텐츠 영역 */}
+      <ContentArea headerCollapsed={isHeaderCollapsed}>
         {activeTab === 'overview' && (
           <OverviewContent>
             {/* KPI 섹션 */}
@@ -269,11 +267,28 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
         )}
 
         {activeTab === 'testplan' && (
-          <TestPlanForm 
-            onSave={(data) => console.log('테스트 계획 저장:', data)}
-            onPreview={() => console.log('테스트 계획 미리보기')}
-            onExport={() => console.log('테스트 계획 내보내기')}
-          />
+          <>
+            {saveStatus === 'saving' && (
+              <SaveStatusMessage style={{ color: '#2563eb' }}>
+                저장 중...
+              </SaveStatusMessage>
+            )}
+            {saveStatus === 'success' && (
+              <SaveStatusMessage style={{ color: '#059669' }}>
+                저장 완료!
+              </SaveStatusMessage>
+            )}
+            {saveStatus === 'error' && (
+              <SaveStatusMessage style={{ color: '#dc2626' }}>
+                저장 실패. 다시 시도해주세요.
+              </SaveStatusMessage>
+            )}
+            <TestPlanForm 
+              onSave={handleTestPlanSave}
+              onPreview={() => console.log('테스트 계획 미리보기')}
+              onExport={() => console.log('테스트 계획 내보내기')}
+            />
+          </>
         )}
 
         {activeTab === 'execution' && (
@@ -297,36 +312,82 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 // Styled Components
 const PageContainer = styled.div`
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   background: ${({ theme }) => theme.color.surface.primary};
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 `;
 
-const ReleaseHeader = styled.div`
+const PageHeader = styled.div<{ collapsed: boolean }>`
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: ${({ theme }) => theme.color.surface.primary};
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  width: 100%;
+  flex-shrink: 0;
+  ${({ collapsed }) => collapsed && `
+    min-height: 80px;
+    max-height: 80px;
+  `}
+`;
+
+
+
+const CollapseButton = styled.button`
+  background: ${({ theme }) => theme.color.surface.secondary};
+  color: ${({ theme }) => theme.color.text.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  cursor: pointer;
+  margin-left: ${({ theme }) => theme.spacing.sm};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    background: ${({ theme }) => theme.color.border.primary};
+    transform: scale(1.05);
+  }
+`;
+
+const ReleaseHeader = styled.div<{ collapsed: boolean }>`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: ${({ theme }) => theme.spacing.xl};
+  padding: ${({ theme, collapsed }) => collapsed ? `${theme.spacing.md} ${theme.spacing.xl}` : `${theme.spacing.lg} ${theme.spacing.xl}`};
   background: ${({ theme }) => theme.color.surface.primary};
+  transition: padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const HeaderRight = styled.div``;
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 3px;
+`;
 
-const BackButton = styled(Button)`
+const BackButton = styled.button`
   background: ${({ theme }) => theme.color.surface.primary};
   color: ${({ theme }) => theme.color.text.primary};
   border: 1px solid ${({ theme }) => theme.color.border.primary};
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
   border-radius: ${({ theme }) => theme.radius.md};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   cursor: pointer;
-  margin-right: ${({ theme }) => theme.spacing.md};
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   &:hover {
     background: ${({ theme }) => theme.color.surface.secondary};
@@ -334,10 +395,10 @@ const BackButton = styled(Button)`
 `;
 
 const ReleaseTitle = styled.h1`
-  font-size: ${({ theme }) => theme.typography.h1.fontSize};
-  font-weight: ${({ theme }) => theme.typography.h1.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing.sm} 0;
+  margin: 0 0 ${({ theme }) => theme.spacing.xs} 0;
 `;
 
 const ReleaseMetadata = styled.div`
@@ -345,40 +406,42 @@ const ReleaseMetadata = styled.div`
   color: ${({ theme }) => theme.color.text.secondary};
 `;
 
-const OpenExecutionButton = styled(Button)`
-  background: ${({ theme }) => theme.color.primary[600]};
-  color: white;
-  border: none;
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.radius.md};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  cursor: pointer;
-  
-  &:hover {
-    background: ${({ theme }) => theme.color.primary[700]};
-  }
-`;
+
 
 const ProgressSection = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
   background: ${({ theme }) => theme.color.surface.secondary};
   border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+`;
+
+const AnimatedProgressSection = styled.div<{ collapsed: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  background: ${({ theme }) => theme.color.surface.secondary};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: ${({ collapsed }) => collapsed ? '0px' : '200px'};
+  opacity: ${({ collapsed }) => collapsed ? '0' : '1'};
+  overflow: hidden;
+  transform: ${({ collapsed }) => collapsed ? 'translateY(-20px)' : 'translateY(0)'};
 `;
 
 const ProgressLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const ProgressBar = styled.div`
-  width: 200px;
-  height: 8px;
+  width: 150px;
+  height: 6px;
   background: ${({ theme }) => theme.color.border.primary};
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 `;
 
@@ -395,16 +458,16 @@ const ProgressText = styled.span`
 `;
 
 const ProgressMetrics = styled.span`
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   color: ${({ theme }) => theme.color.text.secondary};
 `;
 
 const ProgressRight = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const ActionButton = styled(Button)`
+const ActionButton = styled.button`
   background: ${({ theme }) => theme.color.surface.primary};
   color: ${({ theme }) => theme.color.text.primary};
   border: 1px solid ${({ theme }) => theme.color.border.primary};
@@ -418,8 +481,8 @@ const ActionButton = styled(Button)`
   }
 `;
 
-const SignOffButton = styled(Button)`
-  background: ${({ theme }) => theme.color.success.main};
+const SignOffButton = styled.button`
+  background: ${({ theme }) => theme.color.success[600]};
   color: white;
   border: none;
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
@@ -428,7 +491,7 @@ const SignOffButton = styled(Button)`
   cursor: pointer;
   
   &:hover {
-    background: ${({ theme }) => theme.color.success.dark};
+    background: ${({ theme }) => theme.color.success[700]};
   }
 `;
 
@@ -436,27 +499,53 @@ const TabNavigation = styled.div`
   display: flex;
   background: ${({ theme }) => theme.color.surface.primary};
   border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  flex-shrink: 0;
 `;
 
 const TabButton = styled.button<{ active: boolean }>`
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  background: ${({ theme, active }) => active ? theme.color.primary.main : 'transparent'};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  background: ${({ theme, active }) => active ? theme.color.primary[600] : 'transparent'};
   color: ${({ theme, active }) => active ? 'white' : theme.color.text.primary};
   border: none;
-  border-bottom: 2px solid ${({ theme, active }) => active ? theme.color.primary.main : 'transparent'};
+  border-bottom: 2px solid ${({ theme, active }) => active ? theme.color.primary[600] : 'transparent'};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${({ theme, active }) => active ? theme.color.primary.main : theme.color.surface.secondary};
+    background: ${({ theme, active }) => active ? theme.color.primary[600] : theme.color.surface.secondary};
   }
 `;
 
-const ContentArea = styled.div`
+const ContentArea = styled.div<{ headerCollapsed: boolean }>`
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: ${({ theme }) => theme.spacing.xl};
+  scroll-behavior: smooth;
+  min-height: ${({ headerCollapsed }) => headerCollapsed ? 'calc(100vh - 120px)' : 'calc(100vh - 260px)'};
+  
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.color.surface.secondary};
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.border.primary};
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.color.text.secondary};
+  }
 `;
 
 const OverviewContent = styled.div`
@@ -469,8 +558,8 @@ const Section = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: ${({ theme }) => theme.typography.heading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.heading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h2.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h2.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
 `;
@@ -489,7 +578,7 @@ const KPICard = styled.div`
 `;
 
 const KPILabel = styled.div`
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   color: ${({ theme }) => theme.color.text.secondary};
   margin-bottom: ${({ theme }) => theme.spacing.xs};
 `;
@@ -521,20 +610,20 @@ const ChartHeader = styled.div`
 `;
 
 const ChartTitle = styled.h3`
-  font-size: ${({ theme }) => theme.typography.subheading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.subheading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
   margin: 0;
 `;
 
 const ChartValue = styled.div`
-  font-size: ${({ theme }) => theme.typography.heading.fontSize};
-  font-weight: ${({ theme }) => theme.typography.heading.fontWeight};
+  font-size: ${({ theme }) => theme.typography.h2.fontSize};
+  font-weight: ${({ theme }) => theme.typography.h2.fontWeight};
   color: ${({ theme }) => theme.color.text.primary};
 `;
 
 const ChartTrend = styled.div<{ color: string }>`
-  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  font-size: ${({ theme }) => theme.typography.label.fontSize};
   color: ${props => props.color};
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
@@ -557,7 +646,7 @@ const BarChart = styled.div`
 const Bar = styled.div<{ height: number }>`
   flex: 1;
   height: ${props => props.height}%;
-  background: ${({ theme }) => theme.color.primary.main};
+  background: ${({ theme }) => theme.color.primary[600]};
   border-radius: 2px;
 `;
 
@@ -570,7 +659,7 @@ const LineChart = styled.div`
 const Line = styled.div`
   width: 100%;
   height: 2px;
-  background: ${({ theme }) => theme.color.primary.main};
+  background: ${({ theme }) => theme.color.primary[600]};
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -598,7 +687,7 @@ const TimelineIcon = styled.div`
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: ${({ theme }) => theme.color.primary.main};
+  background: ${({ theme }) => theme.color.primary[600]};
   color: white;
   border-radius: 50%;
 `;
@@ -623,8 +712,8 @@ const TabContent = styled.div`
   margin: 0 auto;
   
   h3 {
-    font-size: ${({ theme }) => theme.typography.heading.fontSize};
-    font-weight: ${({ theme }) => theme.typography.heading.fontWeight};
+    font-size: ${({ theme }) => theme.typography.h3.fontSize};
+    font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
     color: ${({ theme }) => theme.color.text.primary};
     margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
   }
@@ -632,6 +721,31 @@ const TabContent = styled.div`
   p {
     color: ${({ theme }) => theme.color.text.secondary};
     line-height: 1.6;
+  }
+`;
+
+const SaveStatusMessage = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.color.surface.primary};
+  border: 1px solid ${({ theme }) => theme.color.border.primary};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 `;
 
