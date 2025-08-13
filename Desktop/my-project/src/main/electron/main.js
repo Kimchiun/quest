@@ -12,6 +12,19 @@ const MAX_RETRIES = 3;
 function createWindow() {
   console.log('📱 브라우저 창 생성 중...');
   
+  // 플랫폼별 아이콘 설정
+  let iconPath;
+  if (process.platform === 'darwin') {
+    // macOS
+    iconPath = path.join(__dirname, 'assets', 'quest-icon.icns');
+  } else if (process.platform === 'win32') {
+    // Windows
+    iconPath = path.join(__dirname, 'assets', 'quest-icon.ico');
+  } else {
+    // Linux
+    iconPath = path.join(__dirname, 'assets', 'quest-icon.png');
+  }
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -25,7 +38,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     },
     show: false,
-    icon: path.join(__dirname, 'assets', 'icon.ico'),
+    icon: iconPath,
     titleBarStyle: 'default',
     autoHideMenuBar: true,
     backgroundColor: '#282c34'

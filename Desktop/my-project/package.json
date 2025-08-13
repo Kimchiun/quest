@@ -33,7 +33,8 @@
     "diagnostic:cleanup": "node scripts/dev-diagnostic.js --cleanup",
     "diagnostic:test": "node scripts/dev-diagnostic.js --test",
     "setup": "node scripts/setup-dev.js",
-    "generate-icon": "node scripts/generate-icon.js"
+    "generate-icon": "node scripts/generate-icon.js",
+    "create-icns": "node scripts/create-icns.js"
   },
   "keywords": ["electron", "test-management", "quest", "desktop-app"],
   "author": "Quest Team",
