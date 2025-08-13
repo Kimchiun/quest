@@ -292,7 +292,7 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
       case 'test-management-v2':
         return 'Quest - 테스트 관리';
       case 'release-management-v2':
-        return 'Quest - 릴리즈 관리 v2';
+        return 'Quest - 릴리즈 관리';
 
       case 'defect-management':
         return 'Quest - 결함 관리';
@@ -443,12 +443,12 @@ const GlobalLayout: React.FC<GlobalLayoutProps> = ({ children }) => {
             active={isActiveSection('release-management-v2')}
             onClick={() => handleNavigationClick('release-management-v2')}
             collapsed={sidebarCollapsed}
-            data-title="릴리즈 관리 v2"
+            data-title="릴리즈 관리"
           >
             <NavIcon>
               <ReleaseIcon size={20} color="white" />
             </NavIcon>
-            <NavText collapsed={sidebarCollapsed}>릴리즈 관리 v2</NavText>
+            <NavText collapsed={sidebarCollapsed}>릴리즈 관리</NavText>
           </NavItem>
 
 
