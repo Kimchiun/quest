@@ -7,7 +7,8 @@ import type {
   Execution, 
   Defect, 
   Comment,
-  User 
+  User,
+  TestFolder
 } from '../types';
 
 // 인증 토큰 관리
@@ -122,6 +123,19 @@ export const api = createApi({
       query: (id) => `/api/releases/${id}`,
       providesTags: (result, error, id) => [{ type: 'Release', id }],
     }),
+    
+    getReleaseTestCases: builder.query<TestCase[], number>({
+      query: (releaseId) => `/api/releases/${releaseId}/testcases`,
+      providesTags: (result, error, releaseId) => [{ type: 'Release', id: releaseId }, 'TestCase'],
+    }),
+      getTestFolders: builder.query<TestFolder[], void>({
+    query: () => '/api/releases/testcases/folders',
+    providesTags: ['TestFolder'],
+  }),
+  getFolderTestCases: builder.query<any[], number>({
+    query: (folderId) => `/api/releases/folders/${folderId}/testcases`,
+    providesTags: (result, error, folderId) => [{ type: 'Folder', id: folderId }, 'TestCase'],
+  }),
     
     createRelease: builder.mutation<Release, Partial<Release>>({
       query: (release) => ({
@@ -300,6 +314,9 @@ export const {
   // Release hooks
   useGetReleasesQuery,
   useGetReleaseQuery,
+  useGetReleaseTestCasesQuery,
+  useGetTestFoldersQuery,
+  useGetFolderTestCasesQuery,
   useCreateReleaseMutation,
   useUpdateReleaseMutation,
   useDeleteReleaseMutation,

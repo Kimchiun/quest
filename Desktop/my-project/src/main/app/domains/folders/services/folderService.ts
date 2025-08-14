@@ -215,16 +215,28 @@ async function checkIsDescendant(folderId: number, targetParentId: number): Prom
 }
 
 export async function deleteFolder(id: number, mode: 'soft' | 'hard' = 'soft', deletedBy: string): Promise<boolean> {
+    console.log(`🗑️ 폴더 삭제 시도: ID ${id}, 모드: ${mode}`);
+    
     const folder = await getFolderByIdRepo(id);
-    if (!folder) return false;
+    if (!folder) {
+        console.log(`❌ 폴더를 찾을 수 없음: ID ${id}`);
+        return false;
+    }
+
+    console.log(`✅ 폴더 찾음: ${folder.name} (ID: ${folder.id})`);
 
     // 하위 폴더들을 재귀적으로 삭제
     const children = await listFolders({ parentId: id });
+    console.log(`📁 하위 폴더 ${children.length}개 발견`);
+    
     for (const child of children) {
+        console.log(`🗑️ 하위 폴더 삭제: ${child.name} (ID: ${child.id})`);
         await deleteFolder(child.id, mode, deletedBy);
     }
 
-    return await deleteFolderRepo(id, mode, deletedBy);
+    const result = await deleteFolderRepo(id, mode, deletedBy);
+    console.log(`🗑️ 폴더 삭제 결과: ${result ? '성공' : '실패'} (ID: ${id})`);
+    return result;
 }
 
 export async function getFolderTree(projectId: number, depth?: number): Promise<FolderTree[]> {

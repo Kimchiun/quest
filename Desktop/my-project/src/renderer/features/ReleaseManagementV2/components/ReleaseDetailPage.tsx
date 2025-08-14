@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import TestPlanForm from './TestPlanForm';
+import ExecutionView from './ExecutionView';
 
 interface ReleaseDetailPageProps {
   release: {
@@ -20,9 +21,9 @@ interface ReleaseDetailPageProps {
 
 const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentTab, onBackToList }) => {
   const [activeTab, setActiveTab] = useState(currentTab);
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [testPlanData, setTestPlanData] = useState(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [testCases, setTestCases] = useState<any[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 기본 스크롤 사용 (커스텀 휠 핸들러 제거)
@@ -50,6 +51,24 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
       // 3초 후 상태 초기화
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
+  };
+
+  // 테스트 케이스 업데이트 함수
+  const handleTestCaseUpdate = (testCaseId: string, updates: any) => {
+    console.log('테스트 케이스 업데이트:', testCaseId, updates);
+    // TODO: 실제 API 호출로 업데이트
+  };
+
+  // 일괄 업데이트 함수
+  const handleBulkUpdate = (testCaseIds: string[], updates: any) => {
+    console.log('일괄 업데이트:', testCaseIds, updates);
+    // TODO: 실제 API 호출로 일괄 업데이트
+  };
+
+  // 테스트케이스 추가 함수
+  const handleAddTestCases = (newTestCases: any[]) => {
+    console.log('테스트케이스 추가:', newTestCases);
+    setTestCases(prev => [...prev, ...newTestCases]);
   };
 
   // 아이콘 렌더링 함수
@@ -129,62 +148,30 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 
   return (
     <PageContainer ref={containerRef}>
-      {/* 페이지 헤더 영역 */}
-      <PageHeader collapsed={isHeaderCollapsed}>
-        {/* 헤더 */}
-        <ReleaseHeader collapsed={isHeaderCollapsed}>
-          <HeaderLeft>
-            <div>
-              <ReleaseTitle>{release.name}</ReleaseTitle>
-              <ReleaseMetadata>
-                버전 {release.version} • {release.status} • {release.startDate} ~ {release.endDate}
-              </ReleaseMetadata>
-            </div>
-          </HeaderLeft>
-          <HeaderRight>
-            <BackButton onClick={onBackToList}>
-              ← 목록으로
-            </BackButton>
-            <CollapseButton onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}>
-              {isHeaderCollapsed ? '▼' : '▲'}
-            </CollapseButton>
-          </HeaderRight>
-        </ReleaseHeader>
-
-        {/* 진행률 섹션 */}
-        <AnimatedProgressSection collapsed={isHeaderCollapsed}>
-          <ProgressLeft>
-            <ProgressBar>
-              <ProgressFill width={release.progress} />
-            </ProgressBar>
-            <ProgressText>{release.progress}%</ProgressText>
-            <ProgressMetrics>
-              통과율: {release.passRate}% • 차단: {release.blockers}
-            </ProgressMetrics>
-          </ProgressLeft>
-          <ProgressRight>
-            <ActionButton>범위 동기화</ActionButton>
-            <ActionButton>보고서</ActionButton>
-            <SignOffButton>승인</SignOffButton>
-          </ProgressRight>
-        </AnimatedProgressSection>
-      </PageHeader>
+      
 
       {/* 탭 네비게이션 - 항상 보임 */}
       <TabNavigation>
-        {tabs.map(tab => (
-          <TabButton
-            key={tab.id}
-            active={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </TabButton>
-        ))}
+        <TabLeft>
+          {tabs.map(tab => (
+            <TabButton
+              key={tab.id}
+              active={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </TabButton>
+          ))}
+        </TabLeft>
+        <TabRight>
+          <BackButton onClick={onBackToList}>
+            ← 목록으로
+          </BackButton>
+        </TabRight>
       </TabNavigation>
 
       {/* 스크롤 가능한 콘텐츠 영역 */}
-      <ContentArea headerCollapsed={isHeaderCollapsed}>
+      <ContentArea>
         {activeTab === 'overview' && (
           <OverviewContent>
             {/* KPI 섹션 */}
@@ -292,10 +279,19 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
         )}
 
         {activeTab === 'execution' && (
-          <TabContent>
-            <h3>실행 콘텐츠</h3>
-            <p>테스트 실행 세부사항 및 결과가 여기에 표시됩니다.</p>
-          </TabContent>
+          <ExecutionView
+            release={{
+              id: release.id,
+              name: release.name,
+              version: release.version,
+              owner: 'John Doe',
+              createdAt: release.startDate
+            }}
+            testCases={testCases}
+            onTestCaseUpdate={handleTestCaseUpdate}
+            onBulkUpdate={handleBulkUpdate}
+            onAddTestCases={handleAddTestCases}
+          />
         )}
 
         {activeTab === 'settings' && (
@@ -319,60 +315,13 @@ const PageContainer = styled.div`
   flex-direction: column;
 `;
 
-const PageHeader = styled.div<{ collapsed: boolean }>`
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: ${({ theme }) => theme.color.surface.primary};
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  width: 100%;
-  flex-shrink: 0;
-  ${({ collapsed }) => collapsed && `
-    min-height: 80px;
-    max-height: 80px;
-  `}
-`;
 
 
 
-const CollapseButton = styled.button`
-  background: ${({ theme }) => theme.color.surface.secondary};
-  color: ${({ theme }) => theme.color.text.primary};
-  border: 1px solid ${({ theme }) => theme.color.border.primary};
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.radius.md};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  cursor: pointer;
-  margin-left: ${({ theme }) => theme.spacing.sm};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  &:hover {
-    background: ${({ theme }) => theme.color.border.primary};
-    transform: scale(1.05);
-  }
-`;
 
-const ReleaseHeader = styled.div<{ collapsed: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: ${({ theme, collapsed }) => collapsed ? `${theme.spacing.md} ${theme.spacing.xl}` : `${theme.spacing.lg} ${theme.spacing.xl}`};
-  background: ${({ theme }) => theme.color.surface.primary};
-  transition: padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-`;
 
-const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
 
-const HeaderRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 3px;
-`;
+
 
 const BackButton = styled.button`
   background: ${({ theme }) => theme.color.surface.primary};
@@ -394,17 +343,7 @@ const BackButton = styled.button`
   }
 `;
 
-const ReleaseTitle = styled.h1`
-  font-size: ${({ theme }) => theme.typography.h3.fontSize};
-  font-weight: ${({ theme }) => theme.typography.h3.fontWeight};
-  color: ${({ theme }) => theme.color.text.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing.xs} 0;
-`;
 
-const ReleaseMetadata = styled.div`
-  font-size: ${({ theme }) => theme.typography.body.fontSize};
-  color: ${({ theme }) => theme.color.text.secondary};
-`;
 
 
 
@@ -417,92 +356,28 @@ const ProgressSection = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
 `;
 
-const AnimatedProgressSection = styled.div<{ collapsed: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
-  background: ${({ theme }) => theme.color.surface.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: ${({ collapsed }) => collapsed ? '0px' : '200px'};
-  opacity: ${({ collapsed }) => collapsed ? '0' : '1'};
-  overflow: hidden;
-  transform: ${({ collapsed }) => collapsed ? 'translateY(-20px)' : 'translateY(0)'};
-`;
 
-const ProgressLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const ProgressBar = styled.div`
-  width: 150px;
-  height: 6px;
-  background: ${({ theme }) => theme.color.border.primary};
-  border-radius: 3px;
-  overflow: hidden;
-`;
-
-const ProgressFill = styled.div<{ width: number }>`
-  width: ${props => props.width}%;
-  height: 100%;
-  background: ${({ theme }) => theme.color.primary[600]};
-  transition: width 0.3s ease;
-`;
-
-const ProgressText = styled.span`
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  color: ${({ theme }) => theme.color.text.primary};
-`;
-
-const ProgressMetrics = styled.span`
-  font-size: ${({ theme }) => theme.typography.label.fontSize};
-  color: ${({ theme }) => theme.color.text.secondary};
-`;
-
-const ProgressRight = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const ActionButton = styled.button`
-  background: ${({ theme }) => theme.color.surface.primary};
-  color: ${({ theme }) => theme.color.text.primary};
-  border: 1px solid ${({ theme }) => theme.color.border.primary};
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.radius.md};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  cursor: pointer;
-  
-  &:hover {
-    background: ${({ theme }) => theme.color.surface.secondary};
-  }
-`;
-
-const SignOffButton = styled.button`
-  background: ${({ theme }) => theme.color.success[600]};
-  color: white;
-  border: none;
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.radius.md};
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  cursor: pointer;
-  
-  &:hover {
-    background: ${({ theme }) => theme.color.success[700]};
-  }
-`;
 
 const TabNavigation = styled.div`
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   background: ${({ theme }) => theme.color.surface.primary};
   border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
   position: sticky;
   top: 0;
   z-index: 999;
   flex-shrink: 0;
+`;
+
+const TabLeft = styled.div`
+  display: flex;
+`;
+
+const TabRight = styled.div`
+  display: flex;
+  align-items: center;
+  padding-right: ${({ theme }) => theme.spacing.md};
 `;
 
 const TabButton = styled.button<{ active: boolean }>`
@@ -521,13 +396,13 @@ const TabButton = styled.button<{ active: boolean }>`
   }
 `;
 
-const ContentArea = styled.div<{ headerCollapsed: boolean }>`
+const ContentArea = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: ${({ theme }) => theme.spacing.xl};
   scroll-behavior: smooth;
-  min-height: ${({ headerCollapsed }) => headerCollapsed ? 'calc(100vh - 120px)' : 'calc(100vh - 260px)'};
+  min-height: calc(100vh - 60px);
   
   /* 스크롤바 스타일링 */
   &::-webkit-scrollbar {

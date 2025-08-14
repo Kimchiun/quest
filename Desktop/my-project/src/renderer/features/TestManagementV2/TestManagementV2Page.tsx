@@ -86,6 +86,8 @@ const TestManagementV2Page: React.FC = () => {
 
   useEffect(() => {
     loadFolderTree();
+    // 초기 로드 시 전체 테스트케이스 로드
+    loadTestCases();
   }, []);
 
   const loadFolderTree = async () => {
@@ -101,6 +103,25 @@ const TestManagementV2Page: React.FC = () => {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTestCases = async (folderId?: number) => {
+    try {
+      const url = folderId 
+        ? `http://localhost:3001/api/testcases?folderId=${folderId}`
+        : 'http://localhost:3001/api/testcases';
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('테스트케이스를 불러올 수 없습니다.');
+      }
+      const data = await response.json();
+      // 백엔드 API는 { testCases: [...], total: number } 형태로 반환하므로 testCases 배열만 추출
+      setTestCases(data.testCases || []);
+    } catch (error) {
+      console.error('테스트케이스 로드 오류:', error);
+      setTestCases([]);
     }
   };
 
@@ -231,12 +252,14 @@ const TestManagementV2Page: React.FC = () => {
 
 
 
-  const handleFolderSelect = (folder: FolderTree) => {
+  const handleFolderSelect = async (folder: FolderTree) => {
     console.log('📁 폴더 선택됨:', folder.name, 'ID:', folder.id);
     setSelectedFolder(folder);
     // 폴더 변경 시 테스트케이스 선택 해제 및 상세 패널 닫기
     setSelectedTestCase(null);
     setIsDetailPanelOpen(false);
+    // 선택된 폴더의 테스트케이스 로드
+    await loadTestCases(folder.id);
   };
 
 
@@ -292,41 +315,44 @@ const TestManagementV2Page: React.FC = () => {
     }
   };
 
-  const handleCreateTestCase = (testCaseData: any) => {
+  const handleCreateTestCase = async (testCaseData: any) => {
     console.log('새 테스트케이스 생성:', testCaseData);
     
-    // 테스트케이스 ID 자동 생성 (TC-001, TC-002 형식)
-    const generateTestCaseId = () => {
-      const existingIds = testCases.map(tc => {
-        const match = tc.id?.toString().match(/^TC-(\d+)$/);
-        return match ? parseInt(match[1]) : 0;
+    try {
+      // 백엔드 API 호출하여 테스트케이스 생성
+      const response = await fetch('http://localhost:3001/api/testcases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: testCaseData.title,
+          prereq: testCaseData.preconditions,
+          steps: testCaseData.steps.filter((step: string) => step.trim() !== ''), // 빈 단계 제거
+          expected: testCaseData.expectedResult,
+          priority: testCaseData.priority === 'high' ? 'High' : testCaseData.priority === 'medium' ? 'Medium' : 'Low',
+          status: testCaseData.status === 'active' ? 'Active' : 'Inactive',
+          folderId: selectedFolder?.id,
+          createdBy: 'admin'
+        }),
       });
-      const maxId = Math.max(0, ...existingIds);
-      return `TC-${String(maxId + 1).padStart(3, '0')}`;
-    };
-    
-    // 새 테스트케이스 객체 생성
-    const newTestCase = {
-      id: generateTestCaseId(), // 자동 생성된 ID
-      title: testCaseData.title,
-      description: testCaseData.description,
-      priority: testCaseData.priority,
-      type: testCaseData.type,
-      status: testCaseData.status,
-      preconditions: testCaseData.preconditions,
-      steps: testCaseData.steps.filter((step: string) => step.trim() !== ''), // 빈 단계 제거
-      expectedResult: testCaseData.expectedResult,
-      createdBy: 'admin',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      folderId: selectedFolder?.id
-    };
-    
-    // 테스트케이스 목록에 추가
-    setTestCases(prev => [...prev, newTestCase]);
-    
-    // TODO: API 호출하여 테스트케이스 저장
-    console.log('테스트케이스가 목록에 추가되었습니다:', newTestCase);
+
+      if (!response.ok) {
+        throw new Error('테스트케이스 생성에 실패했습니다.');
+      }
+
+      const newTestCase = await response.json();
+      console.log('테스트케이스가 성공적으로 생성되었습니다:', newTestCase);
+      
+      // 테스트케이스 목록에 추가
+      setTestCases(prev => [...prev, newTestCase]);
+      
+      // 모달 닫기
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('테스트케이스 생성 오류:', error);
+      alert('테스트케이스 생성에 실패했습니다. 다시 시도해 주세요.');
+    }
   };
 
   const handleTestCaseSelect = (testCase: any) => {
@@ -335,19 +361,49 @@ const TestManagementV2Page: React.FC = () => {
     setIsDetailPanelOpen(true);
   };
 
-  const handleTestCaseUpdate = (updatedTestCase: any) => {
+  const handleTestCaseUpdate = async (updatedTestCase: any) => {
     console.log('테스트케이스 업데이트:', updatedTestCase);
     
-    // 테스트케이스 목록에서 해당 항목 업데이트
-    setTestCases(prev => prev.map(tc => 
-      tc.id === updatedTestCase.id ? updatedTestCase : tc
-    ));
-    
-    // 선택된 테스트케이스도 업데이트
-    setSelectedTestCase(updatedTestCase);
-    
-    // TODO: API 호출하여 테스트케이스 업데이트
-    console.log('테스트케이스가 업데이트되었습니다:', updatedTestCase);
+    try {
+      // 백엔드 API 호출하여 테스트케이스 업데이트
+      // 백엔드 API 형식에 맞게 데이터 변환
+      const apiData = {
+        title: updatedTestCase.title,
+        prereq: updatedTestCase.preconditions || updatedTestCase.prereq,
+        steps: updatedTestCase.steps,
+        expected: updatedTestCase.expectedResult || updatedTestCase.expected,
+        priority: updatedTestCase.priority === 'high' ? 'High' : updatedTestCase.priority === 'medium' ? 'Medium' : 'Low',
+        status: updatedTestCase.status === 'active' ? 'Active' : 'Inactive',
+        folderId: updatedTestCase.folderId,
+        createdBy: updatedTestCase.createdBy || 'admin'
+      };
+
+      const response = await fetch(`http://localhost:3001/api/testcases/${updatedTestCase.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      if (!response.ok) {
+        throw new Error('테스트케이스 업데이트에 실패했습니다.');
+      }
+
+      const updatedData = await response.json();
+      console.log('테스트케이스가 성공적으로 업데이트되었습니다:', updatedData);
+      
+      // 테스트케이스 목록에서 해당 항목 업데이트
+      setTestCases(prev => prev.map(tc => 
+        tc.id === updatedTestCase.id ? updatedData : tc
+      ));
+      
+      // 선택된 테스트케이스도 업데이트
+      setSelectedTestCase(updatedData);
+    } catch (error) {
+      console.error('테스트케이스 업데이트 오류:', error);
+      alert('테스트케이스 업데이트에 실패했습니다. 다시 시도해 주세요.');
+    }
   };
 
   const handleMoveToFolder = (testCaseId: string, targetFolderId: string) => {

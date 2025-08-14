@@ -187,7 +187,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
 }) => {
   console.log('🔍 TestCaseList 렌더링:', {
     selectedFolder: selectedFolder?.name,
-    testCasesLength: testCases.length,
+    testCasesLength: Array.isArray(testCases) ? testCases.length : 0,
     selectedTestCase: selectedTestCase?.title
   });
 
@@ -206,24 +206,26 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
     );
   }
 
-  // 선택된 폴더에 해당하는 테스트케이스만 필터링
-  const filteredTestCases = testCases.filter(tc => {
-    const tcFolderId = typeof tc.folderId === 'string' ? parseInt(tc.folderId) : tc.folderId;
-    const selectedFolderId = selectedFolder?.id;
-    
-    console.log('🔍 테스트케이스 필터링:', {
-      testCaseId: tc.id,
-      testCaseTitle: tc.title,
-      tcFolderId,
-      selectedFolderId,
-      isMatch: tcFolderId === selectedFolderId
-    });
-    
-    return tcFolderId === selectedFolderId;
-  });
+  // testCases가 배열인지 확인하고 안전하게 필터링
+  const filteredTestCases = Array.isArray(testCases) 
+    ? testCases.filter(tc => {
+        const tcFolderId = typeof tc.folderId === 'string' ? parseInt(tc.folderId) : tc.folderId;
+        const selectedFolderId = selectedFolder?.id;
+        
+        console.log('🔍 테스트케이스 필터링:', {
+          testCaseId: tc.id,
+          testCaseTitle: tc.title,
+          tcFolderId,
+          selectedFolderId,
+          isMatch: tcFolderId === selectedFolderId
+        });
+        
+        return tcFolderId === selectedFolderId;
+      })
+    : [];
   
   console.log('🔍 TestCaseList 데이터 분석:', {
-    testCasesLength: testCases.length,
+    testCasesLength: Array.isArray(testCases) ? testCases.length : 0,
     filteredTestCasesLength: filteredTestCases.length,
     selectedFolderId: selectedFolder?.id,
     selectedFolderName: selectedFolder?.name
@@ -274,7 +276,13 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
                   {testCase.status}
                 </StatusBadge>
                 <span>작성자: {testCase.createdBy}</span>
-                <span>수정일: {testCase.updatedAt.toLocaleDateString()}</span>
+                <span>수정일: {(() => {
+                  try {
+                    return new Date(testCase.updatedAt).toLocaleDateString();
+                  } catch (error) {
+                    return '날짜 없음';
+                  }
+                })()}</span>
               </TestCaseMeta>
             </TestCaseContent>
           </TestCaseItem>

@@ -82,6 +82,23 @@ export interface TestCaseChange {
   newValue: any;
 }
 
+// TestFolder Types
+export interface TestFolder {
+  id: number;
+  name: string;
+  testCaseCount: number;
+  children?: TestFolder[];
+  projectId?: number;
+  parentId?: number | null;
+  orderIndex?: number;
+  depth?: number;
+  createdBy?: string;
+  isLocked?: boolean;
+  isArchived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // 리스트 관련 타입
 export interface TestCaseListColumn {
   key: string;

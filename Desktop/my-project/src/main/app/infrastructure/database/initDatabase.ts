@@ -101,13 +101,26 @@ export async function testDatabaseConnection() {
 
 async function runMigrations(pgClient: any) {
     try {
+        console.log('📦 폴더 관리 마이그레이션 실행 중...');
+        
+        // 폴더 관련 마이그레이션 파일 실행
+        const folderMigrationPath = path.join(__dirname, 'migrations', '002_create_folders.sql');
+        const folderMigrationSQL = fs.readFileSync(folderMigrationPath, 'utf8');
+        
+        await pgClient.query(folderMigrationSQL);
+        console.log('✅ 폴더 관리 마이그레이션 완료');
+        
+        // 폴더 테이블 데이터 확인
+        const folderCountResult = await pgClient.query('SELECT COUNT(*) as count FROM tree_nodes WHERE type = \'folder\'');
+        console.log(`📊 폴더 데이터: ${folderCountResult.rows[0].count}개`);
+        
         console.log('📦 릴리즈 관리 마이그레이션 실행 중...');
         
         // 릴리즈 관련 마이그레이션 파일 실행
-        const migrationPath = path.join(__dirname, 'migrations', '005_create_releases.sql');
-        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+        const releaseMigrationPath = path.join(__dirname, 'migrations', '005_create_releases.sql');
+        const releaseMigrationSQL = fs.readFileSync(releaseMigrationPath, 'utf8');
         
-        await pgClient.query(migrationSQL);
+        await pgClient.query(releaseMigrationSQL);
         console.log('✅ 릴리즈 관리 마이그레이션 완료');
         
         // 릴리즈 테이블 데이터 확인
@@ -115,7 +128,7 @@ async function runMigrations(pgClient: any) {
         console.log(`📊 릴리즈 데이터: ${releaseCountResult.rows[0].count}개`);
         
     } catch (error) {
-        console.error('❌ 릴리즈 마이그레이션 실패:', error);
+        console.error('❌ 마이그레이션 실패:', error);
         // 마이그레이션 실패해도 서버는 계속 실행
     }
 } 

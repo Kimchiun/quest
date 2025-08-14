@@ -390,6 +390,68 @@ export class ReleaseController {
     }
   }
 
+  // 릴리즈 테스트 케이스 조회
+  async getReleaseTestCases(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const testCases = await releaseRepository.getTestCases(id);
+      
+      res.json({
+        success: true,
+        data: testCases,
+        message: '릴리즈 테스트 케이스를 성공적으로 조회했습니다.'
+      });
+    } catch (error) {
+      console.error('릴리즈 테스트 케이스 조회 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '릴리즈 테스트 케이스 조회 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
+  // 테스트 폴더 조회
+  async getTestFolders(req: Request, res: Response) {
+    try {
+      console.log('테스트 폴더 조회 요청 받음');
+      const folders = await releaseRepository.getTestFolders();
+      console.log('조회된 폴더:', folders);
+      
+      res.json({
+        success: true,
+        data: folders,
+        message: '테스트 폴더를 성공적으로 조회했습니다.'
+      });
+    } catch (error) {
+      console.error('테스트 폴더 조회 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '테스트 폴더 조회 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  // 폴더별 테스트케이스 조회
+  async getFolderTestCases(req: Request, res: Response) {
+    try {
+      const { folderId } = req.params;
+      const testCases = await releaseRepository.getFolderTestCases(folderId);
+      
+      res.json({
+        success: true,
+        data: testCases,
+        message: '폴더 테스트케이스를 성공적으로 조회했습니다.'
+      });
+    } catch (error) {
+      console.error('폴더 테스트케이스 조회 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '폴더 테스트케이스 조회 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
   // 초기 데이터 로드 (개발용)
   async loadInitialData(req: Request, res: Response) {
     try {

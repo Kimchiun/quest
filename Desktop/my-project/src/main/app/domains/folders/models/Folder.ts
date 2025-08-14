@@ -7,6 +7,7 @@ export interface Folder {
     orderIndex: number;
     depth: number;
     createdBy: string;
+    updatedBy?: string;
     createdAt: Date;
     updatedAt: Date;
     isLocked?: boolean;

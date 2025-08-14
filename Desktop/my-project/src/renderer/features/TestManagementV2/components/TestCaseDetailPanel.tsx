@@ -687,11 +687,23 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>생성일</InfoLabel>
-                  <InfoValue>{testCase.createdAt.toLocaleDateString()}</InfoValue>
+                  <InfoValue>{(() => {
+                    try {
+                      return new Date(testCase.createdAt).toLocaleDateString();
+                    } catch (error) {
+                      return '날짜 없음';
+                    }
+                  })()}</InfoValue>
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>수정일</InfoLabel>
-                  <InfoValue>{testCase.updatedAt.toLocaleDateString()}</InfoValue>
+                  <InfoValue>{(() => {
+                    try {
+                      return new Date(testCase.updatedAt).toLocaleDateString();
+                    } catch (error) {
+                      return '날짜 없음';
+                    }
+                  })()}</InfoValue>
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>ID</InfoLabel>
@@ -792,11 +804,23 @@ const TestCaseDetailPanel: React.FC<TestCaseDetailPanelProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>생성일</InfoLabel>
-                  <InfoValue>{testCase.createdAt.toLocaleDateString()}</InfoValue>
+                  <InfoValue>{(() => {
+                    try {
+                      return new Date(testCase.createdAt).toLocaleDateString();
+                    } catch (error) {
+                      return '날짜 없음';
+                    }
+                  })()}</InfoValue>
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>수정일</InfoLabel>
-                  <InfoValue>{testCase.updatedAt.toLocaleDateString()}</InfoValue>
+                  <InfoValue>{(() => {
+                    try {
+                      return new Date(testCase.updatedAt).toLocaleDateString();
+                    } catch (error) {
+                      return '날짜 없음';
+                    }
+                  })()}</InfoValue>
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>ID</InfoLabel>

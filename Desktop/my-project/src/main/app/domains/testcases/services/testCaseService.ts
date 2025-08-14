@@ -16,7 +16,8 @@ export async function createTestCaseWithVersion(tc: Omit<TestCase, 'id' | 'creat
         data: { ...tc },
         createdBy: tc.createdBy,
     });
-    await indexTestCase(created);
+    // Elasticsearch 인덱싱 임시 비활성화
+    // await indexTestCase(created);
     return created;
 }
 
@@ -32,13 +33,15 @@ export async function updateTestCaseWithVersion(id: number, patch: Partial<TestC
         data: omitFields(updated, ['id', 'createdAt', 'updatedAt']),
         createdBy: user,
     });
-    await indexTestCase(updated);
+    // Elasticsearch 인덱싱 임시 비활성화
+    // await indexTestCase(updated);
     return updated;
 }
 
 export async function deleteTestCaseWithIndex(id: number): Promise<boolean> {
     const ok = await deleteTestCaseRepo(id);
-    if (ok) await removeTestCaseFromIndex(id);
+    // Elasticsearch 인덱싱 임시 비활성화
+    // if (ok) await removeTestCaseFromIndex(id);
     return ok;
 }
 

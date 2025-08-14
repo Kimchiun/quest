@@ -7,7 +7,65 @@ let nextId = 1;
 export class ReleaseRepository {
   // 모든 릴리즈 조회
   async findAll(): Promise<Release[]> {
-    return releases;
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name,
+          version,
+          description,
+          status,
+          assignee_name,
+          scheduled_date,
+          deployed_date,
+          created_at,
+          updated_at
+        FROM releases
+        ORDER BY created_at DESC
+      `);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        projectId: '1',
+        name: row.name,
+        version: row.version,
+        description: row.description || '',
+        status: row.status,
+        startAt: row.scheduled_date,
+        endAt: row.deployed_date,
+        owners: row.assignee_name ? [row.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      }));
+    } catch (error) {
+      console.error('릴리즈 조회 실패:', error);
+      return releases; // 실패 시 메모리 데이터 반환
+    }
   }
 
   // ID로 릴리즈 조회
@@ -138,6 +196,217 @@ export class ReleaseRepository {
         gateCriteria
       }
     });
+  }
+
+  // 릴리즈 테스트 케이스 조회
+  async getTestCases(releaseId: string): Promise<any[]> {
+    // 실제로는 release_test_cases 테이블에서 조회해야 함
+    // 임시로 모든 테스트 케이스를 반환
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // release_test_cases 테이블에서 해당 릴리즈의 테스트 케이스 조회
+      const result = await pgClient.query(`
+        SELECT 
+          tn.id,
+          tn.name as title,
+          '' as description,
+          'MEDIUM' as priority,
+          'ACTIVE' as status,
+          tn.created_by,
+          tn.created_at,
+          tn.updated_at,
+          rtc.status as execution_status,
+          rtc.assignee_name as assigned_to,
+          rtc.executed_at,
+          '' as executed_by
+        FROM tree_nodes tn
+        INNER JOIN release_test_cases rtc ON tn.id::text = rtc.test_case_id::text
+        WHERE rtc.release_id = $1 AND tn.type = 'testcase'
+        ORDER BY tn.id
+      `, [releaseId]);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        priority: row.priority,
+        status: row.status,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        executionStatus: row.execution_status,
+        assignedTo: row.assigned_to,
+        executedAt: row.executed_at,
+        executedBy: row.executed_by
+      }));
+    } catch (error) {
+      console.error('릴리즈 테스트 케이스 조회 실패:', error);
+      // 에러 발생 시 빈 배열 반환
+      return [];
+    }
+  }
+
+  // 테스트 폴더 조회
+  async getTestFolders(): Promise<any[]> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+  
+      // 실제 데이터베이스에서 폴더 구조를 가져오는 쿼리
+      const result = await pgClient.query(`
+        WITH RECURSIVE folder_tree AS (
+          -- 루트 폴더들 (parent_id가 NULL인 폴더들)
+          SELECT 
+            id,
+            name,
+            parent_id,
+            created_by,
+            created_at,
+            updated_at,
+            0 as depth,
+            ARRAY[id] as path
+          FROM tree_nodes 
+          WHERE type = 'folder' AND parent_id IS NULL
+          
+          UNION ALL
+          
+          -- 하위 폴더들
+          SELECT 
+            tn.id,
+            tn.name,
+            tn.parent_id,
+            tn.created_by,
+            tn.created_at,
+            tn.updated_at,
+            ft.depth + 1,
+            ft.path || tn.id
+          FROM tree_nodes tn
+          INNER JOIN folder_tree ft ON tn.parent_id = ft.id
+          WHERE tn.type = 'folder'
+        )
+        SELECT 
+          id,
+          name,
+          parent_id,
+          created_by,
+          created_at,
+          updated_at,
+          depth,
+          path
+        FROM folder_tree
+        ORDER BY path
+      `);
+
+      // 각 폴더의 테스트케이스 개수 계산 (재귀적으로 모든 하위 폴더 포함)
+      const foldersWithCounts = await Promise.all(
+        result.rows.map(async (row: any) => {
+          const testCaseCountResult = await pgClient.query(`
+            WITH RECURSIVE folder_hierarchy AS (
+              -- 현재 폴더
+              SELECT id, parent_id
+              FROM tree_nodes 
+              WHERE id = $1 AND type = 'folder'
+              
+              UNION ALL
+              
+              -- 하위 폴더들
+              SELECT tn.id, tn.parent_id
+              FROM tree_nodes tn
+              INNER JOIN folder_hierarchy fh ON tn.parent_id = fh.id
+              WHERE tn.type = 'folder'
+            )
+            SELECT COUNT(*) as count 
+            FROM tree_nodes 
+            WHERE type = 'testcase' AND parent_id IN (
+              SELECT id FROM folder_hierarchy
+            )
+          `, [row.id]);
+          
+          return {
+            ...row,
+            testCaseCount: parseInt(testCaseCountResult.rows[0].count)
+          };
+        })
+      );
+
+      // 트리 구조로 변환
+      const folderMap = new Map();
+      const rootFolders: any[] = [];
+
+      foldersWithCounts.forEach(folder => {
+        folderMap.set(folder.id, {
+          ...folder,
+          children: []
+        });
+      });
+
+      foldersWithCounts.forEach(folder => {
+        if (folder.parent_id && folderMap.has(folder.parent_id)) {
+          folderMap.get(folder.parent_id).children.push(folderMap.get(folder.id));
+        } else {
+          rootFolders.push(folderMap.get(folder.id));
+        }
+      });
+
+      return rootFolders;
+    } catch (error) {
+      console.error('테스트 폴더 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 폴더별 테스트케이스 조회
+  async getFolderTestCases(folderId: string): Promise<any[]> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+  
+      // 실제 데이터베이스에서 해당 폴더의 테스트케이스 조회
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name as title,
+          '' as description,
+          'MEDIUM' as priority,
+          'ACTIVE' as status,
+          created_by,
+          created_at,
+          updated_at,
+          parent_id as folderId
+        FROM tree_nodes 
+        WHERE type = 'testcase' AND parent_id = $1
+        ORDER BY id
+      `, [folderId]);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        priority: row.priority,
+        status: row.status,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        folderId: row.folderid
+      }));
+    } catch (error) {
+      console.error('폴더 테스트케이스 조회 실패:', error);
+      return [];
+    }
   }
 
   // 통계 정보 조회
