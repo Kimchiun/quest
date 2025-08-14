@@ -55,3 +55,4 @@ try {
   console.log('3. 다운로드한 .icns 파일을 assets 폴더에 저장');
   console.log('4. 파일명을 quest-icon.icns로 변경');
 }
+

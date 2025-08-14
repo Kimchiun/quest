@@ -119,7 +119,7 @@ UNION ALL
 SELECT 
     r.id,
     '대시보드 렌더링 테스트',
-    'IN_PROGRESS',
+    'NOT_EXECUTED',
     '테스터B'
 FROM releases r WHERE r.version = '2.0.0'
 UNION ALL
