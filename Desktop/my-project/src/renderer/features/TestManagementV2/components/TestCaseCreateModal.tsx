@@ -277,23 +277,23 @@ const StepHeader = styled.div`
 `;
 
 const StepNumber = styled.div`
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
   flex-shrink: 0;
-  margin-top: 2px;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  margin-top: 8px;
+  margin-right: 12px;
+  min-width: 20px;
 `;
 
 const StepContent = styled.div`
   flex: 1;
+  width: 100%;
+  
+  textarea {
+    width: 100%;
+    min-width: 400px;
+  }
 `;
 
 const StepActions = styled.div`

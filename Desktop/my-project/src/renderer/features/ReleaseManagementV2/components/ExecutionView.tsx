@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
+import { useDispatch, useSelector } from 'react-redux';
 import { useGetReleaseTestCasesQuery, useGetTestFoldersQuery } from '../../../services/api';
+import { 
+  setImportedFolders, 
+  addImportedFolder, 
+  removeImportedFolder, 
+  clearImportedFolders,
+  ImportedFolder 
+} from '../../../store';
+import type { RootState } from '../../../store';
 
 // 타입 정의
 interface TestCase {
@@ -1117,8 +1126,11 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
   const [showTestCaseModal, setShowTestCaseModal] = useState(false);
   const [selectedTestCasesToAdd, setSelectedTestCasesToAdd] = useState<number[]>([]);
-  const [importedFolders, setImportedFolders] = useState<TestFolder[]>([]);
-  const [selectedImportedFolder, setSelectedImportedFolder] = useState<TestFolder | null>(null);
+  const dispatch = useDispatch();
+  const importedFolders = useSelector((state: RootState) => 
+    state.importedFolders.foldersByRelease[release.id] || []
+  );
+  const [selectedImportedFolder, setSelectedImportedFolder] = useState<ImportedFolder | null>(null);
   const [folderTestCases, setFolderTestCases] = useState<TestCase[]>([]);
   const [detailPanelWidth, setDetailPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
@@ -1313,10 +1325,12 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       );
       
       // 중복 제거하여 가져온 폴더 목록에 추가
-      setImportedFolders(prev => {
-        const existingIds = new Set(prev.map(f => f.id));
-        const newFolders = foldersWithRealCounts.filter(f => !existingIds.has(f.id));
-        return [...prev, ...newFolders];
+      const existingIds = new Set(importedFolders.map(f => f.id));
+      const newFolders = foldersWithRealCounts.filter(f => !existingIds.has(f.id));
+      
+      // Redux 액션으로 폴더 추가
+      newFolders.forEach(folder => {
+        dispatch(addImportedFolder({ releaseId: release.id, folder }));
       });
       
       console.log('선택된 폴더들을 가져온 폴더 목록에 추가:', foldersWithRealCounts);
@@ -1403,16 +1417,16 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
   // 가져온 폴더 삭제
   const handleRemoveImportedFolder = useCallback((folderId: number) => {
-    setImportedFolders(prev => prev.filter(folder => folder.id !== folderId));
+    dispatch(removeImportedFolder({ releaseId: release.id, folderId }));
     // 삭제된 폴더가 현재 선택된 폴더였다면 선택 해제
     if (selectedImportedFolder?.id === folderId) {
       setSelectedImportedFolder(null);
       setFolderTestCases([]);
     }
-  }, [selectedImportedFolder]);
+  }, [selectedImportedFolder, dispatch, release.id]);
 
   // 가져온 폴더 클릭 처리
-  const handleImportedFolderClick = useCallback(async (folder: TestFolder) => {
+  const handleImportedFolderClick = useCallback(async (folder: ImportedFolder) => {
     setSelectedImportedFolder(folder);
     
     try {
