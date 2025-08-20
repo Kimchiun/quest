@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 
 interface TestPlanFormProps {
@@ -126,8 +126,14 @@ const Table = styled.table`
     font-weight: 500;
     line-height: 1.4;
     background: #f8fafc;
-    width: 400px;
   }
+  
+  th:nth-child(1) { width: 120px; } /* 단계 */
+  th:nth-child(2) { width: 100px; } /* 시작일 */
+  th:nth-child(3) { width: 100px; } /* 종료일 */
+  th:nth-child(4) { width: 300px; } /* 작업 */
+  th:nth-child(5) { width: 200px; } /* 테스트 방법 */
+  th:nth-child(6) { width: 80px; }  /* 작업 버튼 */
   
   td {
     padding: 8px 16px;
@@ -138,8 +144,14 @@ const Table = styled.table`
     line-height: 1.4;
     height: 72px;
     border-top: 1px solid #cedbe8;
-    width: 400px;
   }
+  
+  td:nth-child(1) { width: 120px; } /* 단계 */
+  td:nth-child(2) { width: 100px; } /* 시작일 */
+  td:nth-child(3) { width: 100px; } /* 종료일 */
+  td:nth-child(4) { width: 300px; } /* 작업 */
+  td:nth-child(5) { width: 200px; } /* 테스트 방법 */
+  td:nth-child(6) { width: 80px; }  /* 작업 버튼 */
   
   tr:first-child td {
     border-top: none;
@@ -233,52 +245,67 @@ const SubSectionHeader = styled.h4`
 
 const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport }) => {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    projectOverview: '프로젝트 피닉스는 기업이 고객 관계를 관리하는 방식을 혁신하는 것을 목표로 합니다. 이 새로운 CRM 플랫폼은 판매, 마케팅, 고객 서비스 기능을 하나의 통합된 시스템으로 통합할 것입니다.',
-    testObjective: '이 테스트 단계의 주요 목표는 프로젝트 피닉스가 지정된 모든 기능적 및 비기능적 요구사항을 충족하는지 확인하는 것입니다. 여기에는 플랫폼의 사용성, 성능, 보안 및 다양한 브라우저와 기기 간의 호환성 검증이 포함됩니다.',
-    testingApproach: '',
-    exceptionHandling: '',
-    testScopeLimitations: '',
-    excludedAreas: '',
-    assumptions: '',
-    schedule: [
-      { phase: '1단계: 단위 테스트', startDate: '2024-07-15', endDate: '2024-07-22', tasks: 'CRM 플랫폼의 개별 컴포넌트에 대한 단위 테스트를 개발하고 실행합니다.', method: 'JUnit을 사용한 자동화 테스트' },
-      { phase: '2단계: 통합 테스트', startDate: '2024-07-23', endDate: '2024-07-30', tasks: '개별 컴포넌트를 통합하고 통합 테스트를 수행하여 올바르게 작동하는지 확인합니다.', method: '자동화 및 수동 테스트' },
-      { phase: '3단계: 시스템 테스트', startDate: '2024-07-31', endDate: '2024-08-15', tasks: '전체 CRM 플랫폼이 지정된 요구사항을 충족하는지 확인하기 위한 시스템 수준 테스트를 수행합니다.', method: '성능 및 보안 테스트를 포함한 수동 및 자동화 테스트' },
-      { phase: '4단계: 승인 테스트', startDate: '2024-08-16', endDate: '2024-08-30', tasks: 'CRM 플랫폼이 이해관계자의 요구사항과 기대를 충족하는지 확인하기 위한 승인 테스트를 수행합니다.', method: '사용자 승인 테스트 (UAT)' }
-    ],
-    responsibleParties: [
-      { role: '기획', person: '소피아 리 (sl@example.com)' },
-      { role: '개발', person: '리암 첸 (lc@example.com)' },
-      { role: '디자인', person: '아바 파텔 (ap@example.com)' },
-      { role: '퍼블리싱', person: '노아 김 (nk@example.com)' },
-      { role: 'QA', person: '이사벨라 로시 (ir@example.com)' }
-    ],
-    riskFactors: [
-      { name: '결함 해결 지연', impact: '높음', probability: '보통', mitigation: '테스트 및 개발 팀 간의 긴밀한 협업, 중요한 결함 우선순위 지정.' },
-      { name: '테스트 커버리지 부족', impact: '보통', probability: '낮음', mitigation: '중요한 테스트 케이스 우선순위 지정, 유연한 테스트 일정 유지.' },
-      { name: '호환성 문제', impact: '높음', probability: '낮음', mitigation: '타사 통합에 대한 철저한 테스트, 다양한 환경을 위한 가상화 사용.' }
-    ],
-    referenceDocuments: [
-      { name: '요구사항 문서', url: 'https://example.com/requirements.pdf', filename: '요구사항.pdf' },
-      { name: '테스트 계획 문서', url: 'https://example.com/testplan.pdf', filename: '테스트계획.pdf' },
-      { name: '사용자 매뉴얼', url: 'https://example.com/usermanual.pdf', filename: '사용자매뉴얼.pdf' }
-    ],
-    issueReports: [
-      { name: '이슈 리포트 1', path: '/reports/issue1.pdf', filename: '이슈1.pdf' },
-      { name: '이슈 리포트 2', path: '/reports/issue2.pdf', filename: '이슈2.pdf' },
-      { name: '이슈 리포트 3', path: '/reports/issue3.pdf', filename: '이슈3.pdf' }
-    ],
-    testEnvironments: [
-      { category: '웹 브라우저', details: 'Chrome (버전 92+), Firefox (버전 90+), Safari (버전 14+), Edge (버전 92+)' },
-      { category: '모바일 iOS', details: 'iPhone 12 (iOS 14), iPad Pro (iOS 15)' },
-      { category: '모바일 Android', details: 'Samsung Galaxy S21 (Android 11), Google Pixel 5 (Android 12)' }
-    ],
-    testStrategies: [
-      { name: '탐색적 테스트', description: '예상치 못한 문제를 발견하고 사용성을 개선하기 위한 비구조화된 테스트.' },
-      { name: '회귀 테스트', description: '새로운 변경사항이 기존 기능에 부정적인 영향을 미치지 않는지 확인하는 자동화된 테스트.' }
-    ]
+  const [formData, setFormData] = useState(() => {
+    // localStorage에서 저장된 데이터 불러오기
+    const savedData = localStorage.getItem('testPlanData');
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+    
+    // 초기 데이터
+    return {
+      title: '테스트 계획: 프로젝트 피닉스',
+      projectOverview: '프로젝트 피닉스는 기업이 고객 관계를 관리하는 방식을 혁신하는 것을 목표로 합니다. 이 새로운 CRM 플랫폼은 판매, 마케팅, 고객 서비스 기능을 하나의 통합된 시스템으로 통합할 것입니다.',
+      testObjective: '이 테스트 단계의 주요 목표는 프로젝트 피닉스가 지정된 모든 기능적 및 비기능적 요구사항을 충족하는지 확인하는 것입니다. 여기에는 플랫폼의 사용성, 성능, 보안 및 다양한 브라우저와 기기 간의 호환성 검증이 포함됩니다.',
+      testingApproach: '',
+      exceptionHandling: '',
+      testScopeLimitations: '',
+      excludedAreas: '',
+      assumptions: '',
+      schedule: [
+        { phase: '1단계: 단위 테스트', startDate: '2024-07-15', endDate: '2024-07-22', tasks: 'CRM 플랫폼의 개별 컴포넌트에 대한 단위 테스트를 개발하고 실행합니다.', method: 'JUnit을 사용한 자동화 테스트' },
+        { phase: '2단계: 통합 테스트', startDate: '2024-07-23', endDate: '2024-07-30', tasks: '개별 컴포넌트를 통합하고 통합 테스트를 수행하여 올바르게 작동하는지 확인합니다.', method: '자동화 및 수동 테스트' },
+        { phase: '3단계: 시스템 테스트', startDate: '2024-07-31', endDate: '2024-08-15', tasks: '전체 CRM 플랫폼이 지정된 요구사항을 충족하는지 확인하기 위한 시스템 수준 테스트를 수행합니다.', method: '성능 및 보안 테스트를 포함한 수동 및 자동화 테스트' },
+        { phase: '4단계: 승인 테스트', startDate: '2024-08-16', endDate: '2024-08-30', tasks: 'CRM 플랫폼이 이해관계자의 요구사항과 기대를 충족하는지 확인하기 위한 승인 테스트를 수행합니다.', method: '사용자 승인 테스트 (UAT)' }
+      ],
+      responsibleParties: [
+        { role: '기획', person: '소피아 리 (sl@example.com)' },
+        { role: '개발', person: '리암 첸 (lc@example.com)' },
+        { role: '디자인', person: '아바 파텔 (ap@example.com)' },
+        { role: '퍼블리싱', person: '노아 김 (nk@example.com)' },
+        { role: 'QA', person: '이사벨라 로시 (ir@example.com)' }
+      ],
+      riskFactors: [
+        { name: '결함 해결 지연', impact: '높음', probability: '보통', mitigation: '테스트 및 개발 팀 간의 긴밀한 협업, 중요한 결함 우선순위 지정.' },
+        { name: '테스트 커버리지 부족', impact: '보통', probability: '낮음', mitigation: '중요한 테스트 케이스 우선순위 지정, 유연한 테스트 일정 유지.' },
+        { name: '호환성 문제', impact: '높음', probability: '낮음', mitigation: '타사 통합에 대한 철저한 테스트, 다양한 환경을 위한 가상화 사용.' }
+      ],
+      referenceDocuments: [
+        { name: '요구사항 문서', url: 'https://example.com/requirements.pdf', filename: '요구사항.pdf' },
+        { name: '테스트 계획 문서', url: 'https://example.com/testplan.pdf', filename: '테스트계획.pdf' },
+        { name: '사용자 매뉴얼', url: 'https://example.com/usermanual.pdf', filename: '사용자매뉴얼.pdf' }
+      ],
+      issueReports: [
+        { name: '이슈 리포트 1', path: '/reports/issue1.pdf', filename: '이슈1.pdf' },
+        { name: '이슈 리포트 2', path: '/reports/issue2.pdf', filename: '이슈2.pdf' },
+        { name: '이슈 리포트 3', path: '/reports/issue3.pdf', filename: '이슈3.pdf' }
+      ],
+      testEnvironments: [
+        { category: '웹 브라우저', details: 'Chrome (버전 92+), Firefox (버전 90+), Safari (버전 14+), Edge (버전 92+)' },
+        { category: '모바일 iOS', details: 'iPhone 12 (iOS 14), iPad Pro (iOS 15)' },
+        { category: '모바일 Android', details: 'Samsung Galaxy S21 (Android 11), Google Pixel 5 (Android 12)' }
+      ],
+      testStrategies: [
+        { name: '탐색적 테스트', description: '예상치 못한 문제를 발견하고 사용성을 개선하기 위한 비구조화된 테스트.' },
+        { name: '회귀 테스트', description: '새로운 변경사항이 기존 기능에 부정적인 영향을 미치지 않는지 확인하는 자동화된 테스트.' }
+      ]
+    };
   });
+
+  // formData가 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    localStorage.setItem('testPlanData', JSON.stringify(formData));
+  }, [formData]);
 
   const handleSave = () => {
     console.log('저장된 데이터:', formData);
@@ -363,79 +390,101 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
   };
 
   const handleAddReferenceDocument = () => {
-    setFormData(prev => ({
-      ...prev,
-      referenceDocuments: [...prev.referenceDocuments, {
+    if (formData) {
+      const newDocs = [...formData.referenceDocuments, {
         name: '새 문서',
         url: 'https://example.com/document.pdf',
         filename: '문서.pdf'
-      }]
-    }));
+      }];
+      dispatch(updateTestPlanField({ field: 'referenceDocuments', value: newDocs }));
+    }
   };
 
   const handleDeleteReferenceDocument = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      referenceDocuments: prev.referenceDocuments.filter((_, i) => i !== index)
-    }));
+    if (formData) {
+      const newDocs = formData.referenceDocuments.filter((_, i) => i !== index);
+      dispatch(updateTestPlanField({ field: 'referenceDocuments', value: newDocs }));
+    }
   };
 
   const handleAddIssueReport = () => {
-    setFormData(prev => ({
-      ...prev,
-      issueReports: [...prev.issueReports, {
+    if (formData) {
+      const newReports = [...formData.issueReports, {
         name: '새 이슈 리포트',
         path: '/reports/issue.pdf',
         filename: '이슈.pdf'
-      }]
-    }));
+      }];
+      dispatch(updateTestPlanField({ field: 'issueReports', value: newReports }));
+    }
   };
 
   const handleDeleteIssueReport = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      issueReports: prev.issueReports.filter((_, i) => i !== index)
-    }));
+    if (formData) {
+      const newReports = formData.issueReports.filter((_, i) => i !== index);
+      dispatch(updateTestPlanField({ field: 'issueReports', value: newReports }));
+    }
   };
 
   const handleAddTestEnvironment = () => {
-    setFormData(prev => ({
-      ...prev,
-      testEnvironments: [...prev.testEnvironments, {
+    if (formData) {
+      const newEnvs = [...formData.testEnvironments, {
         category: '새 환경',
         details: '환경 상세 정보'
-      }]
-    }));
+      }];
+      dispatch(updateTestPlanField({ field: 'testEnvironments', value: newEnvs }));
+    }
   };
 
   const handleDeleteTestEnvironment = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      testEnvironments: prev.testEnvironments.filter((_, i) => i !== index)
-    }));
+    if (formData) {
+      const newEnvs = formData.testEnvironments.filter((_, i) => i !== index);
+      dispatch(updateTestPlanField({ field: 'testEnvironments', value: newEnvs }));
+    }
   };
 
   const handleAddTestStrategy = () => {
-    setFormData(prev => ({
-      ...prev,
-      testStrategies: [...prev.testStrategies, {
+    if (formData) {
+      const newStrategies = [...formData.testStrategies, {
         name: '새 전략',
         description: '전략 설명'
-      }]
-    }));
+      }];
+      dispatch(updateTestPlanField({ field: 'testStrategies', value: newStrategies }));
+    }
   };
 
   const handleDeleteTestStrategy = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      testStrategies: prev.testStrategies.filter((_, i) => i !== index)
-    }));
+    if (formData) {
+      const newStrategies = formData.testStrategies.filter((_, i) => i !== index);
+      dispatch(updateTestPlanField({ field: 'testStrategies', value: newStrategies }));
+    }
   };
+
+
 
   return (
     <TestPlanContainer>
       <TestPlanHeader>
-        <TestPlanTitle>테스트 계획: 프로젝트 피닉스</TestPlanTitle>
+        <TestPlanTitle>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: '32px',
+                fontWeight: '700',
+                color: '#0d141c',
+                fontFamily: 'inherit'
+              }}
+            />
+          ) : (
+            formData.title
+          )}
+        </TestPlanTitle>
         <div style={{ display: 'flex', gap: '8px' }}>
           {!isEditMode ? (
             <PreviewButton onClick={handleEdit}>
@@ -538,7 +587,14 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                             newSchedule[index].startDate = e.target.value;
                             setFormData(prev => ({ ...prev, schedule: newSchedule }));
                           }}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          style={{ 
+                            width: '120px', 
+                            padding: '2px 4px', 
+                            border: '1px solid #ddd', 
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            height: '24px'
+                          }}
                         />
                       ) : (
                         item.startDate
@@ -554,7 +610,14 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                             newSchedule[index].endDate = e.target.value;
                             setFormData(prev => ({ ...prev, schedule: newSchedule }));
                           }}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          style={{ 
+                            width: '120px', 
+                            padding: '2px 4px', 
+                            border: '1px solid #ddd', 
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            height: '24px'
+                          }}
                         />
                       ) : (
                         item.endDate
@@ -569,7 +632,15 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                             newSchedule[index].tasks = e.target.value;
                             setFormData(prev => ({ ...prev, schedule: newSchedule }));
                           }}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ddd', borderRadius: '4px', minHeight: '60px' }}
+                          style={{ 
+                            width: '100%', 
+                            padding: '6px 8px', 
+                            border: '1px solid #ddd', 
+                            borderRadius: '4px', 
+                            minHeight: '80px',
+                            fontSize: '13px',
+                            resize: 'vertical'
+                          }}
                         />
                       ) : (
                         item.tasks
@@ -577,15 +648,22 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                     </td>
                     <td>
                       {isEditMode ? (
-                        <input
-                          type="text"
+                        <textarea
                           value={item.method}
                           onChange={(e) => {
                             const newSchedule = [...formData.schedule];
                             newSchedule[index].method = e.target.value;
                             setFormData(prev => ({ ...prev, schedule: newSchedule }));
                           }}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ddd', borderRadius: '4px' }}
+                          style={{ 
+                            width: '100%', 
+                            padding: '6px 8px', 
+                            border: '1px solid #ddd', 
+                            borderRadius: '4px',
+                            minHeight: '60px',
+                            fontSize: '13px',
+                            resize: 'vertical'
+                          }}
                         />
                       ) : (
                         item.method

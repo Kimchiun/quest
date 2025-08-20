@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Button from '@/shared/components/Button';
+import { useGetReleaseExecutionStatsQuery } from '../../../services/api';
 
 // 타입 정의
 interface ReleaseDetailHeaderProps {
@@ -9,12 +10,6 @@ interface ReleaseDetailHeaderProps {
     name: string;
     version: string;
     status: 'Draft' | 'Active' | 'Complete' | 'Archived';
-    planned: number;
-    executed: number;
-    passed: number;
-    failed: number;
-    blocked: number;
-    passRate: number;
   };
   onAction: (action: string) => void;
 }
@@ -122,6 +117,52 @@ const KPISection = styled.div`
   border-top: 1px solid ${({ theme }) => theme.color.border.tertiary};
 `;
 
+// 진행률 섹션
+const ProgressSection = styled.div`
+  padding: 16px 0;
+  border-top: 1px solid ${({ theme }) => theme.color.border.tertiary};
+`;
+
+// 진행률 컨테이너
+const ProgressContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+// 진행률 바
+const ProgressBar = styled.div`
+  flex: 1;
+  height: 8px;
+  background: ${({ theme }) => theme.color.neutral[200]};
+  border-radius: 4px;
+  overflow: hidden;
+`;
+
+// 진행률 채우기
+const ProgressFill = styled.div<{ percentage: number }>`
+  height: 100%;
+  background: ${({ theme }) => theme.color.primary[500]};
+  width: ${({ percentage }) => percentage}%;
+  transition: width 0.3s ease;
+`;
+
+// 진행률 텍스트
+const ProgressText = styled.div`
+  font-size: 24px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.text.primary};
+  min-width: 60px;
+  text-align: right;
+`;
+
+// 진행률 라벨
+const ProgressLabel = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.text.secondary};
+  margin-top: 4px;
+`;
+
 // KPI 카드
 const KPICard = styled.div`
   background: ${({ theme }) => theme.color.surface.secondary};
@@ -209,6 +250,18 @@ const ReleaseDetailHeader: React.FC<ReleaseDetailHeaderProps> = ({
   release,
   onAction
 }) => {
+  // 릴리즈 실행 통계 데이터 가져오기
+  const { data: executionStats, isLoading, error } = useGetReleaseExecutionStatsQuery(
+    release.id,
+    {
+      pollingInterval: 5000, // 5초마다 자동 갱신
+    }
+  );
+
+
+
+
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return '#64748b';
@@ -224,6 +277,47 @@ const ReleaseDetailHeader: React.FC<ReleaseDetailHeaderProps> = ({
     if (rate >= 70) return '#d97706';
     return '#dc2626';
   };
+
+  // 로딩 상태나 에러 상태 처리
+  if (isLoading) {
+    return (
+      <HeaderContainer>
+        <ResponsiveContainer>
+          <MainHeader>
+            <LeftSection>
+              <ReleaseName>{release.name}</ReleaseName>
+              <VersionPill>{release.version}</VersionPill>
+              <StatusBadge status={release.status}>
+                {release.status}
+              </StatusBadge>
+            </LeftSection>
+          </MainHeader>
+          <KPISection>
+            {[...Array(6)].map((_, index) => (
+              <KPICard key={index}>
+                <KPIIcon>⏳</KPIIcon>
+                <KPIValue>...</KPIValue>
+                <KPILabel>로딩 중</KPILabel>
+              </KPICard>
+            ))}
+          </KPISection>
+          <ProgressSection>
+            <ProgressContainer>
+              <ProgressBar>
+                <ProgressFill percentage={0} />
+              </ProgressBar>
+              <ProgressText>0%</ProgressText>
+            </ProgressContainer>
+            <ProgressLabel>Progress</ProgressLabel>
+          </ProgressSection>
+        </ResponsiveContainer>
+      </HeaderContainer>
+    );
+  }
+
+  if (error) {
+    console.error('릴리즈 실행 통계 로드 실패:', error);
+  }
 
   return (
     <HeaderContainer>
@@ -274,42 +368,55 @@ const ReleaseDetailHeader: React.FC<ReleaseDetailHeaderProps> = ({
         <KPISection>
           <KPICard>
             <KPIIcon>📋</KPIIcon>
-            <KPIValue>{release.planned}</KPIValue>
+            <KPIValue>{executionStats?.planned || 0}</KPIValue>
             <KPILabel>Planned</KPILabel>
           </KPICard>
           
           <KPICard>
             <KPIIcon>▶️</KPIIcon>
-            <KPIValue>{release.executed}</KPIValue>
+            <KPIValue>{executionStats?.executed || 0}</KPIValue>
             <KPILabel>Executed</KPILabel>
           </KPICard>
           
           <KPICard>
             <KPIIcon>✅</KPIIcon>
-            <KPIValue>{release.passed}</KPIValue>
+            <KPIValue>{executionStats?.passed || 0}</KPIValue>
             <KPILabel>Pass</KPILabel>
           </KPICard>
           
           <KPICard>
             <KPIIcon>❌</KPIIcon>
-            <KPIValue>{release.failed}</KPIValue>
+            <KPIValue>{executionStats?.failed || 0}</KPIValue>
             <KPILabel>Fail</KPILabel>
           </KPICard>
           
           <KPICard>
             <KPIIcon>⏸️</KPIIcon>
-            <KPIValue>{release.blocked}</KPIValue>
+            <KPIValue>{executionStats?.blocked || 0}</KPIValue>
             <KPILabel>Blocked</KPILabel>
           </KPICard>
           
           <KPICard>
             <KPIIcon>📊</KPIIcon>
-            <KPIValue color={getPassRateColor(release.passRate)}>
-              {release.passRate}%
+            <KPIValue color={getPassRateColor(executionStats?.passRate || 0)}>
+              {executionStats?.passRate || 0}%
             </KPIValue>
             <KPILabel>Pass Rate</KPILabel>
           </KPICard>
         </KPISection>
+        
+        {/* 진행률 섹션 */}
+        <ProgressSection>
+          <ProgressContainer>
+            <ProgressBar>
+              <ProgressFill percentage={executionStats ? Math.round((executionStats.executed / executionStats.planned) * 100) : 0} />
+            </ProgressBar>
+            <ProgressText>
+              {executionStats ? Math.round((executionStats.executed / executionStats.planned) * 100) : 0}%
+            </ProgressText>
+          </ProgressContainer>
+          <ProgressLabel>Progress</ProgressLabel>
+        </ProgressSection>
       </ResponsiveContainer>
     </HeaderContainer>
   );

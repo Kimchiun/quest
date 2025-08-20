@@ -19,7 +19,7 @@ ALTER TABLE releases ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRE
 -- 릴리즈-테스트케이스 연결 테이블 생성
 CREATE TABLE IF NOT EXISTS release_test_cases (
     id SERIAL PRIMARY KEY,
-    release_id VARCHAR(50) NOT NULL,
+    release_id UUID NOT NULL,
     test_case_id INTEGER NOT NULL,
     status VARCHAR(20) DEFAULT 'Not Run',
     assignee_name VARCHAR(100),
@@ -28,6 +28,20 @@ CREATE TABLE IF NOT EXISTS release_test_cases (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(release_id, test_case_id)
+);
+
+-- 실행 결과 테이블 생성
+CREATE TABLE IF NOT EXISTS executions (
+    id SERIAL PRIMARY KEY,
+    release_id INTEGER NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
+    testcase_id INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'Untested' CHECK (status IN ('Pass', 'Fail', 'Blocked', 'Untested')),
+    executed_by VARCHAR(100),
+    executed_at TIMESTAMP,
+    comments TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(release_id, testcase_id)
 );
 
 -- tree_nodes 테이블 생성 (폴더 구조용)
@@ -51,6 +65,8 @@ CREATE INDEX IF NOT EXISTS idx_releases_status ON releases(status);
 CREATE INDEX IF NOT EXISTS idx_releases_assignee ON releases(assignee);
 CREATE INDEX IF NOT EXISTS idx_release_test_cases_release_id ON release_test_cases(release_id);
 CREATE INDEX IF NOT EXISTS idx_release_test_cases_test_case_id ON release_test_cases(test_case_id);
+CREATE INDEX IF NOT EXISTS idx_executions_release_id ON executions(release_id);
+CREATE INDEX IF NOT EXISTS idx_executions_testcase_id ON executions(testcase_id);
 CREATE INDEX IF NOT EXISTS idx_tree_nodes_parent_id ON tree_nodes(parent_id);
 CREATE INDEX IF NOT EXISTS idx_tree_nodes_type ON tree_nodes(type);
 
@@ -95,6 +111,12 @@ CREATE TRIGGER update_releases_updated_at
 DROP TRIGGER IF EXISTS update_release_test_cases_updated_at ON release_test_cases;
 CREATE TRIGGER update_release_test_cases_updated_at
     BEFORE UPDATE ON release_test_cases
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_executions_updated_at ON executions;
+CREATE TRIGGER update_executions_updated_at
+    BEFORE UPDATE ON executions
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

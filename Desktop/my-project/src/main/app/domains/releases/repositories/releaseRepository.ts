@@ -70,7 +70,70 @@ export class ReleaseRepository {
 
   // ID로 릴리즈 조회
   async findById(id: string): Promise<Release | null> {
-    return releases.find(release => release.id === id) || null;
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name,
+          version,
+          description,
+          status,
+          assignee_name,
+          scheduled_date,
+          deployed_date,
+          created_at,
+          updated_at
+        FROM releases
+        WHERE id = $1
+      `, [id]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        id: String(row.id),
+        projectId: '1',
+        name: row.name,
+        version: row.version,
+        description: row.description || '',
+        status: row.status,
+        startAt: row.scheduled_date,
+        endAt: row.deployed_date,
+        owners: row.assignee_name ? [row.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      };
+    } catch (error) {
+      console.error('릴리즈 조회 실패:', error);
+      return null;
+    }
   }
 
   // 프로젝트별 릴리즈 조회
@@ -252,6 +315,67 @@ export class ReleaseRepository {
       console.error('릴리즈 테스트 케이스 조회 실패:', error);
       // 에러 발생 시 빈 배열 반환
       return [];
+    }
+  }
+
+  // 릴리즈 테스트케이스 삭제
+  async deleteTestCases(releaseId: string): Promise<void> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // 릴리즈에 연결된 모든 테스트케이스 삭제
+      await pgClient.query(`
+        DELETE FROM release_test_cases
+        WHERE release_id = $1
+      `, [releaseId]);
+
+      console.log(`릴리즈 ${releaseId}의 모든 테스트케이스가 삭제되었습니다.`);
+    } catch (error) {
+      console.error('릴리즈 테스트케이스 삭제 실패:', error);
+      throw error;
+    }
+  }
+
+  // 테스트케이스 상태 변경
+  async updateTestCaseStatus(releaseId: string, testCaseId: string, status: string, comment?: string): Promise<any> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // release_test_cases 테이블에서 상태 업데이트
+      const result = await pgClient.query(`
+        UPDATE release_test_cases
+        SET status = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE release_id = $2 AND test_case_id = $3
+        RETURNING *
+      `, [status, releaseId, testCaseId]);
+
+      if (result.rows.length === 0) {
+        throw new Error('테스트케이스를 찾을 수 없습니다.');
+      }
+
+      // 실행 기록 추가 (executions 테이블)
+      await pgClient.query(`
+        INSERT INTO executions (
+          testcase_id, release_id, status, executed_by, executed_at, comment, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `, [testCaseId, releaseId, status, 'system', comment || '']);
+
+      console.log(`테스트케이스 ${testCaseId} 상태가 ${status}로 변경되었습니다.`);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('테스트케이스 상태 변경 실패:', error);
+      throw error;
     }
   }
 
@@ -542,6 +666,13 @@ export class ReleaseRepository {
               ...insertResult.rows[0],
               testCase: testCase
             });
+          } else {
+            // 이미 존재하는 테스트케이스도 카운트에 포함
+            const existingTestCase = existingResult.rows[0];
+            addedTestCases.push({
+              ...existingTestCase,
+              testCase: testCase
+            });
           }
         } catch (error) {
           console.error(`테스트케이스 ${testCaseId} 추가 실패:`, error);
@@ -584,6 +715,132 @@ export class ReleaseRepository {
       passRate: 85,
       progress: 88
     };
+  }
+
+  // 릴리즈 실행 통계 조회
+  async getExecutionStats(releaseId: string): Promise<{
+    planned: number;
+    executed: number;
+    passed: number;
+    failed: number;
+    blocked: number;
+    skipped: number;
+    passRate: number;
+  }> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // 릴리즈에 연결된 테스트케이스들의 실행 상태를 조회
+      const result = await pgClient.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN status = 'Pass' THEN 1 END) as passed,
+          COUNT(CASE WHEN status = 'Fail' THEN 1 END) as failed,
+          COUNT(CASE WHEN status = 'Block' THEN 1 END) as blocked,
+          COUNT(CASE WHEN status = 'NOT_EXECUTED' THEN 1 END) as notRun
+        FROM release_test_cases
+        WHERE release_id = $1::uuid
+      `, [releaseId]);
+
+      const stats = result.rows[0];
+      const total = parseInt(stats.total) || 0;
+      const passed = parseInt(stats.passed) || 0;
+      const failed = parseInt(stats.failed) || 0;
+      const blocked = parseInt(stats.blocked) || 0;
+      const notRun = parseInt(stats.notRun) || 0;
+      const executed = total - notRun;
+      const passRate = executed > 0 ? Math.round((passed / executed) * 100) : 0;
+
+      return {
+        planned: total,
+        executed,
+        passed,
+        failed,
+        blocked,
+        skipped: 0, // 현재는 skipped 상태가 없으므로 0
+        passRate
+      };
+    } catch (error) {
+      console.error('실행 통계 조회 실패:', error);
+      
+      // 에러 시 0개 반환 (실시간 동기화를 위해)
+      return {
+        planned: 0,
+        executed: 0,
+        passed: 0,
+        failed: 0,
+        blocked: 0,
+        skipped: 0,
+        passRate: 0
+      };
+    }
+  }
+
+  // 릴리즈 실행 통계 업데이트
+  async updateExecutionStats(releaseId: string, plannedCount: number): Promise<{
+    planned: number;
+    executed: number;
+    passed: number;
+    failed: number;
+    blocked: number;
+    skipped: number;
+    passRate: number;
+  }> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // release_test_cases 테이블에서 실행 상태 조회
+      const result = await pgClient.query(`
+        SELECT 
+          COUNT(CASE WHEN status = 'Pass' THEN 1 END) as passed,
+          COUNT(CASE WHEN status = 'Fail' THEN 1 END) as failed,
+          COUNT(CASE WHEN status = 'Block' THEN 1 END) as blocked,
+          COUNT(CASE WHEN status = 'Not Run' THEN 1 END) as notRun
+        FROM release_test_cases
+        WHERE release_id = $1
+      `, [releaseId]);
+
+      const stats = result.rows[0];
+      const passed = parseInt(stats.passed) || 0;
+      const failed = parseInt(stats.failed) || 0;
+      const blocked = parseInt(stats.blocked) || 0;
+      const notRun = parseInt(stats.notRun) || 0;
+      const executed = plannedCount - notRun;
+      const passRate = executed > 0 ? Math.round((passed / executed) * 100) : 0;
+
+      return {
+        planned: plannedCount,
+        executed,
+        passed,
+        failed,
+        blocked,
+        skipped: 0,
+        passRate
+      };
+    } catch (error) {
+      console.error('실행 통계 업데이트 실패:', error);
+      
+      // 에러 시 기본값 반환
+      return {
+        planned: plannedCount,
+        executed: 0,
+        passed: 0,
+        failed: 0,
+        blocked: 0,
+        skipped: 0,
+        passRate: 0
+      };
+    }
   }
 
   // 초기 데이터 로드 (개발용)

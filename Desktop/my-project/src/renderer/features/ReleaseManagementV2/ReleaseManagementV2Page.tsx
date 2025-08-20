@@ -10,6 +10,7 @@ import ReleaseTabBar from './components/ReleaseTabBar';
 import ReleaseDetailPanel from './components/ReleaseDetailPanel';
 import ReleaseDetailPage from './components/ReleaseDetailPage';
 
+
 interface Release {
   id: string;
   name: string;
@@ -27,74 +28,46 @@ interface Release {
 
 const mockReleases: Release[] = [
   {
-    id: '1',
-    name: 'Release Alpha',
-    version: 'v1.2.3',
+    id: '7e7d0979-50ed-4a68-85ae-eadcb30e4161',
+    name: 'Quest v1.4',
+    version: '1.4.0',
     status: 'in-progress',
     startDate: '2024-01-15',
     endDate: '2024-01-22',
     progress: 75,
     passRate: 90,
     blockers: 2,
-    assignee: '김철수',
-    folder: '/프로젝트/알파',
+    assignee: 'admin',
+    folder: '/프로젝트/Quest',
     updatedAt: '2024-01-20T10:30:00Z'
   },
   {
-    id: '2',
-    name: 'Release Beta',
-    version: 'v2.0.0',
-    status: 'released',
+    id: 'f84e8e4b-1f9e-44b1-9005-55f234443a5d',
+    name: 'Quest v1.5',
+    version: '1.5.0',
+    status: 'testing',
     startDate: '2024-01-08',
     endDate: '2024-01-15',
-    progress: 100,
-    passRate: 95,
-    blockers: 0,
-    assignee: '이영희',
-    folder: '/프로젝트/베타',
-    updatedAt: '2024-01-15T14:20:00Z'
-  },
-  {
-    id: '3',
-    name: 'Release Gamma',
-    version: 'v1.5.0',
-    status: 'draft',
-    startDate: '2024-01-22',
-    endDate: '2024-01-29',
-    progress: 20,
-    passRate: 80,
-    blockers: 5,
-    assignee: '박민수',
-    folder: '/프로젝트/감마',
-    updatedAt: '2024-01-21T09:15:00Z'
-  },
-  {
-    id: '4',
-    name: 'Release Delta',
-    version: 'v1.8.1',
-    status: 'testing',
-    startDate: '2024-01-29',
-    endDate: '2024-02-05',
     progress: 60,
     passRate: 85,
     blockers: 3,
-    assignee: '최지영',
-    folder: '/프로젝트/델타',
-    updatedAt: '2024-01-30T16:45:00Z'
+    assignee: 'admin',
+    folder: '/프로젝트/Quest',
+    updatedAt: '2024-01-15T14:20:00Z'
   },
   {
-    id: '5',
-    name: 'Release Epsilon',
-    version: 'v2.1.0',
+    id: '751b18cd-64e5-4665-9730-69994dc12be8',
+    name: 'Quest v2.0',
+    version: '2.0.0',
     status: 'ready',
-    startDate: '2024-02-05',
-    endDate: '2024-02-12',
+    startDate: '2024-01-22',
+    endDate: '2024-01-29',
     progress: 90,
     passRate: 92,
     blockers: 1,
-    assignee: '정수민',
-    folder: '/프로젝트/엡실론',
-    updatedAt: '2024-02-06T11:30:00Z'
+    assignee: 'admin',
+    folder: '/프로젝트/Quest',
+    updatedAt: '2024-01-21T09:15:00Z'
   }
 ];
 
@@ -107,6 +80,8 @@ const ReleaseManagementV2Page: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const containerRef = useRef<HTMLDivElement>(null);
+
+
 
   const handleReleaseSelect = (releaseId: string) => {
     setSelectedReleases(prev => 

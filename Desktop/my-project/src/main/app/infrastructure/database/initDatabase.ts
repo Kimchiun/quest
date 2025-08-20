@@ -22,7 +22,13 @@ export async function initializeDatabase() {
         await pgClient.query(schemaSQL);
         console.log('데이터베이스 스키마 초기화 완료');
 
-        // 마이그레이션 실행
+        // 마이그레이션 파일 실행
+        const migrationPath = path.join(__dirname, 'migration.sql');
+        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+        await pgClient.query(migrationSQL);
+        console.log('데이터베이스 마이그레이션 완료');
+
+        // 추가 마이그레이션 실행
         await runMigrations(pgClient);
 
         // 테스트용 사용자 생성

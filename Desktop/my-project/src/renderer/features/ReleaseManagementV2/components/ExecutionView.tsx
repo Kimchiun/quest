@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { useDispatch, useSelector } from 'react-redux';
-import { useGetReleaseTestCasesQuery, useGetTestFoldersQuery } from '../../../services/api';
-import { 
-  setImportedFolders, 
-  addImportedFolder, 
-  removeImportedFolder, 
-  clearImportedFolders,
-  ImportedFolder 
-} from '../../../store';
-import type { RootState } from '../../../store';
+import { useGetReleaseTestCasesQuery, useUpdateReleaseExecutionStatsMutation, useGetReleaseExecutionStatsQuery, useUpdateTestCaseStatusMutation, useGetTestFoldersQuery } from '../../../services/api';
+
 
 // 타입 정의
 interface TestCase {
@@ -224,7 +216,7 @@ const FolderList = styled.div`
 `;
 
 // 테스트 관리 영역과 동일한 폴더 트리 스타일드 컴포넌트들
-const ImportFolderItem = styled.div<{ level: number; isSelected: boolean }>`
+const ImportFolderItem = styled.div<{ level: number; $isSelected: boolean }>`
   display: flex;
   align-items: center;
   height: 28px;
@@ -232,13 +224,13 @@ const ImportFolderItem = styled.div<{ level: number; isSelected: boolean }>`
   padding-right: 12px;
   cursor: pointer;
   position: relative;
-  background: ${props => props.isSelected ? '#dbeafe' : 'transparent'};
-  border-left: ${props => props.isSelected ? '3px solid #3b82f6' : 'none'};
+  background: ${props => props.$isSelected ? '#dbeafe' : 'transparent'};
+  border-left: ${props => props.$isSelected ? '3px solid #3b82f6' : 'none'};
   transition: background-color 0.2s ease;
-  font-weight: ${props => props.isSelected ? '600' : '400'};
+  font-weight: ${props => props.$isSelected ? '600' : '400'};
 
   &:hover {
-    background: ${props => props.isSelected ? '#dbeafe' : '#f9fafb'};
+    background: ${props => props.$isSelected ? '#dbeafe' : '#f9fafb'};
   }
 `;
 
@@ -480,7 +472,7 @@ const FilterBadge = styled.span`
   font-weight: 500;
 `;
 
-const LiveIndicator = styled.div<{ isLive: boolean }>`
+const LiveIndicator = styled.div<{ $isLive: boolean }>`
   display: flex;
   align-items: center;
   gap: 6px;
@@ -488,16 +480,16 @@ const LiveIndicator = styled.div<{ isLive: boolean }>`
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-  background: ${props => props.isLive ? '#d1fae5' : '#fee2e2'};
-  color: ${props => props.isLive ? '#065f46' : '#dc2626'};
+  background: ${props => props.$isLive ? '#d1fae5' : '#fee2e2'};
+  color: ${props => props.$isLive ? '#065f46' : '#dc2626'};
 `;
 
-const LiveDot = styled.div<{ isLive: boolean }>`
+const LiveDot = styled.div<{ $isLive: boolean }>`
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: ${props => props.isLive ? '#10b981' : '#ef4444'};
-  animation: ${props => props.isLive ? 'pulse 2s infinite' : 'none'};
+  background: ${props => props.$isLive ? '#10b981' : '#ef4444'};
+  animation: ${props => props.$isLive ? 'pulse 2s infinite' : 'none'};
   
   @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -1122,24 +1114,64 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     search: ''
   });
   const [isLive, setIsLive] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
+  
+  // 폴더 가져오기 관련 상태
   const [showTestCaseModal, setShowTestCaseModal] = useState(false);
-  const [selectedTestCasesToAdd, setSelectedTestCasesToAdd] = useState<number[]>([]);
-  const dispatch = useDispatch();
-  const importedFolders = useSelector((state: RootState) => 
-    state.importedFolders.foldersByRelease[release.id] || []
-  );
-  const [selectedImportedFolder, setSelectedImportedFolder] = useState<ImportedFolder | null>(null);
-  const [folderTestCases, setFolderTestCases] = useState<TestCase[]>([]);
+  const [selectedTestCasesToAdd, setSelectedTestCasesToAdd] = useState<string[]>([]);
+  const [isLoadingTestCases, setIsLoadingTestCases] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedImportedFolder, setSelectedImportedFolder] = useState<any>(null);
+  const [folderTestCases, setFolderTestCases] = useState<any[]>([]);
+  const [importedFolders, setImportedFolders] = useState<any[]>([]);
   const [detailPanelWidth, setDetailPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(280);
   const [isLeftPanelResizing, setIsLeftPanelResizing] = useState(false);
 
-  // API 호출
-  const { data: apiTestCases = [], isLoading, error, refetch } = useGetReleaseTestCasesQuery(Number(release.id));
+  // API 호출 - 자동으로 테스트케이스 조회
+  const { data: apiTestCases = [], isLoading, error, refetch } = useGetReleaseTestCasesQuery(release.id, {
+    pollingInterval: 5000, // 5초마다 자동 갱신
+  });
+  const [updateExecutionStats] = useUpdateReleaseExecutionStatsMutation();
+  
+  // 실행 통계 데이터 가져오기 - 실시간 업데이트
+  const { data: executionStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useGetReleaseExecutionStatsQuery(
+    release.id,
+    {
+      pollingInterval: 5000, // 5초마다 자동 갱신
+    }
+  );
+  
+  // 폴더 데이터 가져오기
   const { data: folders = [] } = useGetTestFoldersQuery();
+  
+  // 폴더 기반 실시간 통계 계산
+  useEffect(() => {
+    // 가져온 폴더들의 총 테스트케이스 개수 계산
+    const totalTestCasesFromFolders = importedFolders.reduce((total, folder) => {
+      return total + (folder.testCaseCount || 0);
+    }, 0);
+    
+    const currentPlannedCount = executionStats?.data?.planned || 0;
+    
+    console.log('폴더 기반 실시간 통계 계산:', {
+      importedFolders: importedFolders.length,
+      totalTestCasesFromFolders,
+      currentPlannedCount,
+      folders: importedFolders.map(f => ({ name: f.name, count: f.testCaseCount }))
+    });
+    
+    // 폴더의 테스트케이스 개수와 Planned가 다르면 업데이트
+    if (totalTestCasesFromFolders !== currentPlannedCount) {
+      console.log('폴더 기반 통계 업데이트:', totalTestCasesFromFolders);
+      updateExecutionStats({
+        releaseId: release.id,
+        plannedCount: totalTestCasesFromFolders
+      });
+    }
+  }, [importedFolders, executionStats, release.id, updateExecutionStats]);
+  
+
 
   // 우측 패널 크기 조절 이벤트 핸들러
   const handleDetailPanelResizeStart = (e: React.MouseEvent) => {
@@ -1214,26 +1246,29 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     }
   }, [isLeftPanelResizing, handleLeftPanelResizeMove, handleLeftPanelResizeEnd]);
 
-  // 진행률 계산
-  const totalTestCases = Array.isArray(testCases) ? testCases.length : 0;
-  const executedTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status !== 'Not Run').length : 0;
-  const passedTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status === 'Pass').length : 0;
-  const failedTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status === 'Fail').length : 0;
-  const blockedTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status === 'Block').length : 0;
-  const skippedTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status === 'Skip').length : 0;
-  const notRunTestCases = Array.isArray(testCases) ? testCases.filter(tc => tc.status === 'Not Run').length : 0;
+  // 진행률 계산 - 실제 API 데이터 사용
+  const totalTestCases = executionStats?.data?.planned || 0;
+  const executedTestCases = executionStats?.data?.executed || 0;
+  const passedTestCases = executionStats?.data?.passed || 0;
+  const failedTestCases = executionStats?.data?.failed || 0;
+  const blockedTestCases = executionStats?.data?.blocked || 0;
+  const skippedTestCases = executionStats?.data?.skipped || 0;
+  const notRunTestCases = totalTestCases - executedTestCases;
 
-  const progressPercentage = totalTestCases > 0 ? Math.round((executedTestCases / totalTestCases) * 100) : 0;
+  const progressPercentage = executionStats?.data?.passRate || 0;
 
+  // API에서 가져온 테스트케이스 사용 - 배열인지 확인
+  const allTestCases = Array.isArray(apiTestCases) ? apiTestCases : [];
+  
   // 필터링된 테스트 케이스
-  const filteredTestCases = Array.isArray(testCases) ? testCases.filter(testCase => {
+  const filteredTestCases = allTestCases.filter((testCase: any) => {
     if (filters.status && testCase.status !== filters.status) return false;
     if (filters.priority && testCase.priority !== filters.priority) return false;
     if (filters.suite && testCase.suite !== filters.suite) return false;
     if (filters.assignee && testCase.assignee !== filters.assignee) return false;
-    if (filters.search && !testCase.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.search && !(testCase.name || testCase.title)?.toLowerCase().includes(filters.search.toLowerCase())) return false;
     return true;
-  }) : [];
+  });
 
   // 테스트 케이스 선택 처리
   const handleTestCaseSelect = useCallback((testCaseId: string, isSelected: boolean) => {
@@ -1246,26 +1281,44 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
   // 전체 선택/해제
   const handleSelectAll = useCallback((isSelected: boolean) => {
-    const currentTestCases = selectedImportedFolder ? folderTestCases : filteredTestCases;
     if (isSelected) {
-      setSelectedTestCases(currentTestCases.map(tc => tc.id));
+      setSelectedTestCases(filteredTestCases.map(tc => tc.id));
     } else {
       setSelectedTestCases([]);
     }
-  }, [filteredTestCases, folderTestCases, selectedImportedFolder]);
+  }, [filteredTestCases]);
+
+  // API 훅 추가
+  const [updateTestCaseStatus] = useUpdateTestCaseStatusMutation();
 
   // 상태 변경 처리
-  const handleStatusChange = useCallback((testCaseId: string, newStatus: TestCase['status'], comment?: string) => {
-    onTestCaseUpdate(testCaseId, { 
-      status: newStatus,
-      lastUpdated: new Date().toISOString()
-    });
-    
-    // 상세 패널이 열려있다면 닫기
-    if (selectedTestCase?.id === testCaseId) {
-      setSelectedTestCase(null);
+  const handleStatusChange = useCallback(async (testCaseId: string, newStatus: TestCase['status'], comment?: string) => {
+    try {
+      // API 호출로 상태 변경
+      await updateTestCaseStatus({
+        releaseId: release.id,
+        testCaseId,
+        status: newStatus,
+        comment
+      }).unwrap();
+
+      // 로컬 상태 업데이트
+      onTestCaseUpdate(testCaseId, { 
+        status: newStatus,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // 상세 패널이 열려있다면 닫기
+      if (selectedTestCase?.id === testCaseId) {
+        setSelectedTestCase(null);
+      }
+
+      console.log(`테스트케이스 ${testCaseId} 상태가 ${newStatus}로 변경되었습니다.`);
+    } catch (error) {
+      console.error('테스트케이스 상태 변경 실패:', error);
+      // 에러 처리 (필요시 토스트 메시지 표시)
     }
-  }, [onTestCaseUpdate, selectedTestCase]);
+  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase]);
 
   // 일괄 상태 변경
   const handleBulkStatusChange = useCallback((status: TestCase['status']) => {
@@ -1325,15 +1378,14 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       );
       
       // 중복 제거하여 가져온 폴더 목록에 추가
-      const existingIds = new Set(importedFolders.map(f => f.id));
-      const newFolders = foldersWithRealCounts.filter(f => !existingIds.has(f.id));
+      const existingIds = new Set(importedFolders.map((f: any) => f.id));
+      const newFolders = foldersWithRealCounts.filter((f: any) => !existingIds.has(f.id));
       
-      // Redux 액션으로 폴더 추가
-      newFolders.forEach(folder => {
-        dispatch(addImportedFolder({ releaseId: release.id, folder }));
-      });
+      // 폴더 추가 로직 (로컬 상태로 처리)
+      console.log('새로 추가된 폴더들:', newFolders);
+      setImportedFolders(prev => [...prev, ...newFolders]);
       
-      console.log('선택된 폴더들을 가져온 폴더 목록에 추가:', foldersWithRealCounts);
+
       
       // 선택된 모든 폴더의 테스트케이스를 실제로 가져와서 릴리즈에 추가
       const allTestCaseIds = [];
@@ -1368,7 +1420,17 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
           if (addResponse.ok) {
             const addResult = await addResponse.json();
-            console.log('테스트케이스 릴리즈 추가 완료:', addResult);
+
+            
+            // 실행 통계 업데이트 - 가져온 테스트케이스 개수로 planned 업데이트
+            try {
+              const updateResult = await updateExecutionStats({
+                releaseId: release.id,
+                plannedCount: allTestCaseIds.length
+              }).unwrap();
+            } catch (error) {
+              console.error('실행 통계 업데이트 실패:', error);
+            }
             
             // 성공 후 모달 닫기 및 선택 초기화
             setShowTestCaseModal(false);
@@ -1417,16 +1479,16 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
   // 가져온 폴더 삭제
   const handleRemoveImportedFolder = useCallback((folderId: number) => {
-    dispatch(removeImportedFolder({ releaseId: release.id, folderId }));
+    setImportedFolders(prev => prev.filter((f: any) => f.id !== folderId));
     // 삭제된 폴더가 현재 선택된 폴더였다면 선택 해제
     if (selectedImportedFolder?.id === folderId) {
       setSelectedImportedFolder(null);
       setFolderTestCases([]);
     }
-  }, [selectedImportedFolder, dispatch, release.id]);
+  }, [selectedImportedFolder]);
 
   // 가져온 폴더 클릭 처리
-  const handleImportedFolderClick = useCallback(async (folder: ImportedFolder) => {
+  const handleImportedFolderClick = useCallback(async (folder: any) => {
     setSelectedImportedFolder(folder);
     
     try {
@@ -1434,7 +1496,18 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       const response = await fetch(`http://localhost:3001/api/releases/folders/${folder.id}/testcases`);
       if (response.ok) {
         const data = await response.json();
-        setFolderTestCases(data.data || []);
+        const testCases = data.data || [];
+        setFolderTestCases(testCases);
+        
+        // 폴더의 테스트케이스 개수 업데이트
+        setImportedFolders(prev => prev.map(f => 
+          f.id === folder.id ? { ...f, testCaseCount: testCases.length } : f
+        ));
+        
+        console.log('폴더 테스트케이스 개수 업데이트:', {
+          folderName: folder.name,
+          testCaseCount: testCases.length
+        });
       } else {
         console.error('폴더 테스트 케이스 조회 실패:', response.statusText);
         setFolderTestCases([]);
@@ -1483,7 +1556,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       <div key={folder.id}>
         <ImportFolderItem 
           level={level}
-          isSelected={selectedTestCasesToAdd.includes(folder.id)}
+          $isSelected={selectedTestCasesToAdd.includes(folder.id)}
           onClick={() => handleFolderSelection(folder, !selectedTestCasesToAdd.includes(folder.id))}
         >
           <ImportFolderCheckbox
@@ -1518,7 +1591,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       <div key={folder.id}>
         <ImportFolderItem 
           level={level}
-          isSelected={selectedImportedFolder?.id === folder.id}
+          $isSelected={selectedImportedFolder?.id === folder.id}
           onClick={() => handleImportedFolderClick(folder)}
         >
           <ImportFolderIcon />
@@ -1562,8 +1635,8 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
               </ReleaseDetails>
             </ReleaseInfo>
             
-            <LiveIndicator isLive={isLive}>
-              <LiveDot isLive={isLive} />
+            <LiveIndicator $isLive={isLive}>
+              <LiveDot $isLive={isLive} />
               {isLive ? 'Live' : 'Reconnecting...'}
             </LiveIndicator>
           </ReleaseLeft>
@@ -1782,9 +1855,9 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div style={{ fontWeight: 500 }}>{testCase.name}</div>
+                    <div style={{ fontWeight: 500 }}>{testCase.name || testCase.title}</div>
                     <div style={{ fontSize: 12, color: '#64748b' }}>
-                      {testCase.description.substring(0, 60)}...
+                      {(testCase.description || '').substring(0, 60)}...
                     </div>
                   </div>
                 </TableCell>
@@ -1978,7 +2051,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       )}
 
       {/* 테스트케이스 선택 모달 */}
-      {console.log('모달 렌더링 조건 확인:', showTestCaseModal)}
+
       {showTestCaseModal && (
         <ModalOverlay onClick={() => setShowTestCaseModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>

@@ -481,6 +481,97 @@ export class ReleaseController {
     }
   }
 
+  // 릴리즈 실행 통계 조회
+  async getReleaseExecutionStats(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const stats = await releaseRepository.getExecutionStats(id);
+      
+      res.json({
+        success: true,
+        data: stats,
+        message: '릴리즈 실행 통계를 성공적으로 조회했습니다.'
+      });
+    } catch (error) {
+      console.error('릴리즈 실행 통계 조회 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '릴리즈 실행 통계 조회 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
+  // 릴리즈 실행 통계 업데이트 (테스트케이스 가져오기 후)
+  async updateReleaseExecutionStats(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { plannedCount } = req.body;
+      
+      // 릴리즈에 추가된 테스트케이스 개수로 통계 업데이트
+      const stats = await releaseRepository.updateExecutionStats(id, plannedCount);
+      
+      res.json({
+        success: true,
+        data: stats,
+        message: '릴리즈 실행 통계를 성공적으로 업데이트했습니다.'
+      });
+    } catch (error) {
+      console.error('릴리즈 실행 통계 업데이트 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '릴리즈 실행 통계 업데이트 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
+  // 릴리즈 테스트케이스 삭제
+  async deleteReleaseTestCases(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await releaseRepository.deleteTestCases(id);
+      
+      res.json({
+        success: true,
+        message: '릴리즈 테스트 케이스를 성공적으로 삭제했습니다.'
+      });
+    } catch (error) {
+      console.error('릴리즈 테스트케이스 삭제 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '릴리즈 테스트케이스 삭제 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
+  // 테스트케이스 상태 변경
+  async updateTestCaseStatus(req: Request, res: Response) {
+    try {
+      const { id: releaseId, testCaseId } = req.params;
+      const { status, comment } = req.body;
+      
+      if (!status || !['Pass', 'Fail', 'Blocked', 'Skip', 'Not Executed'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: '유효하지 않은 상태입니다. (Pass, Fail, Blocked, Skip, Not Executed)'
+        });
+      }
+
+      const result = await releaseRepository.updateTestCaseStatus(releaseId, testCaseId, status, comment);
+      
+      res.json({
+        success: true,
+        data: result,
+        message: '테스트케이스 상태를 성공적으로 업데이트했습니다.'
+      });
+    } catch (error) {
+      console.error('테스트케이스 상태 업데이트 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '테스트케이스 상태 업데이트 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
   // 초기 데이터 로드 (개발용)
   async loadInitialData(req: Request, res: Response) {
     try {

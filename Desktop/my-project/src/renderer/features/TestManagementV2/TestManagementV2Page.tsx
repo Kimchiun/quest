@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { store } from '../../store';
 import styled from 'styled-components';
 import { FolderTree } from '../../../types/folder';
 import FolderTreePanel from './components/FolderTreePanel';
@@ -202,9 +201,6 @@ const TestManagementV2Page: React.FC = () => {
         });
       }
 
-      // RTK Query 캐시 무효화
-      store.dispatch({ type: 'api/invalidateTags', payload: ['TestFolder'] });
-
       // 폴더 목록 새로고침
       await loadFolderTree();
 
@@ -242,9 +238,6 @@ const TestManagementV2Page: React.FC = () => {
 
       const newFolder = await response.json();
       console.log('📁 새 상위 폴더 생성됨:', newFolder);
-
-      // RTK Query 캐시 무효화
-      store.dispatch({ type: 'api/invalidateTags', payload: ['TestFolder'] });
 
       // 폴더 목록 새로고침
       await loadFolderTree();
@@ -288,9 +281,6 @@ const TestManagementV2Page: React.FC = () => {
       if (!response.ok) {
         throw new Error('폴더 이름 변경에 실패했습니다.');
       }
-
-      // RTK Query 캐시 무효화
-      store.dispatch({ type: 'api/invalidateTags', payload: ['TestFolder'] });
 
       await loadFolderTree();
     } catch (error) {

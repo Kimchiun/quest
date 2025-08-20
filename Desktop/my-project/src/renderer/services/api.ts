@@ -128,6 +128,57 @@ export const api = createApi({
       query: (releaseId) => `/api/releases/${releaseId}/testcases`,
       providesTags: (result, error, releaseId) => [{ type: 'Release', id: releaseId }, 'TestCase'],
     }),
+    
+    getReleaseExecutionStats: builder.query<{
+      success: boolean;
+      data: {
+        planned: number;
+        executed: number;
+        passed: number;
+        failed: number;
+        blocked: number;
+        skipped: number;
+        passRate: number;
+      };
+      message: string;
+    }, string>({
+      query: (releaseId) => `/api/releases/${releaseId}/execution-stats`,
+      providesTags: (result, error, releaseId) => [{ type: 'Release', id: releaseId }, 'Execution'],
+    }),
+    
+    updateReleaseExecutionStats: builder.mutation<{
+      success: boolean;
+      data: {
+        planned: number;
+        executed: number;
+        passed: number;
+        failed: number;
+        blocked: number;
+        skipped: number;
+        passRate: number;
+      };
+      message: string;
+    }, { releaseId: string; plannedCount: number }>({
+      query: ({ releaseId, plannedCount }) => ({
+        url: `/api/releases/${releaseId}/execution-stats`,
+        method: 'PUT',
+        body: { plannedCount },
+      }),
+      invalidatesTags: (result, error, { releaseId }) => [{ type: 'Release', id: releaseId }, 'Execution'],
+    }),
+
+    updateTestCaseStatus: builder.mutation<{
+      success: boolean;
+      data: any;
+      message: string;
+    }, { releaseId: string; testCaseId: string; status: string; comment?: string }>({
+      query: ({ releaseId, testCaseId, status, comment }) => ({
+        url: `/api/releases/${releaseId}/testcases/${testCaseId}/status`,
+        method: 'PUT',
+        body: { status, comment },
+      }),
+      invalidatesTags: (result, error, { releaseId }) => [{ type: 'Release', id: releaseId }, 'Execution'],
+    }),
       getTestFolders: builder.query<TestFolder[], void>({
     query: () => '/api/releases/testcases/folders',
     transformResponse: (response: { success: boolean; data: TestFolder[] }) => response.data,
@@ -316,6 +367,9 @@ export const {
   useGetReleasesQuery,
   useGetReleaseQuery,
   useGetReleaseTestCasesQuery,
+  useGetReleaseExecutionStatsQuery,
+  useUpdateReleaseExecutionStatsMutation,
+  useUpdateTestCaseStatusMutation,
   useGetTestFoldersQuery,
   useGetFolderTestCasesQuery,
   useCreateReleaseMutation,

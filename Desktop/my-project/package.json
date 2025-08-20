@@ -28,7 +28,9 @@
     "chromatic:test": "chromatic --project-token=CHROMATIC_PROJECT_TOKEN --exit-zero-on-changes",
     "validate:design-system": "node scripts/validate-design-system.js",
     "clean": "rm -rf dist node_modules/.cache",
-    "reset": "npm run clean && npm install && npm run dev:clean",
+    "restart": "chmod +x scripts/restart-app.sh && ./scripts/restart-app.sh",
+    "stop": "chmod +x scripts/stop-app.sh && ./scripts/stop-app.sh",
+    "reset": "npm run stop && sleep 2 && npm run restart",
     "diagnostic": "node scripts/dev-diagnostic.js",
     "diagnostic:cleanup": "node scripts/dev-diagnostic.js --cleanup",
     "diagnostic:test": "node scripts/dev-diagnostic.js --test",
@@ -36,7 +38,12 @@
     "generate-icon": "node scripts/generate-icon.js",
     "create-icns": "node scripts/create-icns.js"
   },
-  "keywords": ["electron", "test-management", "quest", "desktop-app"],
+  "keywords": [
+    "electron",
+    "test-management",
+    "quest",
+    "desktop-app"
+  ],
   "author": "Quest Team",
   "license": "ISC",
   "build": {

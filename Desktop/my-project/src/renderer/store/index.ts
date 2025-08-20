@@ -6,6 +6,7 @@ import notificationReducer from './notificationSlice';
 import dashboardLayoutReducer from './dashboardLayoutSlice';
 import animationReducer from './animationSlice';
 import navigationReducer from './navigationSlice';
+import testPlanReducer from './testPlanSlice';
 
 import { undoRedoMiddleware } from './undoRedoMiddleware';
 
@@ -106,6 +107,7 @@ export const store = configureStore({
     navigation: navigationReducer,
     users: userSlice.reducer,
     importedFolders: importedFoldersSlice.reducer,
+    testPlan: testPlanReducer,
 
   },
   middleware: (getDefaultMiddleware) =>
