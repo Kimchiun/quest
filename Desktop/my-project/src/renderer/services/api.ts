@@ -130,6 +130,7 @@ export const api = createApi({
     }),
       getTestFolders: builder.query<TestFolder[], void>({
     query: () => '/api/releases/testcases/folders',
+    transformResponse: (response: { success: boolean; data: TestFolder[] }) => response.data,
     providesTags: ['TestFolder'],
   }),
   getFolderTestCases: builder.query<any[], number>({

@@ -6,9 +6,10 @@ import { useGetReleaseTestCasesQuery, useGetTestFoldersQuery } from '../../../se
 interface TestCase {
   id: string;
   name: string;
+  title?: string;
   description: string;
-  priority: 'P0' | 'P1' | 'P2' | 'P3';
-  status: 'Not Run' | 'Pass' | 'Fail' | 'Block' | 'Skip';
+  priority: 'P0' | 'P1' | 'P2' | 'P3' | 'High' | 'Medium' | 'Low';
+  status: 'Not Run' | 'Pass' | 'Fail' | 'Block' | 'Skip' | 'Active' | 'Inactive';
   assignee?: string;
   estimatedTime?: number;
   actualTime?: number;
@@ -16,12 +17,17 @@ interface TestCase {
   tags: string[];
   suite?: string;
   module?: string;
-  steps?: string[];
+  steps?: string[] | string;
   expectedResult?: string;
+  expected?: string;
+  prereq?: string;
   attachments?: string[];
   executionStatus?: string;
   executedAt?: string;
   executedBy?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface Release {
@@ -194,18 +200,7 @@ const ModalTitle = styled.h2`
   color: #1f2937;
 `;
 
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 4px;
-  
-  &:hover {
-    color: #374151;
-  }
-`;
+
 
 const ModalBody = styled.div`
   flex: 1;
@@ -217,6 +212,119 @@ const FolderList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+`;
+
+// 테스트 관리 영역과 동일한 폴더 트리 스타일드 컴포넌트들
+const ImportFolderItem = styled.div<{ level: number; isSelected: boolean }>`
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding-left: ${props => props.level * 16 + 12}px;
+  padding-right: 12px;
+  cursor: pointer;
+  position: relative;
+  background: ${props => props.isSelected ? '#dbeafe' : 'transparent'};
+  border-left: ${props => props.isSelected ? '3px solid #3b82f6' : 'none'};
+  transition: background-color 0.2s ease;
+  font-weight: ${props => props.isSelected ? '600' : '400'};
+
+  &:hover {
+    background: ${props => props.isSelected ? '#dbeafe' : '#f9fafb'};
+  }
+`;
+
+const ImportFolderCheckbox = styled.input`
+  margin-right: 8px;
+  width: 14px;
+  height: 14px;
+  accent-color: #3b82f6;
+`;
+
+const ImportFolderIcon = styled.div`
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  position: relative;
+  color: #6b7280;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    background: transparent;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    right: 2px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 1px 1px 0 0;
+  }
+`;
+
+const ImportTextContainer = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+`;
+
+const ImportFolderName = styled.span`
+  font-size: 14px;
+  font-weight: 400;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+`;
+
+const ImportTestCaseCount = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-left: 4px;
+`;
+
+const ImportFolderChildren = styled.div`
+  position: relative;
+`;
+
+const ImportRemoveButton = styled.button`
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+
+  &:hover {
+    background: #dc2626;
+  }
+
+  ${ImportFolderItem}:hover & {
+    opacity: 1;
+  }
 `;
 
 const FolderItem = styled.div<{ level: number }>`
@@ -396,13 +504,42 @@ const MainContent = styled.div`
 `;
 
 // 좌측 필터 패널
-const FilterPanel = styled.div`
-  width: 280px;
+const FilterPanel = styled.div<{ width: number }>`
+  width: ${props => props.width}px;
   background: white;
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  position: relative;
+`;
+
+// 좌측 패널 크기 조절 핸들
+const LeftPanelResizeHandle = styled.div`
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 20px;
+    background: #d1d5db;
+    border-radius: 1px;
+  }
 `;
 
 const FilterSection = styled.div`
@@ -662,18 +799,198 @@ const QuickActionButton = styled.button<{ action: string }>`
 `;
 
 // 우측 상세 패널
-const DetailPanel = styled.div<{ isOpen: boolean }>`
-  width: ${props => props.isOpen ? '400px' : '0'};
+const DetailPanel = styled.div<{ isOpen: boolean; width: number }>`
+  width: ${props => props.isOpen ? `${props.width}px` : '0'};
   background: white;
   border-left: 1px solid #e2e8f0;
   overflow: hidden;
   transition: width 0.3s ease;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ResizeHandle = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 10;
+  
+  &:hover {
+    background: #3b82f6;
+  }
+  
+  &:active {
+    background: #2563eb;
+  }
+`;
+
+const DetailHeader = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
+`;
+
+const DetailHeaderTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
 `;
 
 const DetailContent = styled.div`
+  flex: 1;
   padding: 24px;
-  height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  height: 0;
+  min-height: 0;
+`;
+
+// 심플한 오버뷰 스타일드 컴포넌트들
+const SimpleHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+`;
+
+const SimpleTitle = styled.h2`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  flex: 1;
+`;
+
+const SimpleStatus = styled.span<{ status: string }>`
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 12px;
+  
+  background: ${props => {
+    switch (props.status) {
+      case 'Pass': return '#dcfce7';
+      case 'Fail': return '#fee2e2';
+      case 'Block': return '#fef3c7';
+      case 'Skip': return '#f3e8ff';
+      case 'Active': return '#dbeafe';
+      case 'Inactive': return '#f1f5f9';
+      default: return '#f1f5f9';
+    }
+  }};
+  
+  color: ${props => {
+    switch (props.status) {
+      case 'Pass': return '#166534';
+      case 'Fail': return '#dc2626';
+      case 'Block': return '#d97706';
+      case 'Skip': return '#7c3aed';
+      case 'Active': return '#2563eb';
+      case 'Inactive': return '#64748b';
+      default: return '#64748b';
+    }
+  }};
+`;
+
+const SimpleInfo = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+`;
+
+const SimpleInfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const SimpleLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+`;
+
+const SimpleValue = styled.span<{ priority?: string }>`
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  
+  ${props => props.priority && `
+    color: ${props.priority === 'High' ? '#dc2626' : 
+            props.priority === 'Medium' ? '#d97706' : 
+            props.priority === 'Low' ? '#059669' : '#1e293b'};
+  `}
+`;
+
+const SimpleSection = styled.div`
+  margin-bottom: 16px;
+`;
+
+const SimpleText = styled.div`
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4b5563;
+  margin-top: 4px;
+  padding: 8px 0;
+`;
+
+const SimpleSteps = styled.div`
+  margin-top: 4px;
+`;
+
+const SimpleStep = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 4px 0;
+`;
+
+const SimpleStepNumber = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+  min-width: 20px;
+`;
+
+const SimpleStepText = styled.span`
+  font-size: 14px;
+  line-height: 1.4;
+  color: #4b5563;
 `;
 
 const DetailSection = styled.div`
@@ -785,13 +1102,7 @@ const HistoryChange = styled.div`
   color: #1e293b;
 `;
 
-const ExecutionView: React.FC<ExecutionViewProps> = ({
-  release,
-  testCases: propTestCases,
-  onTestCaseUpdate,
-  onBulkUpdate,
-  onAddTestCases
-}) => {
+const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], onTestCaseUpdate, onBulkUpdate, onAddTestCases }) => {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedTestCases, setSelectedTestCases] = useState<string[]>([]);
   const [filters, setFilters] = useState({
@@ -809,15 +1120,87 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
   const [importedFolders, setImportedFolders] = useState<TestFolder[]>([]);
   const [selectedImportedFolder, setSelectedImportedFolder] = useState<TestFolder | null>(null);
   const [folderTestCases, setFolderTestCases] = useState<TestCase[]>([]);
+  const [detailPanelWidth, setDetailPanelWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(280);
+  const [isLeftPanelResizing, setIsLeftPanelResizing] = useState(false);
 
-  // 실제 API에서 테스트 케이스 데이터 가져오기
-  // prop으로 전달받은 테스트케이스가 있으면 사용, 없으면 API에서 가져오기
+  // API 호출
   const { data: apiTestCases = [], isLoading, error, refetch } = useGetReleaseTestCasesQuery(Number(release.id));
-  const testCases = propTestCases || apiTestCases;
+  const { data: folders = [] } = useGetTestFoldersQuery();
 
-    // 실제 API에서 테스트 폴더 데이터 가져오기
-  const { data: testFoldersResponse, isLoading: foldersLoading } = useGetTestFoldersQuery();
-  const testFolders = testFoldersResponse?.data || [];
+  // 우측 패널 크기 조절 이벤트 핸들러
+  const handleDetailPanelResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const handleDetailPanelResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const container = document.querySelector('.execution-container');
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const newWidth = containerRect.right - e.clientX;
+    
+    // 최소/최대 너비 제한
+    if (newWidth >= 300 && newWidth <= 800) {
+      setDetailPanelWidth(newWidth);
+    }
+  }, [isResizing]);
+
+  const handleDetailPanelResizeEnd = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // 좌측 패널 크기 조절 이벤트 핸들러
+  const handleLeftPanelResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsLeftPanelResizing(true);
+  };
+
+  const handleLeftPanelResizeMove = useCallback((e: MouseEvent) => {
+    if (!isLeftPanelResizing) return;
+    
+    const container = document.querySelector('.execution-container');
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const newWidth = e.clientX - containerRect.left;
+    
+    // 최소 200px, 최대 500px로 제한
+    const clampedWidth = Math.max(200, Math.min(500, newWidth));
+    setLeftPanelWidth(clampedWidth);
+  }, [isLeftPanelResizing]);
+
+  const handleLeftPanelResizeEnd = useCallback(() => {
+    setIsLeftPanelResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleDetailPanelResizeMove);
+      document.addEventListener('mouseup', handleDetailPanelResizeEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleDetailPanelResizeMove);
+        document.removeEventListener('mouseup', handleDetailPanelResizeEnd);
+      };
+    }
+  }, [isResizing, handleDetailPanelResizeMove, handleDetailPanelResizeEnd]);
+
+  useEffect(() => {
+    if (isLeftPanelResizing) {
+      document.addEventListener('mousemove', handleLeftPanelResizeMove);
+      document.addEventListener('mouseup', handleLeftPanelResizeEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleLeftPanelResizeMove);
+        document.removeEventListener('mouseup', handleLeftPanelResizeEnd);
+      };
+    }
+  }, [isLeftPanelResizing, handleLeftPanelResizeMove, handleLeftPanelResizeEnd]);
 
   // 진행률 계산
   const totalTestCases = Array.isArray(testCases) ? testCases.length : 0;
@@ -905,7 +1288,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
     setIsLoadingTestCases(true);
     try {
       // 선택된 폴더들을 가져온 폴더 목록에 추가 (하위 폴더 제외)
-      const selectedFolderObjects = Array.isArray(testFolders) ? testFolders.filter(folder => 
+      const selectedFolderObjects = Array.isArray(folders) ? folders.filter(folder => 
         selectedTestCasesToAdd.includes(folder.id)
       ) : [];
       
@@ -938,36 +1321,17 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
       
       console.log('선택된 폴더들을 가져온 폴더 목록에 추가:', foldersWithRealCounts);
       
-      // 선택된 모든 폴더의 테스트케이스를 실제로 가져와서 테스트케이스 목록에 추가
-      const allTestCases = [];
+      // 선택된 모든 폴더의 테스트케이스를 실제로 가져와서 릴리즈에 추가
+      const allTestCaseIds = [];
       for (const folder of selectedFolderObjects) {
         try {
           const response = await fetch(`http://localhost:3001/api/releases/folders/${folder.id}/testcases`);
           if (response.ok) {
             const data = await response.json();
             if (data.data && Array.isArray(data.data)) {
-              // 테스트케이스 데이터를 ExecutionView에서 사용하는 형식으로 변환
-              const convertedTestCases = data.data.map((tc: any) => ({
-                id: tc.id.toString(),
-                name: tc.title,
-                description: tc.description || '',
-                priority: tc.priority || 'P2',
-                status: 'Not Run',
-                assignee: '',
-                estimatedTime: 0,
-                actualTime: 0,
-                lastUpdated: new Date().toISOString(),
-                tags: [],
-                suite: folder.name,
-                module: folder.name,
-                steps: [],
-                expectedResult: '',
-                attachments: [],
-                executionStatus: 'Not Run',
-                executedAt: '',
-                executedBy: ''
-              }));
-              allTestCases.push(...convertedTestCases);
+              // 테스트케이스 ID들을 수집
+              const testCaseIds = data.data.map((tc: any) => tc.id);
+              allTestCaseIds.push(...testCaseIds);
             }
           }
         } catch (error) {
@@ -975,31 +1339,42 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
         }
       }
       
-      // 가져온 테스트케이스들을 현재 테스트케이스 목록에 추가
-      if (allTestCases.length > 0) {
-        // 중복 제거 (ID 기준)
-        const existingIds = new Set(testCases.map(tc => tc.id));
-        const newTestCases = allTestCases.filter(tc => !existingIds.has(tc.id));
-        
-        // 부모 컴포넌트의 테스트케이스 목록에 추가
-        if (onAddTestCases && newTestCases.length > 0) {
-          onAddTestCases(newTestCases);
-          console.log('테스트케이스 추가 완료:', newTestCases);
+      // 릴리즈에 테스트케이스 추가
+      if (allTestCaseIds.length > 0) {
+        try {
+          const addResponse = await fetch(`http://localhost:3001/api/releases/${release.id}/testcases`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              testCaseIds: allTestCaseIds
+            })
+          });
+
+          if (addResponse.ok) {
+            const addResult = await addResponse.json();
+            console.log('테스트케이스 릴리즈 추가 완료:', addResult);
+            
+            // 성공 후 모달 닫기 및 선택 초기화
+            setShowTestCaseModal(false);
+            setSelectedTestCasesToAdd([]);
+            
+            // 데이터 새로고침
+            await refetch();
+          } else {
+            console.error('테스트케이스 릴리즈 추가 실패:', addResponse.statusText);
+          }
+        } catch (error) {
+          console.error('테스트케이스 릴리즈 추가 실패:', error);
         }
       }
-      
-      // 성공 후 모달 닫기 및 선택 초기화
-      setShowTestCaseModal(false);
-      setSelectedTestCasesToAdd([]);
-      
-      // 데이터 새로고침
-      await refetch();
     } catch (error) {
       console.error('테스트케이스 추가 실패:', error);
     } finally {
       setIsLoadingTestCases(false);
     }
-  }, [selectedTestCasesToAdd, testFolders, testCases, refetch]);
+  }, [selectedTestCasesToAdd, folders, release.id, refetch]);
 
   // 폴더의 모든 하위 폴더 ID를 재귀적으로 가져오기
   const getAllSubFolderIds = useCallback((folder: any): number[] => {
@@ -1056,6 +1431,34 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
     }
   }, []);
 
+  // 폴더 배열을 트리 구조로 변환하는 함수
+  const buildFolderTree = useCallback((folders: any[]): any[] => {
+    const folderMap = new Map();
+    const rootFolders: any[] = [];
+
+    // 모든 폴더를 Map에 저장
+    folders.forEach(folder => {
+      folderMap.set(folder.id, { ...folder, children: [] });
+    });
+
+    // 부모-자식 관계 설정
+    folders.forEach(folder => {
+      const folderNode = folderMap.get(folder.id);
+      if (folder.parent_id === null) {
+        // 루트 폴더
+        rootFolders.push(folderNode);
+      } else {
+        // 하위 폴더
+        const parentNode = folderMap.get(folder.parent_id);
+        if (parentNode) {
+          parentNode.children.push(folderNode);
+        }
+      }
+    });
+
+    return rootFolders;
+  }, []);
+
   // 폴더 트리 렌더링 컴포넌트 (모달용)
   const renderFolderTree = useCallback((folders: any[], level: number = 0) => {
     if (!Array.isArray(folders)) {
@@ -1064,28 +1467,28 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
     }
     return folders.map((folder) => (
       <div key={folder.id}>
-        <FolderItem 
+        <ImportFolderItem 
           level={level}
-          className={selectedTestCasesToAdd.includes(folder.id) ? 'selected' : ''}
+          isSelected={selectedTestCasesToAdd.includes(folder.id)}
           onClick={() => handleFolderSelection(folder, !selectedTestCasesToAdd.includes(folder.id))}
         >
-          <FolderCheckbox
+          <ImportFolderCheckbox
             type="checkbox"
             checked={selectedTestCasesToAdd.includes(folder.id)}
-            onChange={(e) => handleFolderSelection(folder, e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFolderSelection(folder, e.target.checked)}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           />
-          <FolderInfo>
-            <FolderIcon>📁</FolderIcon>
-            <FolderName>{folder.name}</FolderName>
-            <FolderCount>{folder.testCaseCount}개</FolderCount>
-          </FolderInfo>
-        </FolderItem>
+          <ImportFolderIcon />
+          <ImportTextContainer>
+            <ImportFolderName>{folder.name}</ImportFolderName>
+            <ImportTestCaseCount>({folder.testCaseCount}개)</ImportTestCaseCount>
+          </ImportTextContainer>
+        </ImportFolderItem>
         
         {folder.children && folder.children.length > 0 && (
-          <div style={{ marginLeft: 20 }}>
+          <ImportFolderChildren>
             {renderFolderTree(folder.children, level + 1)}
-          </div>
+          </ImportFolderChildren>
         )}
       </div>
     ));
@@ -1099,51 +1502,37 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
     }
     return folders.map((folder) => (
       <div key={folder.id}>
-        <FolderItem 
+        <ImportFolderItem 
           level={level}
-          style={{ position: 'relative' }}
-          className={selectedImportedFolder?.id === folder.id ? 'selected' : ''}
+          isSelected={selectedImportedFolder?.id === folder.id}
           onClick={() => handleImportedFolderClick(folder)}
         >
-          <FolderInfo>
-            <FolderIcon>📁</FolderIcon>
-            <FolderName>{folder.name}</FolderName>
-            <FolderCount>{folder.testCaseCount}개</FolderCount>
-          </FolderInfo>
-          <button
-            onClick={(e) => {
+          <ImportFolderIcon />
+          <ImportTextContainer>
+            <ImportFolderName>{folder.name}</ImportFolderName>
+            <ImportTestCaseCount>({folder.testCaseCount}개)</ImportTestCaseCount>
+          </ImportTextContainer>
+          <ImportRemoveButton
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               handleRemoveImportedFolder(folder.id);
             }}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '2px 6px',
-              fontSize: '10px',
-              cursor: 'pointer'
-            }}
           >
-            삭제
-          </button>
-        </FolderItem>
+            ×
+          </ImportRemoveButton>
+        </ImportFolderItem>
         
         {folder.children && folder.children.length > 0 && (
-          <div style={{ marginLeft: 20 }}>
+          <ImportFolderChildren>
             {renderImportedFolderTree(folder.children, level + 1)}
-          </div>
+          </ImportFolderChildren>
         )}
       </div>
     ));
   }, [handleRemoveImportedFolder, handleImportedFolderClick, selectedImportedFolder]);
 
   return (
-    <ExecutionContainer>
+    <ExecutionContainer className="execution-container">
       {/* 상단 컨텍스트 바 */}
       <TopContextBar>
         <ReleaseMeta>
@@ -1230,7 +1619,8 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
       {!isCollapsed && (
         <MainContent>
         {/* 좌측 테스트케이스 폴더 패널 */}
-        <FilterPanel>
+        <FilterPanel width={leftPanelWidth}>
+          <LeftPanelResizeHandle onMouseDown={handleLeftPanelResizeStart} />
           <FilterSection>
             <FilterTitle>가져온 테스트케이스 폴더</FilterTitle>
             
@@ -1253,7 +1643,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
                   </button>
                 </div>
                 <FolderList>
-                  {renderImportedFolderTree(importedFolders)}
+                  {renderImportedFolderTree(buildFolderTree(importedFolders))}
                 </FolderList>
               </div>
             ) : (
@@ -1416,83 +1806,159 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
         </TestListContainer>
 
         {/* 우측 상세 패널 */}
-        <DetailPanel isOpen={!!selectedTestCase}>
-          {selectedTestCase && (
-            <DetailContent>
-              <DetailSection>
-                <DetailTitle>Overview</DetailTitle>
-                <DetailText><strong>ID:</strong> {selectedTestCase.id}</DetailText>
-                <DetailText><strong>Name:</strong> {selectedTestCase.name}</DetailText>
-                <DetailText><strong>Description:</strong> {selectedTestCase.description}</DetailText>
-                <DetailText><strong>Priority:</strong> {selectedTestCase.priority}</DetailText>
-                <DetailText><strong>Status:</strong> {selectedTestCase.status}</DetailText>
-                <DetailText><strong>Assignee:</strong> {selectedTestCase.assignee || 'Unassigned'}</DetailText>
-                <DetailText><strong>Suite:</strong> {selectedTestCase.suite || 'No Suite'}</DetailText>
-                <DetailText><strong>Module:</strong> {selectedTestCase.module || 'No Module'}</DetailText>
-              </DetailSection>
-
-              {selectedTestCase.steps && (
+        <DetailPanel isOpen={!!selectedTestCase} width={detailPanelWidth} onMouseDown={handleDetailPanelResizeStart}>
+          <DetailHeader>
+            <DetailHeaderTitle>Test Case Details</DetailHeaderTitle>
+            <CloseButton onClick={() => setSelectedTestCase(null)}>×</CloseButton>
+          </DetailHeader>
+          <ResizeHandle onMouseDown={handleDetailPanelResizeStart} />
+          <DetailContent onMouseUp={handleDetailPanelResizeEnd} onMouseMove={handleDetailPanelResizeMove} onMouseLeave={handleDetailPanelResizeEnd}>
+            {selectedTestCase && (
+              <>
                 <DetailSection>
-                  <DetailTitle>Steps</DetailTitle>
-                  <DetailText>{selectedTestCase.steps.join('\n')}</DetailText>
-                </DetailSection>
-              )}
+                  <DetailTitle>Overview</DetailTitle>
+                  
+                  {/* 제목과 상태 */}
+                  <SimpleHeader>
+                    <SimpleTitle>{selectedTestCase.title || selectedTestCase.name}</SimpleTitle>
+                    <SimpleStatus status={selectedTestCase.status}>{selectedTestCase.status}</SimpleStatus>
+                  </SimpleHeader>
 
-              {selectedTestCase.expectedResult && (
+                  {/* 기본 정보 */}
+                  <SimpleInfo>
+                    <SimpleInfoItem>
+                      <SimpleLabel>ID:</SimpleLabel>
+                      <SimpleValue>#{selectedTestCase.id}</SimpleValue>
+                    </SimpleInfoItem>
+                    <SimpleInfoItem>
+                      <SimpleLabel>Priority:</SimpleLabel>
+                      <SimpleValue priority={selectedTestCase.priority}>{selectedTestCase.priority}</SimpleValue>
+                    </SimpleInfoItem>
+                    <SimpleInfoItem>
+                      <SimpleLabel>Author:</SimpleLabel>
+                      <SimpleValue>{selectedTestCase.createdBy || 'admin'}</SimpleValue>
+                    </SimpleInfoItem>
+                  </SimpleInfo>
+
+                  {/* 설명 */}
+                  <SimpleSection>
+                    <SimpleLabel>Description</SimpleLabel>
+                    <SimpleText>{selectedTestCase.description || '설명이 없습니다.'}</SimpleText>
+                  </SimpleSection>
+
+                  {/* 사전 조건 */}
+                  <SimpleSection>
+                    <SimpleLabel>Prerequisites</SimpleLabel>
+                    <SimpleText>{selectedTestCase.prereq || '사전 조건이 없습니다.'}</SimpleText>
+                  </SimpleSection>
+
+                  {/* 테스트 단계 */}
+                  <SimpleSection>
+                    <SimpleLabel>Test Steps</SimpleLabel>
+                    <SimpleSteps>
+                      {(() => {
+                        let stepsArray: string[] = [];
+                        if (selectedTestCase.steps) {
+                          if (Array.isArray(selectedTestCase.steps)) {
+                            stepsArray = selectedTestCase.steps;
+                          } else if (typeof selectedTestCase.steps === 'string') {
+                            try {
+                              stepsArray = JSON.parse(selectedTestCase.steps);
+                            } catch (e) {
+                              stepsArray = [selectedTestCase.steps];
+                            }
+                          }
+                        }
+                        
+                        if (stepsArray.length > 0) {
+                          return stepsArray.map((step: string, index: number) => (
+                            <SimpleStep key={index}>
+                              <SimpleStepNumber>{index + 1}.</SimpleStepNumber>
+                              <SimpleStepText>{step}</SimpleStepText>
+                            </SimpleStep>
+                          ));
+                        } else {
+                          return (
+                            <SimpleStep>
+                              <SimpleStepNumber>1.</SimpleStepNumber>
+                              <SimpleStepText>No steps defined</SimpleStepText>
+                            </SimpleStep>
+                          );
+                        }
+                      })()}
+                    </SimpleSteps>
+                  </SimpleSection>
+
+                  {/* 예상 결과 */}
+                  <SimpleSection>
+                    <SimpleLabel>Expected Result</SimpleLabel>
+                    <SimpleText>{selectedTestCase.expected || selectedTestCase.expectedResult || '예상 결과가 없습니다.'}</SimpleText>
+                  </SimpleSection>
+                </DetailSection>
+
+                {selectedTestCase.steps && (
+                  <DetailSection>
+                    <DetailTitle>Steps</DetailTitle>
+                    <DetailText>{selectedTestCase.steps.join('\n')}</DetailText>
+                  </DetailSection>
+                )}
+
+                {selectedTestCase.expectedResult && (
+                  <DetailSection>
+                    <DetailTitle>Expected Result</DetailTitle>
+                    <DetailText>{selectedTestCase.expectedResult}</DetailText>
+                  </DetailSection>
+                )}
+
                 <DetailSection>
-                  <DetailTitle>Expected Result</DetailTitle>
-                  <DetailText>{selectedTestCase.expectedResult}</DetailText>
+                  <DetailTitle>Run Test</DetailTitle>
+                  <StatusChangeForm>
+                    <StatusRadioGroup>
+                      {(['Pass', 'Fail', 'Block', 'Skip'] as const).map((status) => (
+                        <StatusRadio key={status}>
+                          <input
+                            type="radio"
+                            name="status"
+                            value={status}
+                            checked={selectedTestCase.status === status}
+                            onChange={() => handleStatusChange(selectedTestCase.id, status)}
+                          />
+                          <StatusBadge status={status}>{status}</StatusBadge>
+                        </StatusRadio>
+                      ))}
+                    </StatusRadioGroup>
+                    
+                    <FilterLabel>Comment (Optional)</FilterLabel>
+                    <CommentTextarea placeholder="Add a comment about this test execution..." />
+                    
+                    <SaveButton onClick={() => setSelectedTestCase(null)}>
+                      Save Result
+                    </SaveButton>
+                  </StatusChangeForm>
                 </DetailSection>
-              )}
 
-              <DetailSection>
-                <DetailTitle>Run Test</DetailTitle>
-                <StatusChangeForm>
-                  <StatusRadioGroup>
-                    {(['Pass', 'Fail', 'Block', 'Skip'] as const).map((status) => (
-                      <StatusRadio key={status}>
-                        <input
-                          type="radio"
-                          name="status"
-                          value={status}
-                          checked={selectedTestCase.status === status}
-                          onChange={() => handleStatusChange(selectedTestCase.id, status)}
-                        />
-                        <StatusBadge status={status}>{status}</StatusBadge>
-                      </StatusRadio>
-                    ))}
-                  </StatusRadioGroup>
-                  
-                  <FilterLabel>Comment (Optional)</FilterLabel>
-                  <CommentTextarea placeholder="Add a comment about this test execution..." />
-                  
-                  <SaveButton onClick={() => setSelectedTestCase(null)}>
-                    Save Result
-                  </SaveButton>
-                </StatusChangeForm>
-              </DetailSection>
-
-              <DetailSection>
-                <DetailTitle>History</DetailTitle>
-                <HistoryList>
-                  <HistoryItem>
-                    <HistoryMeta>
-                      <span>John Doe</span>
-                      <span>2024-01-15 14:30</span>
-                    </HistoryMeta>
-                    <HistoryChange>Status changed from Not Run to Pass</HistoryChange>
-                  </HistoryItem>
-                  <HistoryItem>
-                    <HistoryMeta>
-                      <span>Jane Smith</span>
-                      <span>2024-01-14 16:45</span>
-                    </HistoryMeta>
-                    <HistoryChange>Status changed from Pass to Fail</HistoryChange>
-                  </HistoryItem>
-                </HistoryList>
-              </DetailSection>
-            </DetailContent>
-          )}
+                <DetailSection>
+                  <DetailTitle>History</DetailTitle>
+                  <HistoryList>
+                    <HistoryItem>
+                      <HistoryMeta>
+                        <span>John Doe</span>
+                        <span>2024-01-15 14:30</span>
+                      </HistoryMeta>
+                      <HistoryChange>Status changed from Not Run to Pass</HistoryChange>
+                    </HistoryItem>
+                    <HistoryItem>
+                      <HistoryMeta>
+                        <span>Jane Smith</span>
+                        <span>2024-01-14 16:45</span>
+                      </HistoryMeta>
+                      <HistoryChange>Status changed from Pass to Fail</HistoryChange>
+                    </HistoryItem>
+                  </HistoryList>
+                </DetailSection>
+              </>
+            )}
+          </DetailContent>
         </DetailPanel>
         </MainContent>
       )}
@@ -1514,9 +1980,9 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({
                   가져올 폴더를 선택하세요. 각 폴더를 개별적으로 선택할 수 있습니다.
                 </p>
                 <FolderList>
-                  {Array.isArray(testFolders) ? renderFolderTree(testFolders) : (
+                  {Array.isArray(folders) ? renderFolderTree(buildFolderTree(folders)) : (
                     <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                      {foldersLoading ? '폴더 목록을 불러오는 중...' : '폴더 목록을 불러올 수 없습니다.'}
+                      {isLoading ? '폴더 목록을 불러오는 중...' : '폴더 목록을 불러올 수 없습니다.'}
                     </div>
                   )}
                 </FolderList>

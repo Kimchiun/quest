@@ -5,9 +5,9 @@ export interface TestCase {
     steps: string[];
     expected?: string;
     priority: 'High' | 'Medium' | 'Low';
-    tags?: string[];
     status: 'Active' | 'Inactive' | 'Deprecated';
     folderId?: number;
+    tags?: string[];
     sortOrder?: number;
     createdBy: string;
     createdAt: Date;

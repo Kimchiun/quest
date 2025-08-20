@@ -452,6 +452,35 @@ export class ReleaseController {
     }
   }
 
+  // 릴리즈에 테스트케이스 추가
+  async addTestCasesToRelease(req: Request, res: Response) {
+    try {
+      const { releaseId } = req.params;
+      const { testCaseIds } = req.body;
+      
+      if (!testCaseIds || !Array.isArray(testCaseIds)) {
+        return res.status(400).json({
+          success: false,
+          message: '테스트케이스 ID 목록이 필요합니다.'
+        });
+      }
+
+      const result = await releaseRepository.addTestCasesToRelease(releaseId, testCaseIds);
+      
+      res.json({
+        success: true,
+        data: result,
+        message: '테스트케이스가 성공적으로 릴리즈에 추가되었습니다.'
+      });
+    } catch (error) {
+      console.error('테스트케이스 추가 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '테스트케이스 추가 중 오류가 발생했습니다.'
+      });
+    }
+  }
+
   // 초기 데이터 로드 (개발용)
   async loadInitialData(req: Request, res: Response) {
     try {

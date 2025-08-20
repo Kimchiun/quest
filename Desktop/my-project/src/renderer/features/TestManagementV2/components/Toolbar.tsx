@@ -104,9 +104,31 @@ const FolderInfo = styled.div`
 const FolderIcon = styled.div`
   width: 16px;
   height: 16px;
-  background: #fbbf24;
-  border: 1px solid #a16207;
-  border-radius: 2px;
+  position: relative;
+  color: #6b7280;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    background: transparent;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    right: 2px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 1px 1px 0 0;
+  }
 `;
 
 const Spacer = styled.div`

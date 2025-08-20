@@ -96,12 +96,37 @@ export async function updateFolder(id: number, data: Partial<Folder> & { updated
             throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
         }
 
+        // 업데이트할 필드들을 동적으로 구성
+        const updateFields: string[] = [];
+        const queryParams: any[] = [];
+        let paramIndex = 1;
+
+        if (data.name !== undefined) {
+            updateFields.push(`name = $${paramIndex}`);
+            queryParams.push(data.name);
+            paramIndex++;
+        }
+
+        if (data.parentId !== undefined) {
+            updateFields.push(`parent_id = $${paramIndex}`);
+            queryParams.push(data.parentId);
+            paramIndex++;
+        }
+
+        if (data.orderIndex !== undefined) {
+            updateFields.push(`sort_order = $${paramIndex}`);
+            queryParams.push(data.orderIndex);
+            paramIndex++;
+        }
+
+        updateFields.push(`updated_at = NOW()`);
+
         const result = await pgClient.query(`
             UPDATE tree_nodes 
-            SET name = $1, parent_id = $2, sort_order = $3, updated_at = NOW()
-            WHERE id = $4 AND type = 'folder'
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex} AND type = 'folder'
             RETURNING id, name, type, parent_id, sort_order, created_by, created_at, updated_at
-        `, [data.name, data.parentId, data.orderIndex, id]);
+        `, [...queryParams, id]);
 
         if (result.rows.length === 0) {
             return null;
@@ -208,11 +233,24 @@ export async function getFolderTree(projectId: number, depth?: number): Promise<
     const folderMap = new Map<number, FolderTree>();
     const rootFolders: FolderTree[] = [];
     
-    // 모든 폴더를 맵에 추가
+    // depth 계산 함수
+    const calculateDepth = (folderId: number, visited: Set<number> = new Set()): number => {
+        if (visited.has(folderId)) return 0; // 순환 참조 방지
+        visited.add(folderId);
+        
+        const folder = allFolders.find(f => f.id === folderId);
+        if (!folder || !folder.parentId) return 0;
+        
+        return 1 + calculateDepth(folder.parentId, visited);
+    };
+    
+    // 모든 폴더를 맵에 추가 (depth 계산 포함)
     allFolders.forEach(folder => {
-        if (depth === undefined || folder.depth <= depth) {
+        const calculatedDepth = calculateDepth(folder.id);
+        if (depth === undefined || calculatedDepth <= depth) {
             folderMap.set(folder.id, {
                 ...folder,
+                depth: calculatedDepth,
                 children: [],
                 testCaseCount: 0
             });
@@ -221,7 +259,8 @@ export async function getFolderTree(projectId: number, depth?: number): Promise<
     
     // 트리 구조 생성
     allFolders.forEach(folder => {
-        if (depth === undefined || folder.depth <= depth) {
+        const calculatedDepth = calculateDepth(folder.id);
+        if (depth === undefined || calculatedDepth <= depth) {
             const folderTree = folderMap.get(folder.id)!;
             
             if (folder.parentId && folderMap.has(folder.parentId)) {

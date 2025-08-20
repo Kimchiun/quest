@@ -13,6 +13,7 @@ router.get('/folders/:folderId/testcases', releaseController.getFolderTestCases)
 router.get('/:id/testcases', releaseController.getReleaseTestCases);
 router.get('/:id', releaseController.getReleaseById);
 router.post('/', releaseController.createRelease);
+router.post('/:releaseId/testcases', releaseController.addTestCasesToRelease);
 router.put('/:id', releaseController.updateRelease);
 router.delete('/:id', releaseController.deleteRelease);
 
