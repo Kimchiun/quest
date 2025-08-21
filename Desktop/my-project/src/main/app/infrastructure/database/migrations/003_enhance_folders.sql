@@ -80,7 +80,4 @@ CREATE INDEX IF NOT EXISTS idx_folders_testcase_count ON folders(testcase_count)
 CREATE INDEX IF NOT EXISTS idx_folders_is_expanded ON folders(is_expanded);
 CREATE INDEX IF NOT EXISTS idx_folders_is_readonly ON folders(is_readonly);
 
--- 루트 폴더 생성 (기본값)
-INSERT INTO folders (name, description, parent_id, sort_order, testcase_count, created_by, is_expanded, is_readonly) 
-VALUES ('Test Case - All', '모든 테스트케이스', NULL, 0, 0, 'system', true, false) 
-ON CONFLICT (id) DO NOTHING; 
+ 

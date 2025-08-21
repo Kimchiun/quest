@@ -74,6 +74,78 @@ const AddRootFolderButton = styled.button`
   }
 `;
 
+const EditButton = styled.button<{ isActive: boolean }>`
+  width: 24px;
+  height: 24px;
+  background: ${props => props.isActive ? '#ef4444' : '#6b7280'};
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${props => props.isActive ? '#dc2626' : '#4b5563'};
+    transform: scale(1.05);
+  }
+
+  &:active {
+    background: ${props => props.isActive ? '#b91c1c' : '#374151'};
+    transform: scale(0.95);
+  }
+`;
+
+const MultiSelectActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+`;
+
+const DeleteSelectedButton = styled.button`
+  padding: 4px 8px;
+  background: #ef4444;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #dc2626;
+  }
+
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const CancelSelectionButton = styled.button`
+  padding: 4px 8px;
+  background: #6b7280;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #4b5563;
+  }
+`;
+
 const TreeContainer = styled.div<{ isCollapsed: boolean }>`
   flex: 1;
   overflow-y: auto;
@@ -119,6 +191,7 @@ interface FolderTreePanelProps {
   expandedFolders: Set<number>;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Set<number>>>;
   onCreateRootFolder: () => void;
+  onMultiDelete?: (folderIds: number[]) => void;
 }
 
 const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
@@ -132,7 +205,8 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   onCollapse,
   expandedFolders,
   setExpandedFolders,
-  onCreateRootFolder
+  onCreateRootFolder,
+  onMultiDelete
 }) => {
 
   // 폴더 목록이 변경되어도 확장 상태 유지
@@ -140,6 +214,8 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
     console.log('📁 FolderTreePanel - 현재 확장된 폴더들:', Array.from(expandedFolders));
   }, [expandedFolders, folders]);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<number>>(new Set());
 
   const handleToggleExpand = (folderId: number) => {
     const newExpanded = new Set(expandedFolders);
@@ -153,7 +229,44 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
 
   const handleFolderClick = (folder: FolderTree) => {
     console.log('📁 FolderTreePanel에서 폴더 클릭됨:', folder.name, 'ID:', folder.id);
-    onFolderSelect(folder);
+    
+    if (isMultiSelectMode) {
+      // 다중 선택 모드에서는 선택 상태를 토글
+      const newSelectedIds = new Set(selectedFolderIds);
+      if (newSelectedIds.has(folder.id)) {
+        newSelectedIds.delete(folder.id);
+      } else {
+        newSelectedIds.add(folder.id);
+      }
+      setSelectedFolderIds(newSelectedIds);
+    } else {
+      // 일반 모드에서는 폴더 선택
+      onFolderSelect(folder);
+    }
+  };
+
+  const handleToggleMultiSelect = () => {
+    setIsMultiSelectMode(!isMultiSelectMode);
+    if (isMultiSelectMode) {
+      // 다중 선택 모드 종료 시 선택된 폴더들 초기화
+      setSelectedFolderIds(new Set());
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedFolderIds.size === 0) return;
+    
+    const confirmed = window.confirm(`선택된 ${selectedFolderIds.size}개의 폴더를 삭제하시겠습니까?`);
+    if (confirmed && onMultiDelete) {
+      onMultiDelete(Array.from(selectedFolderIds));
+      setSelectedFolderIds(new Set());
+      setIsMultiSelectMode(false);
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedFolderIds(new Set());
+    setIsMultiSelectMode(false);
   };
 
   const handleToggleCollapse = () => {
@@ -167,27 +280,29 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   const renderFolderTree = (folderList: FolderTree[], depth: number = 0): React.ReactNode => {
     return folderList.map((folder) => {
       const isExpanded = expandedFolders.has(folder.id);
-      const isSelected = selectedFolder?.id === folder.id;
+      const isSelected = isMultiSelectMode 
+        ? selectedFolderIds.has(folder.id)
+        : selectedFolder?.id === folder.id;
       const hasChildren = folder.children && Array.isArray(folder.children) && folder.children.length > 0;
 
       return (
         <div key={folder.id}>
-                      <FolderTreeItem
-              folder={folder}
-              depth={depth}
-              isExpanded={isExpanded}
-              isSelected={isSelected}
-              hasChildren={hasChildren}
-              onToggleExpand={() => handleToggleExpand(folder.id)}
-              onClick={() => handleFolderClick(folder)}
-              onCreateSubFolder={() => {
-                console.log('📁 onCreateSubFolder 호출됨:', folder.name, 'ID:', folder.id);
-                onCreateFolder(folder.id);
-              }}
-              onMove={onFolderMove}
-              onRename={onRename}
-              onDelete={onDelete}
-            />
+          <FolderTreeItem
+            folder={folder}
+            depth={depth}
+            isExpanded={isExpanded}
+            isSelected={isSelected}
+            hasChildren={hasChildren}
+            onToggleExpand={() => handleToggleExpand(folder.id)}
+            onClick={() => handleFolderClick(folder)}
+            onCreateSubFolder={() => {
+              console.log('📁 onCreateSubFolder 호출됨:', folder.name, 'ID:', folder.id);
+              onCreateFolder(folder.id);
+            }}
+            onMove={onFolderMove}
+            onRename={onRename}
+            onDelete={onDelete}
+          />
           {isExpanded && hasChildren && (
             <div style={{ marginLeft: 16 }}>
               {renderFolderTree(folder.children!, depth + 1)}
@@ -207,16 +322,41 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
         <HeaderLeft>
           <Title isCollapsed={isCollapsed}>폴더 구조</Title>
           {!isCollapsed && (
-            <AddRootFolderButton
-              onClick={onCreateRootFolder}
-              title="새 폴더 생성"
-            >
-              +
-            </AddRootFolderButton>
+            <>
+              <AddRootFolderButton
+                onClick={onCreateRootFolder}
+                title="새 폴더 생성"
+              >
+                +
+              </AddRootFolderButton>
+              <EditButton
+                isActive={isMultiSelectMode}
+                onClick={handleToggleMultiSelect}
+                title={isMultiSelectMode ? "다중 선택 모드 종료" : "다중 선택 모드"}
+              >
+                ✏️
+              </EditButton>
+            </>
           )}
         </HeaderLeft>
       </Header>
       <TreeContainer isCollapsed={isCollapsed}>
+        {isMultiSelectMode && (
+          <MultiSelectActions>
+            <span style={{ fontSize: '12px', color: '#374151' }}>
+              {selectedFolderIds.size}개 선택됨
+            </span>
+            <DeleteSelectedButton
+              onClick={handleDeleteSelected}
+              disabled={selectedFolderIds.size === 0}
+            >
+              선택 삭제
+            </DeleteSelectedButton>
+            <CancelSelectionButton onClick={handleCancelSelection}>
+              취소
+            </CancelSelectionButton>
+          </MultiSelectActions>
+        )}
         {folders.length === 0 ? (
           <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
             폴더가 없습니다.

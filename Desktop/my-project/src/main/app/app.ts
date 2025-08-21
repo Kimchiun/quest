@@ -9,6 +9,7 @@ import folderRoutes from './domains/folders/routes/folderRoutes';
 // import bulkController from './domains/folders/controllers/bulkController';
 import releaseRoutes from './domains/releases/routes/releaseRoutes';
 import { errorHandler } from './utils/errorHandler';
+import { specs, swaggerUi } from './infrastructure/swagger/swagger';
 
 const app = express();
 
@@ -25,6 +26,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Passport 초기화
 app.use(passport.initialize());
+
+// Swagger API 문서
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // 라우터 설정
 app.use('/api/auth', authController);

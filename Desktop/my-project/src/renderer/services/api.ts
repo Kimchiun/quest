@@ -74,7 +74,7 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['TestCase', 'Release', 'Suite', 'Execution', 'Defect', 'Comment', 'User'],
+  tagTypes: ['TestCase', 'Release', 'Suite', 'Execution', 'Defect', 'Comment', 'User', 'TestFolder'],
   endpoints: (builder) => ({
     // TestCase API
     getTestCases: builder.query<TestCase[], void>({
@@ -93,7 +93,7 @@ export const api = createApi({
         method: 'POST',
         body: testCase,
       }),
-      invalidatesTags: ['TestCase'],
+      invalidatesTags: ['TestCase', 'TestFolder'],
     }),
     
     updateTestCase: builder.mutation<TestCase, { id: number; data: Partial<TestCase> }>({
@@ -102,7 +102,7 @@ export const api = createApi({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'TestCase', id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'TestCase', id }, 'TestFolder'],
     }),
     
     deleteTestCase: builder.mutation<void, number>({
@@ -110,7 +110,7 @@ export const api = createApi({
         url: `/api/testcases/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['TestCase'],
+      invalidatesTags: ['TestCase', 'TestFolder'],
     }),
     
     // Release API
@@ -180,13 +180,53 @@ export const api = createApi({
       invalidatesTags: (result, error, { releaseId }) => [{ type: 'Release', id: releaseId }, 'Execution'],
     }),
       getTestFolders: builder.query<TestFolder[], void>({
-    query: () => '/api/releases/testcases/folders',
-    transformResponse: (response: { success: boolean; data: TestFolder[] }) => response.data,
+    query: () => '/api/tree',
     providesTags: ['TestFolder'],
   }),
   getFolderTestCases: builder.query<any[], number>({
     query: (folderId) => `/api/releases/folders/${folderId}/testcases`,
     providesTags: (result, error, folderId) => [{ type: 'Folder', id: folderId }, 'TestCase'],
+  }),
+
+  // 폴더 생성 API
+  createFolder: builder.mutation<any, any>({
+    query: (folder) => ({
+      url: '/api/folders',
+      method: 'POST',
+      body: folder,
+    }),
+    invalidatesTags: ['TestFolder'],
+  }),
+
+  // 가져온 폴더 관련 API
+  getImportedFolders: builder.query<any[], string>({
+    query: (releaseId) => `/api/releases/${releaseId}/imported-folders`,
+    transformResponse: (response: { success: boolean; data: any[] }) => response.data,
+    providesTags: (result, error, releaseId) => [{ type: 'Release', id: releaseId }, 'ImportedFolder'],
+  }),
+
+  addImportedFolders: builder.mutation<{
+    success: boolean;
+    data: any[];
+    message: string;
+  }, { releaseId: string; folders: any[] }>({
+    query: ({ releaseId, folders }) => ({
+      url: `/api/releases/${releaseId}/imported-folders`,
+      method: 'POST',
+      body: { folders },
+    }),
+    invalidatesTags: (result, error, { releaseId }) => [{ type: 'Release', id: releaseId }, 'ImportedFolder'],
+  }),
+
+  removeImportedFolder: builder.mutation<{
+    success: boolean;
+    message: string;
+  }, { releaseId: string; folderId: number }>({
+    query: ({ releaseId, folderId }) => ({
+      url: `/api/releases/${releaseId}/imported-folders/${folderId}`,
+      method: 'DELETE',
+    }),
+    invalidatesTags: (result, error, { releaseId }) => [{ type: 'Release', id: releaseId }, 'ImportedFolder'],
   }),
     
     createRelease: builder.mutation<Release, Partial<Release>>({
@@ -372,6 +412,10 @@ export const {
   useUpdateTestCaseStatusMutation,
   useGetTestFoldersQuery,
   useGetFolderTestCasesQuery,
+  useCreateFolderMutation,
+  useGetImportedFoldersQuery,
+  useAddImportedFoldersMutation,
+  useRemoveImportedFolderMutation,
   useCreateReleaseMutation,
   useUpdateReleaseMutation,
   useDeleteReleaseMutation,

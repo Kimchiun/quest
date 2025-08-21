@@ -2,6 +2,45 @@ import { Request, Response } from 'express';
 import * as folderService from '../services/folderService';
 import { FolderCreateRequest, FolderUpdateRequest, FolderMoveRequest } from '../models/Folder';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Folder:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 폴더 ID
+ *         name:
+ *           type: string
+ *           description: 폴더 이름
+ *         description:
+ *           type: string
+ *           description: 폴더 설명
+ *         parentId:
+ *           type: integer
+ *           nullable: true
+ *           description: 부모 폴더 ID
+ *         projectId:
+ *           type: string
+ *           description: 프로젝트 ID
+ *         sortOrder:
+ *           type: integer
+ *           description: 정렬 순서
+ *         createdBy:
+ *           type: string
+ *           description: 생성자
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: 생성일
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: 수정일
+ */
+
 export async function createFolder(req: Request, res: Response) {
     try {
         const data: FolderCreateRequest = req.body;

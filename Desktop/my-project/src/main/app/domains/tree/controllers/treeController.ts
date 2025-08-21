@@ -2,12 +2,77 @@ import { Router } from 'express';
 import * as treeService from '../services/treeService';
 import { CreateTreeNodeRequest, UpdateTreeNodeRequest, DragDropRequest } from '../types';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TreeNode:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 노드 ID
+ *         name:
+ *           type: string
+ *           description: 노드 이름
+ *         type:
+ *           type: string
+ *           enum: [folder, testcase, suite]
+ *           description: 노드 타입
+ *         parentId:
+ *           type: integer
+ *           nullable: true
+ *           description: 부모 노드 ID
+ *         sortOrder:
+ *           type: integer
+ *           description: 정렬 순서
+ *         createdBy:
+ *           type: string
+ *           description: 생성자
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: 생성일
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: 수정일
+ *     TreeStructure:
+ *       type: object
+ *       properties:
+ *         nodes:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/TreeNode'
+ *         rootNodes:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/TreeNode'
+ */
+
 const router = Router();
 
 // =====================================================
 // 기본 CRUD 엔드포인트
 // =====================================================
 
+/**
+ * @swagger
+ * /api/tree/structure:
+ *   get:
+ *     summary: 트리 구조 조회
+ *     description: 전체 트리 구조를 조회합니다.
+ *     tags: [Tree]
+ *     responses:
+ *       200:
+ *         description: 트리 구조 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TreeStructure'
+ *       500:
+ *         description: 서버 오류
+ */
 // 트리 구조 조회
 router.get('/structure', async (req, res) => {
   try {
@@ -22,6 +87,25 @@ router.get('/structure', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tree:
+ *   get:
+ *     summary: 모든 트리 노드 조회
+ *     description: 모든 트리 노드를 조회합니다.
+ *     tags: [Tree]
+ *     responses:
+ *       200:
+ *         description: 트리 노드 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TreeNode'
+ *       500:
+ *         description: 서버 오류
+ */
 // 모든 노드 조회
 router.get('/', async (req, res) => {
   try {

@@ -29,8 +29,4 @@ CREATE INDEX IF NOT EXISTS idx_tree_nodes_created_by ON tree_nodes(created_by);
 -- 테스트 케이스-폴더 관계 테이블 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_case_folders_testcase_id ON case_folders(testcase_id);
 CREATE INDEX IF NOT EXISTS idx_case_folders_folder_id ON case_folders(folder_id);
-
--- 루트 폴더 생성 (기본값)
-INSERT INTO tree_nodes (name, type, created_by) 
-VALUES ('Root', 'folder', 'system') 
-ON CONFLICT DO NOTHING; 
+ 

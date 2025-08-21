@@ -355,50 +355,7 @@ const DashboardPage: React.FC = () => {
     weeklyDeployments: { value: 2, trend: 'stable', change: 0 }
   };
 
-  const releasesData = [
-    {
-      id: 1,
-      version: 'v2.3.0',
-      status: 'testing',
-      deployDate: '2024-08-07',
-      successRate: 89,
-      blockerCount: 2,
-      openIssues: 5,
-      commits: 17,
-      assignee: '김치운',
-      majorChanges: 'Login 검증 개선 외 2건',
-      trend: 'down' as const,
-      change: 3
-    },
-    {
-      id: 2,
-      version: 'v2.2.1',
-      status: 'completed',
-      deployDate: '2024-08-01',
-      successRate: 97,
-      blockerCount: 0,
-      openIssues: 1,
-      commits: 13,
-      assignee: '우승',
-      majorChanges: '배포모듈 통합',
-      trend: 'up' as const,
-      change: 2
-    },
-    {
-      id: 3,
-      version: 'v2.2.0',
-      status: 'deployed',
-      deployDate: '2024-07-25',
-      successRate: 94,
-      blockerCount: 1,
-      openIssues: 3,
-      commits: 22,
-      assignee: '태영',
-      majorChanges: '결제 시스템 개선',
-      trend: 'stable' as const,
-      change: 0
-    }
-  ];
+  const releasesData: any[] = [];
 
   const issuesData = [
     {

@@ -74,7 +74,7 @@ export async function getAllTreeNodes(): Promise<TreeNode[]> {
 
   const result = await pgClient.query('SELECT * FROM tree_nodes ORDER BY sort_order, name');
   
-  return result.rows.map((row: any) => ({
+  const nodes = result.rows.map((row: any) => ({
     id: row.id,
     name: row.name,
     type: row.type,
@@ -84,6 +84,22 @@ export async function getAllTreeNodes(): Promise<TreeNode[]> {
     updatedAt: row.updated_at,
     createdBy: row.created_by
   }));
+
+  // 폴더 타입인 경우에만 테스트케이스 개수 계산
+  for (const node of nodes) {
+    if (node.type === 'folder') {
+      // 해당 폴더의 직접적인 테스트케이스만 계산
+      const testCaseCountResult = await pgClient.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM tree_nodes WHERE type = 'testcase' AND parent_id = $1) +
+          (SELECT COUNT(*) FROM testcases WHERE folder_id = $1) as count
+      `, [node.id]);
+      
+      (node as any).testCaseCount = parseInt(testCaseCountResult.rows[0]?.count || '0');
+    }
+  }
+
+  return nodes;
 }
 
 export async function getTreeStructure(): Promise<TreeNode[]> {
@@ -117,7 +133,7 @@ export async function getTreeStructure(): Promise<TreeNode[]> {
     const treeNode: TreeNode = {
       ...node,
       children: [],
-      testcaseCount: countMap.get(node.id) || 0
+      testCaseCount: countMap.get(node.id) || 0
     };
     nodeMap.set(node.id, treeNode);
   });

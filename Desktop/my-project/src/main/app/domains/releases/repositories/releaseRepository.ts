@@ -1,8 +1,17 @@
 import { Release, ReleaseScope, ReleaseCase, Run, DefectLink, Environment } from '../entities/release';
 
 // 임시 메모리 저장소 (실제로는 데이터베이스 사용)
-let releases: Release[] = [];
+let releases: Release[] = []; // 빈 배열로 초기화
 let nextId = 1;
+
+// 메모리 배열 초기화 함수
+const clearMemoryReleases = () => {
+  releases = [];
+  nextId = 1;
+};
+
+// 앱 시작 시 메모리 배열 초기화
+clearMemoryReleases();
 
 export class ReleaseRepository {
   // 모든 릴리즈 조회
@@ -64,7 +73,7 @@ export class ReleaseRepository {
       }));
     } catch (error) {
       console.error('릴리즈 조회 실패:', error);
-      return releases; // 실패 시 메모리 데이터 반환
+      return []; // 실패 시 빈 배열 반환
     }
   }
 
@@ -138,21 +147,134 @@ export class ReleaseRepository {
 
   // 프로젝트별 릴리즈 조회
   async findByProjectId(projectId: string): Promise<Release[]> {
-    return releases.filter(release => release.projectId === projectId);
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name,
+          version,
+          description,
+          status,
+          assignee_name,
+          scheduled_date,
+          deployed_date,
+          created_at,
+          updated_at
+        FROM releases
+        ORDER BY created_at DESC
+      `);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        projectId: '1',
+        name: row.name,
+        version: row.version,
+        description: row.description || '',
+        status: row.status,
+        startAt: row.scheduled_date,
+        endAt: row.deployed_date,
+        owners: row.assignee_name ? [row.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      }));
+    } catch (error) {
+      console.error('프로젝트별 릴리즈 조회 실패:', error);
+      return [];
+    }
   }
 
   // 릴리즈 생성
   async create(releaseData: Omit<Release, 'id' | 'createdAt' | 'updatedAt'>): Promise<Release> {
-    const now = new Date().toISOString();
-    const newRelease: Release = {
-      ...releaseData,
-      id: String(nextId++),
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    releases.push(newRelease);
-    return newRelease;
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const now = new Date().toISOString();
+      
+      const result = await pgClient.query(`
+        INSERT INTO releases (
+          name, version, description, status, assignee_name, 
+          scheduled_date, deployed_date, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+      `, [
+        releaseData.name,
+        releaseData.version,
+        releaseData.description || '',
+        releaseData.status,
+        releaseData.owners?.[0] || null,
+        releaseData.startAt || null,
+        releaseData.endAt || null,
+        now,
+        now
+      ]);
+
+      const createdRelease = result.rows[0];
+      
+      return {
+        id: createdRelease.id,
+        projectId: '1',
+        name: createdRelease.name,
+        version: createdRelease.version,
+        description: createdRelease.description || '',
+        status: createdRelease.status,
+        startAt: createdRelease.scheduled_date,
+        endAt: createdRelease.deployed_date,
+        owners: createdRelease.assignee_name ? [createdRelease.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: createdRelease.created_at,
+        updatedAt: createdRelease.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      };
+    } catch (error) {
+      console.error('릴리즈 생성 실패:', error);
+      throw error;
+    }
   }
 
   // 릴리즈 업데이트
@@ -341,6 +463,35 @@ export class ReleaseRepository {
     }
   }
 
+  // 특정 테스트케이스들 삭제
+  async deleteSpecificTestCases(releaseId: string, testCaseIds: string[]): Promise<void> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      if (testCaseIds.length === 0) {
+        return;
+      }
+
+      // 릴리즈에서 특정 테스트케이스들 삭제
+      // testCaseIds를 정수 배열로 변환
+      const testCaseIdsAsIntegers = testCaseIds.map(id => parseInt(id, 10));
+      await pgClient.query(`
+        DELETE FROM release_test_cases
+        WHERE release_id = $1 AND test_case_id = ANY($2::integer[])
+      `, [releaseId, testCaseIdsAsIntegers]);
+
+      console.log(`릴리즈 ${releaseId}에서 ${testCaseIds.length}개의 테스트케이스가 삭제되었습니다.`);
+    } catch (error) {
+      console.error('특정 테스트케이스 삭제 실패:', error);
+      throw error;
+    }
+  }
+
   // 테스트케이스 상태 변경
   async updateTestCaseStatus(releaseId: string, testCaseId: string, status: string, comment?: string): Promise<any> {
     try {
@@ -487,46 +638,20 @@ export class ReleaseRepository {
       // 각 폴더에 대해 테스트케이스 개수 계산
       for (const folder of folders) {
         if (folder.source_table === 'folders') {
-          // folders 테이블의 폴더인 경우
+          // folders 테이블의 폴더인 경우 - 해당 폴더의 직접적인 테스트케이스만 계산
           const testCaseCountResult = await pgClient.query(`
-            WITH RECURSIVE folder_hierarchy AS (
-              -- 현재 폴더
-              SELECT id, parent_id
-              FROM folders 
-              WHERE id = $1
-              
-              UNION ALL
-              
-              -- 하위 폴더들
-              SELECT f.id, f.parent_id
-              FROM folders f
-              INNER JOIN folder_hierarchy fh ON f.parent_id = fh.id
-            )
-            SELECT 
-              (SELECT COUNT(*) FROM testcases WHERE folder_id IN (SELECT id FROM folder_hierarchy)) as count
+            SELECT COUNT(*) as count
+            FROM testcases 
+            WHERE folder_id = $1
           `, [folder.id]);
           
           folder.testCaseCount = parseInt(testCaseCountResult.rows[0]?.count || '0');
         } else {
-          // tree_nodes 테이블의 폴더인 경우
+          // tree_nodes 테이블의 폴더인 경우 - 해당 폴더의 직접적인 테스트케이스만 계산
           const testCaseCountResult = await pgClient.query(`
-            WITH RECURSIVE folder_hierarchy AS (
-              -- 현재 폴더
-              SELECT id, parent_id
-              FROM tree_nodes 
-              WHERE id = $1 AND type = 'folder'
-              
-              UNION ALL
-              
-              -- 하위 폴더들
-              SELECT tn.id, tn.parent_id
-              FROM tree_nodes tn
-              INNER JOIN folder_hierarchy fh ON tn.parent_id = fh.id
-              WHERE tn.type = 'folder'
-            )
             SELECT 
-              (SELECT COUNT(*) FROM tree_nodes WHERE type = 'testcase' AND parent_id IN (SELECT id FROM folder_hierarchy)) +
-              (SELECT COUNT(*) FROM testcases WHERE folder_id IN (SELECT id FROM folder_hierarchy)) as count
+              (SELECT COUNT(*) FROM tree_nodes WHERE type = 'testcase' AND parent_id = $1) +
+              (SELECT COUNT(*) FROM testcases WHERE folder_id = $1) as count
           `, [folder.id]);
           
           folder.testCaseCount = parseInt(testCaseCountResult.rows[0]?.count || '0');
@@ -840,6 +965,113 @@ export class ReleaseRepository {
         skipped: 0,
         passRate: 0
       };
+    }
+  }
+
+  // 릴리즈에 가져온 폴더 목록 조회
+  async getImportedFolders(releaseId: string): Promise<any[]> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          release_id,
+          folder_id,
+          folder_name,
+          parent_id,
+          test_case_count,
+          created_at,
+          updated_at
+        FROM release_imported_folders
+        WHERE release_id = $1
+        ORDER BY created_at ASC
+      `, [releaseId]);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        releaseId: row.release_id,
+        folderId: row.folder_id,
+        name: row.folder_name,
+        parentId: row.parent_id,
+        testCaseCount: row.test_case_count,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+    } catch (error) {
+      console.error('가져온 폴더 목록 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 릴리즈에 폴더 추가
+  async addImportedFolders(releaseId: string, folders: any[]): Promise<any[]> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const addedFolders = [];
+
+      for (const folder of folders) {
+        // 중복 체크
+        const existingResult = await pgClient.query(`
+          SELECT id FROM release_imported_folders 
+          WHERE release_id = $1 AND folder_id = $2
+        `, [releaseId, folder.folder_id]);
+
+        if (existingResult.rows.length === 0) {
+          // 새 폴더 추가
+          const result = await pgClient.query(`
+            INSERT INTO release_imported_folders 
+            (release_id, folder_id, folder_name, parent_id, test_case_count)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+          `, [
+            releaseId,
+            folder.folder_id,
+            folder.folder_name,
+            folder.parent_id || null,
+            folder.test_case_count || 0
+          ]);
+
+          addedFolders.push(result.rows[0]);
+        }
+      }
+
+      return addedFolders;
+    } catch (error) {
+      console.error('폴더 추가 실패:', error);
+      throw error;
+    }
+  }
+
+  // 릴리즈에서 폴더 제거
+  async removeImportedFolder(releaseId: string, folderId: number): Promise<void> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      await pgClient.query(`
+        DELETE FROM release_imported_folders 
+        WHERE release_id = $1 AND folder_id = $2
+      `, [releaseId, folderId]);
+
+    } catch (error) {
+      console.error('폴더 제거 실패:', error);
+      throw error;
     }
   }
 

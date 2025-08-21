@@ -224,4 +224,5 @@ NODE_ENV=development
 - ✅ 테스트케이스 상태 변경 기능 구현
 - ✅ 실시간 데이터 동기화 (5초 polling)
 - ✅ 런타임 오류 수정 및 안정성 개선
-- ✅ 앱 재시작/종료 스크립트 추가 
+- ✅ 앱 재시작/종료 스크립트 추가
+- ✅ **Swagger API 문서 추가** - [API 문서](./docs/api.md) | [Swagger UI](http://localhost:3001/api-docs/)

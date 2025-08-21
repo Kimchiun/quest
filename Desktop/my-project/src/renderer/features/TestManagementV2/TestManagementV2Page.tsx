@@ -315,6 +315,37 @@ const TestManagementV2Page: React.FC = () => {
     }
   };
 
+  const handleMultiDelete = async (folderIds: number[]) => {
+    if (!confirm(`선택된 ${folderIds.length}개의 폴더를 삭제하시겠습니까? 하위 폴더와 테스트 케이스도 함께 삭제됩니다.`)) {
+      return;
+    }
+
+    try {
+      // 각 폴더를 순차적으로 삭제
+      for (const folderId of folderIds) {
+        const response = await fetch(`http://localhost:3001/api/folders/${folderId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`폴더 ID ${folderId} 삭제에 실패했습니다.`);
+        }
+      }
+
+      await loadFolderTree();
+      
+      // 삭제된 폴더 중 현재 선택된 폴더가 있었다면 선택 해제
+      if (selectedFolder && folderIds.includes(selectedFolder.id)) {
+        setSelectedFolder(null);
+      }
+
+      alert(`${folderIds.length}개의 폴더가 성공적으로 삭제되었습니다.`);
+    } catch (error) {
+      console.error('다중 폴더 삭제 오류:', error);
+      alert('폴더 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    }
+  };
+
   const handleCreateTestCase = async (testCaseData: any) => {
     console.log('새 테스트케이스 생성:', testCaseData);
     
@@ -692,6 +723,7 @@ const TestManagementV2Page: React.FC = () => {
           expandedFolders={expandedFolders}
           setExpandedFolders={setExpandedFolders}
           onCreateRootFolder={handleCreateRootFolder}
+          onMultiDelete={handleMultiDelete}
         />
         {!isTreeCollapsed && (
           <ResizeHandle

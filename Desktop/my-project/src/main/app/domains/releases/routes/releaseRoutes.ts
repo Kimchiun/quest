@@ -39,6 +39,11 @@ router.post('/:releaseId/defects', releaseController.addDefectLink);
 // 환경 관리
 router.put('/:releaseId/environment', releaseController.updateEnvironment);
 
+// 가져온 폴더 관리 라우트
+router.get('/:id/imported-folders', releaseController.getImportedFolders);
+router.post('/:id/imported-folders', releaseController.addImportedFolders);
+router.delete('/:id/imported-folders/:folderId', releaseController.removeImportedFolder);
+
 // 개발용 라우트
 router.post('/load-initial-data', releaseController.loadInitialData);
 

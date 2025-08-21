@@ -6,7 +6,7 @@ export interface TreeNode {
     children?: TreeNode[];
     sortOrder?: number;
     createdBy?: string;
-    testcaseCount?: number;
+    testCaseCount?: number;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -47,7 +47,4 @@ CREATE TRIGGER update_tree_nodes_updated_at
     BEFORE UPDATE ON tree_nodes 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- 기본 루트 폴더 생성
-INSERT INTO tree_nodes (name, type, parent_id, sort_order, created_by) 
-VALUES ('루트', 'folder', NULL, 0, 'system')
-ON CONFLICT DO NOTHING; 
+ 

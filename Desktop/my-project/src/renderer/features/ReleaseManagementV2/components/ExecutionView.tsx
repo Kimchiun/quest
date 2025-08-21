@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { useGetReleaseTestCasesQuery, useUpdateReleaseExecutionStatsMutation, useGetReleaseExecutionStatsQuery, useUpdateTestCaseStatusMutation, useGetTestFoldersQuery } from '../../../services/api';
+import { useGetReleaseTestCasesQuery, useUpdateReleaseExecutionStatsMutation, useGetReleaseExecutionStatsQuery, useUpdateTestCaseStatusMutation, useGetTestFoldersQuery, useGetImportedFoldersQuery, useAddImportedFoldersMutation, useRemoveImportedFolderMutation } from '../../../services/api';
 
 
 // 타입 정의
@@ -58,25 +58,38 @@ const ExecutionContainer = styled.div`
   margin: -20px;
 `;
 
-// 상단 컨텍스트 바
-const TopContextBar = styled.div`
-  background: white;
+// 상단 컨텍스트 바 - 흰색 컨셉 디자인
+const TopContextBar = styled.div<{ isCollapsed: boolean }>`
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-bottom: 1px solid #e2e8f0;
-  padding: 16px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: ${props => props.isCollapsed ? '16px 24px' : '24px 24px'};
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  color: #1e293b;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #cbd5e1 50%, transparent 100%);
+  }
 `;
 
-const ReleaseMeta = styled.div`
+const ReleaseMeta = styled.div<{ isCollapsed: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: ${props => props.isCollapsed ? '0' : '16px'};
 `;
 
 const ReleaseLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 `;
 
 const ReleaseRight = styled.div`
@@ -85,77 +98,140 @@ const ReleaseRight = styled.div`
   gap: 12px;
 `;
 
-const ReleaseInfo = styled.div`
+const ReleaseInfo = styled.div<{ isCollapsed: boolean }>`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: ${props => props.isCollapsed ? 'row' : 'column'};
+  align-items: ${props => props.isCollapsed ? 'center' : 'flex-start'};
+  gap: ${props => props.isCollapsed ? '16px' : '6px'};
 `;
 
-const ReleaseName = styled.h2`
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
-`;
-
-const ReleaseDetails = styled.div`
-  display: flex;
-  gap: 16px;
-  font-size: 14px;
-  color: #64748b;
-`;
-
-const ProgressSummary = styled.div`
+const ReleaseNameContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
+  gap: 12px;
+`;
+
+const ReleaseName = styled.h2<{ isCollapsed: boolean }>`
+  margin: 0;
+  font-size: ${props => props.isCollapsed ? '18px' : '24px'};
+  font-weight: 700;
+  color: #1e293b;
+  transition: all 0.3s ease;
+`;
+
+const ReleaseDetails = styled.div<{ isCollapsed: boolean }>`
+  display: flex;
+  gap: ${props => props.isCollapsed ? '12px' : '20px'};
+  font-size: ${props => props.isCollapsed ? '12px' : '14px'};
+  color: #64748b;
+  align-items: center;
+  transition: all 0.3s ease;
+`;
+
+const ReleaseDetailItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
   background: #f1f5f9;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: #64748b;
+    border-radius: 50%;
+  }
+`;
+
+const ProgressSummary = styled.div<{ isCollapsed: boolean }>`
+  display: ${props => props.isCollapsed ? 'none' : 'flex'};
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
 `;
 
 const ActionButton = styled.button`
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: white;
-  color: #374151;
+  background: #3b82f6;
+  color: white;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover:not(:disabled) {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
   
   &:active:not(:disabled) {
-    background: #f3f4f6;
+    transform: translateY(0);
   }
   
   &:disabled {
-    background: #f3f4f6;
+    background: #e5e7eb;
+    border-color: #d1d5db;
     color: #9ca3af;
     cursor: not-allowed;
     opacity: 0.6;
   }
+
+  &::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
 `;
 
-const CollapseButton = styled.button`
-  padding: 6px 12px;
+const CollapseButton = styled.button<{ isCollapsed: boolean }>`
+  padding: 8px 16px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: white;
-  color: #6b7280;
-  font-size: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #475569;
+  }
+
+  &::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${props => props.isCollapsed ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'}"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    transition: transform 0.2s ease;
   }
 `;
 
@@ -426,27 +502,47 @@ const ProgressItem = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  min-height: 65px;
+  flex: 1;
+
+  &:hover {
+    background: #fafafa;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
 `;
 
 const ProgressNumber = styled.span<{ color: string }>`
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: ${props => props.color};
+  line-height: 1;
 `;
 
-const ProgressLabel = styled.span`
-  font-size: 12px;
-  color: #64748b;
+const ProgressLabel = styled.span<{ color: string }>`
+  font-size: 11px;
+  color: ${props => props.color};
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const ProgressBar = styled.div`
   flex: 1;
   height: 8px;
-  background: #e2e8f0;
+  background: #f1f5f9;
   border-radius: 4px;
   overflow: hidden;
-  margin: 0 16px;
+  margin: 0 24px;
+  border: 1px solid #e2e8f0;
 `;
 
 const ProgressFill = styled.div<{ percentage: number }>`
@@ -454,22 +550,25 @@ const ProgressFill = styled.div<{ percentage: number }>`
   background: linear-gradient(90deg, #3b82f6, #10b981);
   width: ${props => props.percentage}%;
   transition: width 0.3s ease;
+  border-radius: 4px;
 `;
 
-const FilterSummary = styled.div`
-  display: flex;
+const FilterSummary = styled.div<{ isCollapsed: boolean }>`
+  display: ${props => props.isCollapsed ? 'none' : 'flex'};
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: 12px;
 `;
 
 const FilterBadge = styled.span`
-  background: #dbeafe;
-  color: #1e40af;
-  padding: 4px 8px;
-  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
+  border: 1px solid #e2e8f0;
 `;
 
 const LiveIndicator = styled.div<{ $isLive: boolean }>`
@@ -477,23 +576,36 @@ const LiveIndicator = styled.div<{ $isLive: boolean }>`
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  background: ${props => props.$isLive ? '#d1fae5' : '#fee2e2'};
-  color: ${props => props.$isLive ? '#065f46' : '#dc2626'};
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: ${props => props.$isLive 
+    ? '#ecfdf5' 
+    : '#fef2f2'};
+  color: ${props => props.$isLive ? '#16a34a' : '#dc2626'};
+  border: 1px solid ${props => props.$isLive 
+    ? '#bbf7d0' 
+    : '#fecaca'};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const LiveDot = styled.div<{ $isLive: boolean }>`
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: ${props => props.$isLive ? '#10b981' : '#ef4444'};
-  animation: ${props => props.$isLive ? 'pulse 2s infinite' : 'none'};
+  background: ${props => props.$isLive ? '#16a34a' : '#dc2626'};
+  animation: ${props => props.$isLive ? 'livePulse 2s infinite' : 'none'};
   
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  @keyframes livePulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.5; 
+      transform: scale(1.1);
+    }
   }
 `;
 
@@ -1145,33 +1257,46 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   // 폴더 데이터 가져오기
   const { data: folders = [] } = useGetTestFoldersQuery();
   
-  // 폴더 기반 실시간 통계 계산
+  // 가져온 폴더 데이터 가져오기 (DB에서)
+  const { data: dbImportedFolders = [], refetch: refetchImportedFolders } = useGetImportedFoldersQuery(release.id);
+  const [addImportedFolders] = useAddImportedFoldersMutation();
+  const [removeImportedFolder] = useRemoveImportedFolderMutation();
+  
+    useEffect(() => {
+     if (Array.isArray(dbImportedFolders)) {
+       setImportedFolders(dbImportedFolders.map(folder => ({
+         id: folder.folderId,
+         name: folder.name,
+         parentId: folder.parentId,
+         testCaseCount: folder.testCaseCount,
+         children: []
+       })));
+     } else {
+       setImportedFolders([]);
+     }
+  }, [dbImportedFolders]);
+  
   useEffect(() => {
-    // 가져온 폴더들의 총 테스트케이스 개수 계산
     const totalTestCasesFromFolders = importedFolders.reduce((total, folder) => {
       return total + (folder.testCaseCount || 0);
     }, 0);
     
     const currentPlannedCount = executionStats?.data?.planned || 0;
     
-    console.log('폴더 기반 실시간 통계 계산:', {
-      importedFolders: importedFolders.length,
-      totalTestCasesFromFolders,
-      currentPlannedCount,
-      folders: importedFolders.map(f => ({ name: f.name, count: f.testCaseCount }))
-    });
-    
-    // 폴더의 테스트케이스 개수와 Planned가 다르면 업데이트
+    // 가져온 폴더가 있는 경우에만 업데이트
     if (totalTestCasesFromFolders !== currentPlannedCount) {
-      console.log('폴더 기반 통계 업데이트:', totalTestCasesFromFolders);
+      console.log(`plannedCount 업데이트: ${currentPlannedCount} -> ${totalTestCasesFromFolders}`);
       updateExecutionStats({
         releaseId: release.id,
         plannedCount: totalTestCasesFromFolders
+      }).then(() => {
+        console.log('plannedCount 업데이트 완료');
+        refetchStats();
+      }).catch(error => {
+        console.error('plannedCount 업데이트 실패:', error);
       });
     }
-  }, [importedFolders, executionStats, release.id, updateExecutionStats]);
-  
-
+  }, [importedFolders, executionStats, release.id, updateExecutionStats, refetchStats]);
 
   // 우측 패널 크기 조절 이벤트 핸들러
   const handleDetailPanelResizeStart = (e: React.MouseEvent) => {
@@ -1313,7 +1438,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
         setSelectedTestCase(null);
       }
 
-      console.log(`테스트케이스 ${testCaseId} 상태가 ${newStatus}로 변경되었습니다.`);
+
     } catch (error) {
       console.error('테스트케이스 상태 변경 실패:', error);
       // 에러 처리 (필요시 토스트 메시지 표시)
@@ -1337,14 +1462,9 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     setSelectedTestCase(testCase);
   }, []);
 
-  // 테스트케이스 가져오기 기능
   const handleFetchTestCases = useCallback(() => {
-    console.log('테스트케이스 가져오기 버튼 클릭됨');
     setShowTestCaseModal(true);
-    console.log('showTestCaseModal 상태:', true);
   }, []);
-
-
 
   // 선택된 폴더들의 모든 테스트케이스 추가
   const handleAddSelectedFolders = useCallback(async () => {
@@ -1381,9 +1501,23 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       const existingIds = new Set(importedFolders.map((f: any) => f.id));
       const newFolders = foldersWithRealCounts.filter((f: any) => !existingIds.has(f.id));
       
-      // 폴더 추가 로직 (로컬 상태로 처리)
-      console.log('새로 추가된 폴더들:', newFolders);
-      setImportedFolders(prev => [...prev, ...newFolders]);
+      // DB에 폴더 추가
+      if (newFolders.length > 0) {
+        const foldersToAdd = newFolders.map(folder => ({
+          folder_id: folder.id,
+          folder_name: folder.name,
+          parent_id: folder.parentId || null,
+          test_case_count: folder.testCaseCount || 0
+        }));
+        
+        await addImportedFolders({
+          releaseId: release.id,
+          folders: foldersToAdd
+        });
+        
+        // 로컬 상태 업데이트
+        setImportedFolders(prev => [...prev, ...newFolders]);
+      }
       
 
       
@@ -1420,17 +1554,6 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
           if (addResponse.ok) {
             const addResult = await addResponse.json();
-
-            
-            // 실행 통계 업데이트 - 가져온 테스트케이스 개수로 planned 업데이트
-            try {
-              const updateResult = await updateExecutionStats({
-                releaseId: release.id,
-                plannedCount: allTestCaseIds.length
-              }).unwrap();
-            } catch (error) {
-              console.error('실행 통계 업데이트 실패:', error);
-            }
             
             // 성공 후 모달 닫기 및 선택 초기화
             setShowTestCaseModal(false);
@@ -1438,6 +1561,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
             
             // 데이터 새로고침
             await refetch();
+            await refetchImportedFolders();
           } else {
             console.error('테스트케이스 릴리즈 추가 실패:', addResponse.statusText);
           }
@@ -1478,14 +1602,76 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   }, []);
 
   // 가져온 폴더 삭제
-  const handleRemoveImportedFolder = useCallback((folderId: number) => {
-    setImportedFolders(prev => prev.filter((f: any) => f.id !== folderId));
-    // 삭제된 폴더가 현재 선택된 폴더였다면 선택 해제
-    if (selectedImportedFolder?.id === folderId) {
-      setSelectedImportedFolder(null);
-      setFolderTestCases([]);
+  const handleRemoveImportedFolder = useCallback(async (folderId: number) => {
+    try {
+      // 해당 폴더의 테스트케이스들을 릴리즈에서 제거
+      const folder = importedFolders.find((f: any) => f.id === folderId);
+      if (folder) {
+        try {
+          // 폴더의 테스트케이스들을 가져와서 릴리즈에서 제거
+          const response = await fetch(`http://localhost:3001/api/releases/folders/${folderId}/testcases`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              const testCaseIds = data.data.map((tc: any) => tc.id);
+              
+              // 릴리즈에서 테스트케이스 제거
+              if (testCaseIds.length > 0) {
+                await fetch(`http://localhost:3001/api/releases/${release.id}/testcases`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    testCaseIds: testCaseIds
+                  })
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('폴더 테스트케이스 제거 실패:', error);
+        }
+      }
+      
+      // DB에서 폴더 제거
+      await removeImportedFolder({
+        releaseId: release.id,
+        folderId: folderId
+      });
+      
+      // 로컬 상태 업데이트
+      setImportedFolders(prev => {
+        const updatedFolders = prev.filter((f: any) => f.id !== folderId);
+        
+        // plannedCount 즉시 업데이트
+        const totalTestCasesFromFolders = updatedFolders.reduce((total, folder) => {
+          return total + (folder.testCaseCount || 0);
+        }, 0);
+        
+        // 실행 통계 업데이트 (비동기)
+        updateExecutionStats({
+          releaseId: release.id,
+          plannedCount: totalTestCasesFromFolders
+        }).then(() => {
+          // 통계 업데이트 후 즉시 새로고침
+          refetchStats();
+        }).catch(error => {
+          console.error('실행 통계 업데이트 실패:', error);
+        });
+        
+        return updatedFolders;
+      });
+      
+      // 삭제된 폴더가 현재 선택된 폴더였다면 선택 해제
+      if (selectedImportedFolder?.id === folderId) {
+        setSelectedImportedFolder(null);
+        setFolderTestCases([]);
+      }
+    } catch (error) {
+      console.error('폴더 제거 실패:', error);
     }
-  }, [selectedImportedFolder]);
+  }, [selectedImportedFolder, removeImportedFolder, release.id, importedFolders, updateExecutionStats, refetchStats]);
 
   // 가져온 폴더 클릭 처리
   const handleImportedFolderClick = useCallback(async (folder: any) => {
@@ -1499,15 +1685,9 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
         const testCases = data.data || [];
         setFolderTestCases(testCases);
         
-        // 폴더의 테스트케이스 개수 업데이트
         setImportedFolders(prev => prev.map(f => 
           f.id === folder.id ? { ...f, testCaseCount: testCases.length } : f
         ));
-        
-        console.log('폴더 테스트케이스 개수 업데이트:', {
-          folderName: folder.name,
-          testCaseCount: testCases.length
-        });
       } else {
         console.error('폴더 테스트 케이스 조회 실패:', response.statusText);
         setFolderTestCases([]);
@@ -1531,12 +1711,12 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     // 부모-자식 관계 설정
     folders.forEach(folder => {
       const folderNode = folderMap.get(folder.id);
-      if (folder.parent_id === null) {
+      if (folder.parentId === null) {
         // 루트 폴더
         rootFolders.push(folderNode);
       } else {
         // 하위 폴더
-        const parentNode = folderMap.get(folder.parent_id);
+        const parentNode = folderMap.get(folder.parentId);
         if (parentNode) {
           parentNode.children.push(folderNode);
         }
@@ -1620,25 +1800,26 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
   return (
     <ExecutionContainer className="execution-container">
-      {/* 상단 컨텍스트 바 */}
-      <TopContextBar>
-        <ReleaseMeta>
+      {/* 상단 컨텍스트 바 - 새로운 디자인 */}
+      <TopContextBar isCollapsed={isCollapsed}>
+        <ReleaseMeta isCollapsed={isCollapsed}>
           <ReleaseLeft>
-            <ReleaseInfo>
-              <ReleaseName>{release.name}</ReleaseName>
-              <ReleaseDetails>
-                <span>v{release.version}</span>
-                {release.sprint && <span>Sprint: {release.sprint}</span>}
-                {release.period && <span>Period: {release.period}</span>}
-                <span>Owner: {release.owner}</span>
-                <span>Created: {new Date(release.createdAt).toLocaleDateString()}</span>
+            <ReleaseInfo isCollapsed={isCollapsed}>
+              <ReleaseNameContainer>
+                <ReleaseName isCollapsed={isCollapsed}>{release.name}</ReleaseName>
+                <LiveIndicator $isLive={isLive}>
+                  <LiveDot $isLive={isLive} />
+                  {isLive ? 'LIVE' : 'OFFLINE'}
+                </LiveIndicator>
+              </ReleaseNameContainer>
+              <ReleaseDetails isCollapsed={isCollapsed}>
+                <ReleaseDetailItem>v{release.version}</ReleaseDetailItem>
+                {release.sprint && <ReleaseDetailItem>Sprint {release.sprint}</ReleaseDetailItem>}
+                {release.period && <ReleaseDetailItem>{release.period}</ReleaseDetailItem>}
+                <ReleaseDetailItem>{release.owner}</ReleaseDetailItem>
+                <ReleaseDetailItem>{new Date(release.createdAt).toLocaleDateString('ko-KR')}</ReleaseDetailItem>
               </ReleaseDetails>
             </ReleaseInfo>
-            
-            <LiveIndicator $isLive={isLive}>
-              <LiveDot $isLive={isLive} />
-              {isLive ? 'Live' : 'Reconnecting...'}
-            </LiveIndicator>
           </ReleaseLeft>
           
           <ReleaseRight>
@@ -1648,36 +1829,36 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
             >
               {isLoadingTestCases ? '가져오는 중...' : '테스트케이스 가져오기'}
             </ActionButton>
-            <CollapseButton onClick={handleToggleCollapse}>
+            <CollapseButton isCollapsed={isCollapsed} onClick={handleToggleCollapse}>
               {isCollapsed ? '펼치기' : '접기'}
             </CollapseButton>
           </ReleaseRight>
         </ReleaseMeta>
 
-        <ProgressSummary>
+        <ProgressSummary isCollapsed={isCollapsed}>
           <ProgressItem>
-            <ProgressNumber color="#6b7280">Planned {totalTestCases}</ProgressNumber>
-            <ProgressLabel>Planned</ProgressLabel>
+            <ProgressNumber color="#3b82f6">{totalTestCases}</ProgressNumber>
+            <ProgressLabel color="#3b82f6">PLANNED</ProgressLabel>
           </ProgressItem>
           <ProgressItem>
-            <ProgressNumber color="#3b82f6">Executed {executedTestCases}</ProgressNumber>
-            <ProgressLabel>Executed</ProgressLabel>
+            <ProgressNumber color="#8b5cf6">{executedTestCases}</ProgressNumber>
+            <ProgressLabel color="#8b5cf6">EXECUTED</ProgressLabel>
           </ProgressItem>
           <ProgressItem>
-            <ProgressNumber color="#10b981">Pass {passedTestCases}</ProgressNumber>
-            <ProgressLabel>Pass</ProgressLabel>
+            <ProgressNumber color="#10b981">{passedTestCases}</ProgressNumber>
+            <ProgressLabel color="#10b981">PASS</ProgressLabel>
           </ProgressItem>
           <ProgressItem>
-            <ProgressNumber color="#ef4444">Fail {failedTestCases}</ProgressNumber>
-            <ProgressLabel>Fail</ProgressLabel>
+            <ProgressNumber color="#ef4444">{failedTestCases}</ProgressNumber>
+            <ProgressLabel color="#ef4444">FAIL</ProgressLabel>
           </ProgressItem>
           <ProgressItem>
-            <ProgressNumber color="#f59e0b">Block {blockedTestCases}</ProgressNumber>
-            <ProgressLabel>Block</ProgressLabel>
+            <ProgressNumber color="#f59e0b">{blockedTestCases}</ProgressNumber>
+            <ProgressLabel color="#f59e0b">BLOCK</ProgressLabel>
           </ProgressItem>
           <ProgressItem>
-            <ProgressNumber color="#8b5cf6">Skip {skippedTestCases}</ProgressNumber>
-            <ProgressLabel>Skip</ProgressLabel>
+            <ProgressNumber color="#6b7280">{skippedTestCases}</ProgressNumber>
+            <ProgressLabel color="#6b7280">SKIP</ProgressLabel>
           </ProgressItem>
           
           <ProgressBar>
@@ -1685,12 +1866,12 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
           </ProgressBar>
           
           <ProgressItem>
-            <ProgressNumber color="#1e293b">{progressPercentage}%</ProgressNumber>
-            <ProgressLabel>Progress</ProgressLabel>
+            <ProgressNumber color="#059669">{progressPercentage.toFixed(1)}%</ProgressNumber>
+            <ProgressLabel color="#059669">PROGRESS</ProgressLabel>
           </ProgressItem>
         </ProgressSummary>
 
-        <FilterSummary>
+        <FilterSummary isCollapsed={isCollapsed}>
           {filters.status && <FilterBadge>Status: {filters.status}</FilterBadge>}
           {filters.priority && <FilterBadge>Priority: {filters.priority}</FilterBadge>}
           {filters.suite && <FilterBadge>Suite: {filters.suite}</FilterBadge>}
@@ -1702,9 +1883,8 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
         </FilterSummary>
       </TopContextBar>
 
-      {/* 메인 콘텐츠 영역 - 접기/펼치기 기능 */}
-      {!isCollapsed && (
-        <MainContent>
+      {/* 메인 콘텐츠 영역 - 하단 패널은 항상 표시 */}
+      <MainContent>
         {/* 좌측 테스트케이스 폴더 패널 */}
         <FilterPanel width={leftPanelWidth}>
           <LeftPanelResizeHandle onMouseDown={handleLeftPanelResizeStart} />
@@ -2047,8 +2227,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
             )}
           </DetailContent>
         </DetailPanel>
-        </MainContent>
-      )}
+      </MainContent>
 
       {/* 테스트케이스 선택 모달 */}
 
