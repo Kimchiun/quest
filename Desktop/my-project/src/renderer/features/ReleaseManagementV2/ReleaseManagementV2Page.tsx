@@ -55,6 +55,23 @@ const PageWrapper = styled.div`
   position: relative;
 `;
 
+// 간단한 토스트 컴포넌트
+const Toast = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transform: translateX(${props => props.show ? '0' : '100%'});
+  transition: transform 0.3s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
 const ReleaseManagementV2Page: React.FC = () => {
   const [releases, setReleases] = useState<Release[]>([]);
   
@@ -96,6 +113,8 @@ const ReleaseManagementV2Page: React.FC = () => {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
   const [currentTab, setCurrentTab] = useState('overview');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // 릴리즈 선택 핸들러
   const handleReleaseSelect = (releaseId: string) => {
@@ -150,10 +169,15 @@ const ReleaseManagementV2Page: React.FC = () => {
       setReleases(prev => prev.filter(r => r.id !== releaseId));
       setSelectedReleases(prev => prev.filter(id => id !== releaseId));
       
-      alert('릴리즈가 성공적으로 삭제되었습니다.');
+      // 토스트 알림 표시
+      setToastMessage('릴리즈가 성공적으로 삭제되었습니다.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('릴리즈 삭제 오류:', error);
-      alert('릴리즈 삭제에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('릴리즈 삭제에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     }
   };
 
@@ -210,10 +234,14 @@ const ReleaseManagementV2Page: React.FC = () => {
       setIsCreateModalOpen(false);
       
       // 성공 메시지
-      alert('릴리즈가 성공적으로 생성되었습니다.');
+      setToastMessage('릴리즈가 성공적으로 생성되었습니다.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('릴리즈 생성 오류:', error);
-      alert('릴리즈 생성에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('릴리즈 생성에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
       throw error;
     }
   };
@@ -237,10 +265,14 @@ const ReleaseManagementV2Page: React.FC = () => {
       setSelectedReleases([]);
       
       // 성공 메시지
-      alert(`${releaseIds.length}개의 릴리즈가 성공적으로 삭제되었습니다.`);
+      setToastMessage(`${releaseIds.length}개의 릴리즈가 성공적으로 삭제되었습니다.`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('다중 삭제 오류:', error);
-      alert('릴리즈 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      setToastMessage('릴리즈 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     }
   };
 
@@ -273,6 +305,11 @@ const ReleaseManagementV2Page: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateReleaseSubmit}
       />
+      
+      {/* 토스트 알림 */}
+      <Toast show={showToast}>
+        {toastMessage}
+      </Toast>
     </PageWrapper>
   );
 };
