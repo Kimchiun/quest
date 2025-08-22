@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS executions (
     id SERIAL PRIMARY KEY,
     testcase_id INTEGER NOT NULL REFERENCES testcases(id) ON DELETE CASCADE,
     suite_id INTEGER REFERENCES suites(id) ON DELETE SET NULL,
-    release_id INTEGER REFERENCES releases(id) ON DELETE SET NULL,
+    release_id UUID REFERENCES releases(id) ON DELETE SET NULL,
     status VARCHAR(16) NOT NULL CHECK (status IN ('Pass', 'Fail', 'Blocked', 'Untested')),
     executed_by VARCHAR(64) NOT NULL,
     executed_at TIMESTAMP NOT NULL,

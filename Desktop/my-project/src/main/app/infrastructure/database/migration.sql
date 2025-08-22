@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS release_test_cases (
 -- 실행 결과 테이블 생성
 CREATE TABLE IF NOT EXISTS executions (
     id SERIAL PRIMARY KEY,
-    release_id INTEGER NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
+    release_id UUID NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
     testcase_id INTEGER NOT NULL,
     status VARCHAR(20) DEFAULT 'Untested' CHECK (status IN ('Pass', 'Fail', 'Blocked', 'Untested')),
     executed_by VARCHAR(100),

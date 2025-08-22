@@ -396,6 +396,75 @@ const EmptyDescription = styled.p`
   color: #6b7280;
 `;
 
+// 삭제 확인 모달 스타일
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+`;
+
+const ModalMessage = styled.p`
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const ModalButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  ${props => props.variant === 'primary' ? `
+    background-color: #dc2626;
+    color: white;
+    
+    &:hover {
+      background-color: #b91c1c;
+    }
+  ` : `
+    background-color: #f3f4f6;
+    color: #374151;
+    
+    &:hover {
+      background-color: #e5e7eb;
+    }
+  `}
+`;
+
 const ReleaseListView: React.FC<ReleaseListViewProps> = ({
   releases,
   selectedReleases,
@@ -410,6 +479,8 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredReleases, setFilteredReleases] = useState<Release[]>(releases);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [releaseToDelete, setReleaseToDelete] = useState<Release | null>(null);
 
   useEffect(() => {
     const filtered = releases.filter(release =>
@@ -585,7 +656,8 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
                           className="delete"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDeleteRelease(release.id);
+                            setReleaseToDelete(release);
+                            setShowDeleteModal(true);
                           }}
                         >
                           삭제
@@ -609,6 +681,40 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
           </ReleaseGrid>
         )}
       </Content>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && releaseToDelete && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>릴리즈 삭제</ModalTitle>
+            <ModalMessage>
+              <strong>"{releaseToDelete.name}"</strong> 릴리즈를 삭제하시겠습니까?<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setReleaseToDelete(null);
+                }}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={() => {
+                  onDeleteRelease(releaseToDelete.id);
+                  setShowDeleteModal(false);
+                  setReleaseToDelete(null);
+                }}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };

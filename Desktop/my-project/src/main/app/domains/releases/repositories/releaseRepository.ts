@@ -1,18 +1,5 @@
 import { Release, ReleaseScope, ReleaseCase, Run, DefectLink, Environment } from '../entities/release';
 
-// 임시 메모리 저장소 (실제로는 데이터베이스 사용)
-let releases: Release[] = []; // 빈 배열로 초기화
-let nextId = 1;
-
-// 메모리 배열 초기화 함수
-const clearMemoryReleases = () => {
-  releases = [];
-  nextId = 1;
-};
-
-// 앱 시작 시 메모리 배열 초기화
-clearMemoryReleases();
-
 export class ReleaseRepository {
   // 모든 릴리즈 조회
   async findAll(): Promise<Release[]> {
@@ -279,41 +266,226 @@ export class ReleaseRepository {
 
   // 릴리즈 업데이트
   async update(id: string, updateData: Partial<Release>): Promise<Release | null> {
-    const index = releases.findIndex(release => release.id === id);
-    if (index === -1) return null;
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
 
-    releases[index] = {
-      ...releases[index],
-      ...updateData,
-      updatedAt: new Date().toISOString()
-    };
+      const now = new Date().toISOString();
+      
+      const result = await pgClient.query(`
+        UPDATE releases 
+        SET 
+          name = COALESCE($1, name),
+          version = COALESCE($2, version),
+          description = COALESCE($3, description),
+          status = COALESCE($4, status),
+          assignee_name = COALESCE($5, assignee_name),
+          scheduled_date = COALESCE($6, scheduled_date),
+          deployed_date = COALESCE($7, deployed_date),
+          updated_at = $8
+        WHERE id = $9
+        RETURNING *
+      `, [
+        updateData.name,
+        updateData.version,
+        updateData.description,
+        updateData.status,
+        updateData.owners?.[0] || null,
+        updateData.startAt,
+        updateData.endAt,
+        now,
+        id
+      ]);
 
-    return releases[index];
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const updatedRelease = result.rows[0];
+      
+      return {
+        id: updatedRelease.id,
+        projectId: '1',
+        name: updatedRelease.name,
+        version: updatedRelease.version,
+        description: updatedRelease.description || '',
+        status: updatedRelease.status,
+        startAt: updatedRelease.scheduled_date,
+        endAt: updatedRelease.deployed_date,
+        owners: updatedRelease.assignee_name ? [updatedRelease.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: updatedRelease.created_at,
+        updatedAt: updatedRelease.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      };
+    } catch (error) {
+      console.error('릴리즈 업데이트 실패:', error);
+      throw error;
+    }
   }
 
-  // 릴리즈 삭제
+  // 릴리즈 삭제 (메모리 배열 기반 - deprecated)
   async delete(id: string): Promise<boolean> {
-    const index = releases.findIndex(release => release.id === id);
-    if (index === -1) return false;
-
-    releases.splice(index, 1);
-    return true;
+    try {
+      await this.deleteRelease(id);
+      return true;
+    } catch (error) {
+      console.error('릴리즈 삭제 실패:', error);
+      return false;
+    }
   }
 
   // 상태별 릴리즈 조회
   async findByStatus(status: Release['status']): Promise<Release[]> {
-    return releases.filter(release => release.status === status);
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name,
+          version,
+          description,
+          status,
+          assignee_name,
+          scheduled_date,
+          deployed_date,
+          created_at,
+          updated_at
+        FROM releases
+        WHERE status = $1
+        ORDER BY created_at DESC
+      `, [status]);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        projectId: '1',
+        name: row.name,
+        version: row.version,
+        description: row.description || '',
+        status: row.status,
+        startAt: row.scheduled_date,
+        endAt: row.deployed_date,
+        owners: row.assignee_name ? [row.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      }));
+    } catch (error) {
+      console.error('상태별 릴리즈 조회 실패:', error);
+      return [];
+    }
   }
 
   // 검색어로 릴리즈 조회
   async search(query: string): Promise<Release[]> {
-    const lowerQuery = query.toLowerCase();
-    return releases.filter(release => 
-      release.name.toLowerCase().includes(lowerQuery) ||
-      release.description.toLowerCase().includes(lowerQuery) ||
-      release.version.toLowerCase().includes(lowerQuery) ||
-      release.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
-    );
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      const searchPattern = `%${query}%`;
+      
+      const result = await pgClient.query(`
+        SELECT 
+          id,
+          name,
+          version,
+          description,
+          status,
+          assignee_name,
+          scheduled_date,
+          deployed_date,
+          created_at,
+          updated_at
+        FROM releases
+        WHERE 
+          name ILIKE $1 OR 
+          description ILIKE $1 OR 
+          version ILIKE $1
+        ORDER BY created_at DESC
+      `, [searchPattern]);
+
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        projectId: '1',
+        name: row.name,
+        version: row.version,
+        description: row.description || '',
+        status: row.status,
+        startAt: row.scheduled_date,
+        endAt: row.deployed_date,
+        owners: row.assignee_name ? [row.assignee_name] : [],
+        watchers: [],
+        tags: [],
+        createdBy: 'system',
+        updatedBy: 'system',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        settings: {
+          gateCriteria: {
+            minPassRate: 85,
+            maxFailCritical: 0,
+            zeroBlockers: true,
+            coverageByPriority: {
+              P0: 100,
+              P1: 95,
+              P2: 90
+            }
+          },
+          autoSyncScope: true,
+          allowReopen: false
+        }
+      }));
+    } catch (error) {
+      console.error('릴리즈 검색 실패:', error);
+      return [];
+    }
   }
 
   // 릴리즈 스코프 업데이트
@@ -1085,10 +1257,9 @@ export class ReleaseRepository {
         throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
       }
 
-      // 릴리즈와 관련된 데이터들을 먼저 삭제
+      // 릴리즈와 관련된 데이터들을 먼저 삭제 (존재하는 테이블만)
       await pgClient.query('DELETE FROM release_imported_folders WHERE release_id = $1', [id]);
       await pgClient.query('DELETE FROM release_test_cases WHERE release_id = $1', [id]);
-      await pgClient.query('DELETE FROM release_execution_stats WHERE release_id = $1', [id]);
       
       // 마지막으로 릴리즈 삭제
       const result = await pgClient.query('DELETE FROM releases WHERE id = $1', [id]);
@@ -1105,7 +1276,9 @@ export class ReleaseRepository {
 
   // 초기 데이터 로드 (개발용)
   async loadInitialData(): Promise<void> {
-    if (releases.length > 0) return; // 이미 데이터가 있으면 스킵
+    // 데이터베이스에 이미 데이터가 있는지 확인
+    const existingReleases = await this.findAll();
+    if (existingReleases.length > 0) return; // 이미 데이터가 있으면 스킵
 
     const initialReleases: Omit<Release, 'id' | 'createdAt' | 'updatedAt'>[] = [
       {
