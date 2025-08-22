@@ -137,9 +137,6 @@ const ReleaseManagementV2Page: React.FC = () => {
 
   // 릴리즈 삭제 핸들러
   const handleDeleteRelease = async (releaseId: string) => {
-    const confirmed = window.confirm('정말로 이 릴리즈를 삭제하시겠습니까?');
-    if (!confirmed) return;
-
     try {
       const response = await fetch(`http://localhost:3001/api/releases/${releaseId}`, {
         method: 'DELETE',
