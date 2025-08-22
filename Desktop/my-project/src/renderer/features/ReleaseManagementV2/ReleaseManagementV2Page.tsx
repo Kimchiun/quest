@@ -66,10 +66,12 @@ const Toast = styled.div<{ show: boolean }>`
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  transform: translateX(${props => props.show ? '0' : '100%'});
-  transition: transform 0.3s ease-in-out;
+  transform: translateX(${props => props.show ? '0' : '120%'});
+  opacity: ${props => props.show ? '1' : '0'};
+  transition: all 0.3s ease-in-out;
   font-size: 14px;
   font-weight: 500;
+  pointer-events: ${props => props.show ? 'auto' : 'none'};
 `;
 
 const ReleaseManagementV2Page: React.FC = () => {
@@ -172,12 +174,18 @@ const ReleaseManagementV2Page: React.FC = () => {
       // 토스트 알림 표시
       setToastMessage('릴리즈가 성공적으로 삭제되었습니다.');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
     } catch (error) {
       console.error('릴리즈 삭제 오류:', error);
       setToastMessage('릴리즈 삭제에 실패했습니다. 다시 시도해 주세요.');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
     }
   };
 
@@ -236,12 +244,18 @@ const ReleaseManagementV2Page: React.FC = () => {
       // 성공 메시지
       setToastMessage('릴리즈가 성공적으로 생성되었습니다.');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
     } catch (error) {
       console.error('릴리즈 생성 오류:', error);
       setToastMessage('릴리즈 생성에 실패했습니다. 다시 시도해 주세요.');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
       throw error;
     }
   };
@@ -267,12 +281,18 @@ const ReleaseManagementV2Page: React.FC = () => {
       // 성공 메시지
       setToastMessage(`${releaseIds.length}개의 릴리즈가 성공적으로 삭제되었습니다.`);
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
     } catch (error) {
       console.error('다중 삭제 오류:', error);
       setToastMessage('릴리즈 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300); // 애니메이션 완료 후 메시지 초기화
+      }, 3000);
     }
   };
 
