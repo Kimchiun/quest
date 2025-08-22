@@ -1075,6 +1075,34 @@ export class ReleaseRepository {
     }
   }
 
+  // 릴리즈 삭제
+  async deleteRelease(id: string): Promise<void> {
+    try {
+      const { getPgClient } = await import('../../../infrastructure/database/pgClient');
+      const pgClient = getPgClient();
+      
+      if (!pgClient) {
+        throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
+      }
+
+      // 릴리즈와 관련된 데이터들을 먼저 삭제
+      await pgClient.query('DELETE FROM release_imported_folders WHERE release_id = $1', [id]);
+      await pgClient.query('DELETE FROM release_test_cases WHERE release_id = $1', [id]);
+      await pgClient.query('DELETE FROM release_execution_stats WHERE release_id = $1', [id]);
+      
+      // 마지막으로 릴리즈 삭제
+      const result = await pgClient.query('DELETE FROM releases WHERE id = $1', [id]);
+      
+      if (result.rowCount === 0) {
+        throw new Error('삭제할 릴리즈를 찾을 수 없습니다.');
+      }
+
+    } catch (error) {
+      console.error('릴리즈 삭제 실패:', error);
+      throw error;
+    }
+  }
+
   // 초기 데이터 로드 (개발용)
   async loadInitialData(): Promise<void> {
     if (releases.length > 0) return; // 이미 데이터가 있으면 스킵

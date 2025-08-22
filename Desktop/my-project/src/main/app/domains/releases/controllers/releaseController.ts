@@ -325,14 +325,7 @@ export class ReleaseController {
   async deleteRelease(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const deleted = await releaseRepository.delete(id);
-
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: '해당 릴리즈를 찾을 수 없습니다.'
-        });
-      }
+      await releaseRepository.deleteRelease(id);
 
       res.json({
         success: true,
@@ -340,6 +333,14 @@ export class ReleaseController {
       });
     } catch (error) {
       console.error('릴리즈 삭제 실패:', error);
+      
+      if (error instanceof Error && error.message.includes('찾을 수 없습니다')) {
+        return res.status(404).json({
+          success: false,
+          message: '해당 릴리즈를 찾을 수 없습니다.'
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: '릴리즈 삭제 중 오류가 발생했습니다.'
