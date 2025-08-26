@@ -700,7 +700,7 @@ export class ReleaseRepository {
       // 실행 기록 추가 (executions 테이블) - 중복 처리
       const upsertQuery = `
         INSERT INTO executions (
-          testcase_id, release_id, status, executed_by, executed_at, comments, created_at, updated_at
+          release_id, testcase_id, status, executed_by, executed_at, comments, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (release_id, testcase_id) 
         DO UPDATE SET 
@@ -712,9 +712,9 @@ export class ReleaseRepository {
       `;
       
       console.log('Upsert query:', upsertQuery);
-      console.log('Upsert parameters:', [testCaseId, releaseId, status, 'system', comment || '']);
+      console.log('Upsert parameters:', [releaseId, testCaseId, status, 'system', comment || '']);
 
-      await pgClient.query(upsertQuery, [testCaseId, releaseId, status, 'system', comment || '']);
+      await pgClient.query(upsertQuery, [releaseId, testCaseId, status, 'system', comment || '']);
 
       console.log(`=== 테스트케이스 ${testCaseId} 상태가 ${status}로 변경되었습니다. ===`);
       
