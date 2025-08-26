@@ -151,6 +151,58 @@ const ResizeHandle = styled.div`
   }
 `;
 
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #ffffff;
+  gap: 16px;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.div`
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 500;
+`;
+
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #ffffff;
+  gap: 16px;
+`;
+
+const ErrorIcon = styled.div`
+  font-size: 48px;
+  color: #ef4444;
+`;
+
+const ErrorText = styled.div`
+  font-size: 16px;
+  color: #ef4444;
+  font-weight: 500;
+  text-align: center;
+`;
+
 const TestManagementV2Page: React.FC = () => {
   const [folders, setFolders] = useState<FolderTree[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderTree | null>(null);
@@ -660,7 +712,7 @@ const TestManagementV2Page: React.FC = () => {
         setSelectedFolder(targetFolder);
         
         // 선택된 테스트케이스도 업데이트
-        setSelectedTestCase(prev => prev ? { ...prev, folderId: targetFolderId } : null);
+        setSelectedTestCase((prev: any) => prev ? { ...prev, folderId: targetFolderId } : null);
         
         console.log('✅ 테스트케이스가 이동된 폴더로 이동 완료:', targetFolder.name);
       } else {
@@ -872,21 +924,22 @@ const TestManagementV2Page: React.FC = () => {
 
   if (loading) {
     return (
-      <Container>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <div>폴더 트리를 불러오는 중...</div>
-        </div>
-      </Container>
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>폴더 구조를 불러오는 중...</LoadingText>
+      </LoadingContainer>
     );
   }
 
   if (error) {
     return (
-      <Container>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', color: 'red' }}>
-          <div>오류: {error}</div>
-        </div>
-      </Container>
+      <ErrorContainer>
+        <ErrorIcon>⚠️</ErrorIcon>
+        <ErrorText>
+          폴더 구조를 불러오는 중 오류가 발생했습니다.<br />
+          {error}
+        </ErrorText>
+      </ErrorContainer>
     );
   }
 

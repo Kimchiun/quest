@@ -40,7 +40,7 @@ async function startElectron() {
 
         // 파일 저장 IPC 핸들러
         ipcMain.handle('save-file', async (event: any, { name, buffer }: { name: string; buffer: Buffer }) => {
-            const saveDir = path.join(process.env.ITMS_FILE_DIR || __dirname, 'uploads');
+            const saveDir = path.join(process.env.QUEST_FILE_DIR || __dirname, 'uploads');
             if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
             const savePath = path.join(saveDir, `${Date.now()}_${name}`);
             await fs.promises.writeFile(savePath, Buffer.from(buffer));

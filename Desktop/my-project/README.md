@@ -1,6 +1,6 @@
-# ITMS (지능형 테스트 관리 시스템)
+# Quest - 지능형 테스트 관리 시스템
 
-ITMS는 테스트 계획, 실행, 결과 추적 및 결함 관리를 위한 데스크톱 애플리케이션입니다. 사용자 친화적인 UX와 AI 기반 통찰력을 결합하여 QA 생산성을 높이고 소프트웨어 품질을 향상하며 팀 간 협업을 개선하는 것을 목표로 합니다.
+Quest는 테스트 계획, 실행, 결과 추적 및 결함 관리를 위한 데스크톱 애플리케이션입니다. 사용자 친화적인 UX와 AI 기반 통찰력을 결합하여 QA 생산성을 높이고 소프트웨어 품질을 향상하며 팀 간 협업을 개선하는 것을 목표로 합니다.
 
 ## 🚀 빠른 시작
 
@@ -170,7 +170,7 @@ npm run cypress:open
 # 데이터베이스
 PGUSER=postgres
 PGHOST=localhost
-PGDATABASE=itms
+PGDATABASE=quest
 PGPASSWORD=your_secure_password
 PGPORT=5432
 

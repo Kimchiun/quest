@@ -1,5 +1,5 @@
 {
-  "name": "my-project",
+  "name": "quest",
   "version": "1.0.0",
   "description": "Quest - 지능형 테스트 관리 시스템",
   "icon": "src/main/electron/assets/quest-icon.svg",
@@ -36,7 +36,10 @@
     "diagnostic:test": "node scripts/dev-diagnostic.js --test",
     "setup": "node scripts/setup-dev.js",
     "generate-icon": "node scripts/generate-icon.js",
-    "create-icns": "node scripts/create-icns.js"
+    "create-icns": "node scripts/create-icns.js",
+    "backend:start": "./start-backend.sh",
+    "backend:status": "./check-status.sh",
+    "backend:restart": "pkill -f 'ts-node.*src/main/index.ts' 2>/dev/null || true && sleep 2 && ./start-backend.sh"
   },
   "keywords": [
     "electron",

@@ -1,8 +1,8 @@
-# ITMS API 문서
+# Quest API 문서
 
 ## 개요
 
-ITMS (지능형 테스트 관리 시스템) API는 테스트 계획, 실행, 결과 추적 및 결함 관리를 위한 RESTful API입니다.
+Quest (지능형 테스트 관리 시스템) API는 테스트 계획, 실행, 결과 추적 및 결함 관리를 위한 RESTful API입니다.
 
 ## 기본 정보
 

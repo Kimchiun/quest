@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log('🚀 ITMS 개발 환경 설정을 시작합니다...\n');
+console.log('Quest 개발 환경 설정을 시작합니다...\n');
 
 // 1. 환경 변수 파일 생성
 function createEnvFile() {

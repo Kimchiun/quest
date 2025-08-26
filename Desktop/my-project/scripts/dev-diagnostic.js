@@ -4,7 +4,7 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔍 ITMS 개발 환경 진단 시작...\n');
+console.log('🔍 Quest 개발 환경 진단 시작...\n');
 
 // 1. 포트 사용 현황 확인
 function checkPorts() {

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# ITMS Desktop App Restart Script
+# Quest Desktop App Restart Script
 # 모든 관련 프로세스를 종료하고 깨끗한 상태에서 다시 시작
 
-echo "🔄 ITMS 앱 재시작 중..."
+echo "🔄 Quest 앱 재시작 중..."
 
 # 1. 모든 관련 프로세스 종료
 echo "📴 기존 프로세스 종료 중..."
@@ -74,7 +74,7 @@ echo $BACKEND_PID > .backend.pid
 echo $REACT_PID > .react.pid
 echo $ELECTRON_PID > .electron.pid
 
-echo "🎉 ITMS 앱 재시작 완료!"
+echo "🎉 Quest 앱 재시작 완료!"
 echo "📊 실행 중인 프로세스:"
 echo "   - 백엔드 (PID: $BACKEND_PID)"
 echo "   - React (PID: $REACT_PID)"

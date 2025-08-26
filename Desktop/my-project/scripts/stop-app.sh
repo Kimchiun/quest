@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# ITMS Desktop App Stop Script
+# Quest Desktop App Stop Script
 # 모든 관련 프로세스를 안전하게 종료
 
-echo "🛑 ITMS 앱 종료 중..."
+echo "🛑 Quest 앱 종료 중..."
 
 # 1. PID 파일에서 프로세스 종료
 if [ -f .backend.pid ]; then
@@ -51,4 +51,4 @@ if pgrep -f "node.*backend\|webpack.*serve\|electron" > /dev/null; then
     sleep 1
 fi
 
-echo "✅ ITMS 앱 종료 완료!"
+echo "✅ Quest 앱 종료 완료!"

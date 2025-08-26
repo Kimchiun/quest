@@ -245,6 +245,59 @@ const ToggleIcon = styled.div`
   border-bottom: 4px solid transparent;
 `;
 
+const EmptyStateContainer = styled.div`
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+const EmptyStateIcon = styled.div`
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 8px;
+`;
+
+const EmptyStateTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+`;
+
+const EmptyStateMessage = styled.p`
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+`;
+
+const CreateFirstFolderButton = styled.button`
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+
+  &:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    background: #1d4ed8;
+    transform: translateY(0);
+  }
+`;
+
 interface FolderTreePanelProps {
   folders: FolderTree[];
   selectedFolder: FolderTree | null;
@@ -356,7 +409,7 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
       const isSelected = isMultiSelectMode 
         ? selectedFolderIds.has(folder.id)
         : selectedFolder?.id === folder.id;
-      const hasChildren = folder.children && Array.isArray(folder.children) && folder.children.length > 0;
+      const hasChildren = !!(folder.children && Array.isArray(folder.children) && folder.children.length > 0);
 
       return (
         <div key={folder.id}>
@@ -431,9 +484,17 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
           </MultiSelectActions>
         )}
         {folders.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-            폴더가 없습니다.
-          </div>
+          <EmptyStateContainer>
+            <EmptyStateIcon>📁</EmptyStateIcon>
+            <EmptyStateTitle>폴더가 없습니다</EmptyStateTitle>
+            <EmptyStateMessage>
+              테스트 케이스를 체계적으로 관리하기 위해<br />
+              첫 번째 폴더를 생성해보세요.
+            </EmptyStateMessage>
+            <CreateFirstFolderButton onClick={onCreateRootFolder}>
+              첫 폴더 생성하기
+            </CreateFirstFolderButton>
+          </EmptyStateContainer>
         ) : (
           renderFolderTree(folders)
         )}
