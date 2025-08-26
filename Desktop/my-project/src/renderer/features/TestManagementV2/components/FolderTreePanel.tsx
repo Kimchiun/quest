@@ -3,6 +3,72 @@ import styled from 'styled-components';
 import { FolderTree } from '../../../types/folder';
 import FolderTreeItem from './FolderTreeItem';
 
+// 커스텀 모달 스타일 컴포넌트
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+`;
+
+const ModalMessage = styled.p`
+  margin: 0 0 24px 0;
+  color: #4b5563;
+  line-height: 1.5;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const ModalButton = styled.button<{ variant: 'primary' | 'secondary' }>`
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  ${props => props.variant === 'primary' ? `
+    background: #dc2626;
+    color: white;
+    &:hover {
+      background: #b91c1c;
+    }
+  ` : `
+    background: #f3f4f6;
+    color: #374151;
+    &:hover {
+      background: #e5e7eb;
+    }
+  `}
+`;
+
 const Container = styled.div<{ isCollapsed: boolean }>`
   display: flex;
   flex-direction: column;
@@ -216,6 +282,9 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedFolderIds, setSelectedFolderIds] = useState<Set<number>>(new Set());
+  
+  // 커스텀 모달 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleToggleExpand = (folderId: number) => {
     const newExpanded = new Set(expandedFolders);
@@ -256,12 +325,16 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
   const handleDeleteSelected = async () => {
     if (selectedFolderIds.size === 0) return;
     
-    const confirmed = window.confirm(`선택된 ${selectedFolderIds.size}개의 폴더를 삭제하시겠습니까?`);
-    if (confirmed && onMultiDelete) {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (onMultiDelete) {
       onMultiDelete(Array.from(selectedFolderIds));
       setSelectedFolderIds(new Set());
       setIsMultiSelectMode(false);
     }
+    setShowDeleteModal(false);
   };
 
   const handleCancelSelection = () => {
@@ -365,6 +438,33 @@ const FolderTreePanel: React.FC<FolderTreePanelProps> = ({
           renderFolderTree(folders)
         )}
       </TreeContainer>
+      
+      {/* 커스텀 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>다중 폴더 삭제</ModalTitle>
+            <ModalMessage>
+              선택된 <strong>{selectedFolderIds.size}개</strong>의 폴더를 삭제하시겠습니까?<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={confirmDeleteSelected}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };

@@ -302,6 +302,72 @@ const ContextMenuDivider = styled.div`
   margin: 4px 0;
 `;
 
+// 커스텀 모달 스타일 컴포넌트
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+`;
+
+const ModalMessage = styled.p`
+  margin: 0 0 24px 0;
+  color: #4b5563;
+  line-height: 1.5;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const ModalButton = styled.button<{ variant: 'primary' | 'secondary' }>`
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  ${props => props.variant === 'primary' ? `
+    background: #dc2626;
+    color: white;
+    &:hover {
+      background: #b91c1c;
+    }
+  ` : `
+    background: #f3f4f6;
+    color: #374151;
+    &:hover {
+      background: #e5e7eb;
+    }
+  `}
+`;
+
 interface FolderTreeItemProps {
   folder: FolderTree;
   depth: number;
@@ -331,6 +397,9 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(folder.name);
+  
+  // 커스텀 모달 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropType, setDropType] = useState<'before' | 'after' | 'into' | null>(null);
@@ -587,9 +656,12 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   // 삭제 메뉴 클릭
   const handleDeleteClick = () => {
     closeContextMenu();
-    if (window.confirm(`"${folder.name}" 폴더를 삭제하시겠습니까?`)) {
-      onDelete(folder.id);
-    }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(folder.id);
+    setShowDeleteModal(false);
   };
 
   const handleDoubleClick = () => {
@@ -723,6 +795,33 @@ const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
           🗑️ 삭제
         </ContextMenuItem>
       </ContextMenu>
+      
+      {/* 커스텀 삭제 확인 모달 */}
+      {showDeleteModal && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>폴더 삭제</ModalTitle>
+            <ModalMessage>
+              <strong>"{folder.name}"</strong> 폴더를 삭제하시겠습니까?<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={confirmDelete}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </>
   );
 };

@@ -10,7 +10,7 @@ interface TestCase {
   title?: string;
   description: string;
   priority: 'P0' | 'P1' | 'P2' | 'P3' | 'High' | 'Medium' | 'Low';
-  status: 'Not Run' | 'Pass' | 'Fail' | 'Block' | 'Skip' | 'Active' | 'Inactive';
+  status: 'Not Run' | 'Pass' | 'Fail' | 'Block' | 'Blocked' | 'Skip' | 'Active' | 'Inactive';
   assignee?: string;
   estimatedTime?: number;
   actualTime?: number;
@@ -1226,6 +1226,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     search: ''
   });
   const [isLive, setIsLive] = useState(true);
+  const [currentComment, setCurrentComment] = useState('');
   
   // 폴더 가져오기 관련 상태
   const [showTestCaseModal, setShowTestCaseModal] = useState(false);
@@ -1419,13 +1420,20 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   // 상태 변경 처리
   const handleStatusChange = useCallback(async (testCaseId: string, newStatus: TestCase['status'], comment?: string) => {
     try {
+      console.log('=== 상태 변경 시작 ===');
+      console.log('테스트케이스 ID:', testCaseId);
+      console.log('새로운 상태:', newStatus);
+      console.log('댓글:', comment);
+      
       // API 호출로 상태 변경
-      await updateTestCaseStatus({
+      const result = await updateTestCaseStatus({
         releaseId: release.id,
         testCaseId,
         status: newStatus,
-        comment
+        comment: comment || currentComment
       }).unwrap();
+      
+      console.log('API 호출 성공:', result);
 
       // 로컬 상태 업데이트
       onTestCaseUpdate(testCaseId, { 
@@ -1433,17 +1441,30 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
         lastUpdated: new Date().toISOString()
       });
       
-      // 상세 패널이 열려있다면 닫기
+      // 선택된 테스트케이스가 변경된 경우 상태 업데이트
       if (selectedTestCase?.id === testCaseId) {
-        setSelectedTestCase(null);
+        setSelectedTestCase({
+          ...selectedTestCase,
+          status: newStatus,
+          lastUpdated: new Date().toISOString()
+        });
       }
+      
+      // 댓글 초기화
+      setCurrentComment('');
+      
+      // 데이터 새로고침
+      await refetch();
+      await refetchStats();
 
-
+      console.log('=== 상태 변경 완료 ===');
     } catch (error) {
-      console.error('테스트케이스 상태 변경 실패:', error);
+      console.error('=== 테스트케이스 상태 변경 실패 ===');
+      console.error('Error details:', error);
       // 에러 처리 (필요시 토스트 메시지 표시)
+      alert(`상태 변경에 실패했습니다: ${error}`);
     }
-  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase]);
+  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase, currentComment, refetch, refetchStats]);
 
   // 일괄 상태 변경
   const handleBulkStatusChange = useCallback((status: TestCase['status']) => {
@@ -2181,14 +2202,19 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                   <DetailTitle>Run Test</DetailTitle>
                   <StatusChangeForm>
                     <StatusRadioGroup>
-                      {(['Pass', 'Fail', 'Block', 'Skip'] as const).map((status) => (
+                      {(['Pass', 'Fail', 'Blocked', 'Skip'] as const).map((status) => (
                         <StatusRadio key={status}>
                           <input
                             type="radio"
                             name="status"
                             value={status}
                             checked={selectedTestCase.status === status}
-                            onChange={() => handleStatusChange(selectedTestCase.id, status)}
+                            onChange={(e) => {
+                              console.log('라디오 버튼 클릭:', status);
+                              if (e.target.checked) {
+                                handleStatusChange(selectedTestCase.id, status);
+                              }
+                            }}
                           />
                           <StatusBadge status={status}>{status}</StatusBadge>
                         </StatusRadio>
@@ -2196,10 +2222,24 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                     </StatusRadioGroup>
                     
                     <FilterLabel>Comment (Optional)</FilterLabel>
-                    <CommentTextarea placeholder="Add a comment about this test execution..." />
+                    <CommentTextarea 
+                      placeholder="Add a comment about this test execution..."
+                      value={currentComment}
+                      onChange={(e) => setCurrentComment(e.target.value)}
+                    />
                     
-                    <SaveButton onClick={() => setSelectedTestCase(null)}>
-                      Save Result
+                    <SaveButton 
+                      onClick={() => {
+                        if (currentComment.trim()) {
+                          // 댓글이 있으면 현재 상태로 다시 저장
+                          handleStatusChange(selectedTestCase.id, selectedTestCase.status, currentComment);
+                        } else {
+                          // 댓글이 없으면 그냥 패널 닫기
+                          setSelectedTestCase(null);
+                        }
+                      }}
+                    >
+                      {currentComment.trim() ? 'Save with Comment' : 'Close'}
                     </SaveButton>
                   </StatusChangeForm>
                 </DetailSection>

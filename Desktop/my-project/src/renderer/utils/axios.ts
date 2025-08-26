@@ -47,8 +47,8 @@ async function attemptAutoLogin() {
 function showToast(message: string, type: 'error' | 'info' | 'success' = 'error') {
   // 실제 구현: Redux dispatch(pushNotification) 또는 Toast 라이브러리 사용
   // window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
-  // 임시: alert
-  alert(`[${type}] ${message}`);
+  // 임시: console.log로 변경 (alert 제거)
+  console.log(`[${type}] ${message}`);
 }
 
 const api = axios.create({

@@ -396,14 +396,14 @@ const EmptyDescription = styled.p`
   color: #6b7280;
 `;
 
-// 삭제 확인 모달 스타일
+// 커스텀 모달 스타일 컴포넌트
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -421,15 +421,14 @@ const ModalContent = styled.div`
 
 const ModalTitle = styled.h3`
   margin: 0 0 16px 0;
+  color: #1f2937;
   font-size: 18px;
   font-weight: 600;
-  color: #374151;
 `;
 
 const ModalMessage = styled.p`
   margin: 0 0 24px 0;
-  font-size: 14px;
-  color: #6b7280;
+  color: #4b5563;
   line-height: 1.5;
 `;
 
@@ -439,7 +438,7 @@ const ModalButtons = styled.div`
   justify-content: flex-end;
 `;
 
-const ModalButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+const ModalButton = styled.button<{ variant: 'primary' | 'secondary' }>`
   padding: 8px 16px;
   border-radius: 6px;
   border: none;
@@ -447,20 +446,18 @@ const ModalButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-
+  
   ${props => props.variant === 'primary' ? `
-    background-color: #dc2626;
+    background: #dc2626;
     color: white;
-    
     &:hover {
-      background-color: #b91c1c;
+      background: #b91c1c;
     }
   ` : `
-    background-color: #f3f4f6;
+    background: #f3f4f6;
     color: #374151;
-    
     &:hover {
-      background-color: #e5e7eb;
+      background: #e5e7eb;
     }
   `}
 `;
@@ -481,6 +478,7 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [releaseToDelete, setReleaseToDelete] = useState<Release | null>(null);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   useEffect(() => {
     const filtered = releases.filter(release =>
@@ -493,10 +491,12 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
   const handleBulkDelete = () => {
     if (selectedReleases.length === 0) return;
     
-    const confirmed = window.confirm(`선택된 ${selectedReleases.length}개의 릴리즈를 삭제하시겠습니까?`);
-    if (confirmed) {
-      onBulkDelete(selectedReleases);
-    }
+    setShowBulkDeleteModal(true);
+  };
+
+  const confirmBulkDelete = () => {
+    onBulkDelete(selectedReleases);
+    setShowBulkDeleteModal(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -708,6 +708,33 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
                   setShowDeleteModal(false);
                   setReleaseToDelete(null);
                 }}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+      
+      {/* 다중 삭제 확인 모달 */}
+      {showBulkDeleteModal && (
+        <ModalOverlay onClick={() => setShowBulkDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>다중 릴리즈 삭제</ModalTitle>
+            <ModalMessage>
+              선택된 <strong>{selectedReleases.length}개</strong>의 릴리즈를 삭제하시겠습니까?<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => setShowBulkDeleteModal(false)}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={confirmBulkDelete}
               >
                 삭제
               </ModalButton>

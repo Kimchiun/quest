@@ -233,6 +233,12 @@ export async function getFolderTree(projectId: number, depth?: number): Promise<
     const folderMap = new Map<number, FolderTree>();
     const rootFolders: FolderTree[] = [];
     
+    // 폴더가 없으면 빈 배열 반환 (자동 생성하지 않음)
+    if (allFolders.length === 0) {
+        console.log('📁 폴더가 없습니다. 빈 배열을 반환합니다.');
+        return [];
+    }
+    
     // depth 계산 함수
     const calculateDepth = (folderId: number, visited: Set<number> = new Set()): number => {
         if (visited.has(folderId)) return 0; // 순환 참조 방지

@@ -3,21 +3,27 @@ import { releaseController } from '../controllers/releaseController';
 
 const router = Router();
 
-// 기본 CRUD 라우트
+// 기본 CRUD 라우트 - 구체적인 라우트를 먼저 정의
 router.get('/', releaseController.getAllReleases);
 router.get('/search', releaseController.searchReleases);
 router.get('/status/:status', releaseController.getReleasesByStatus);
 router.get('/project/:projectId', releaseController.getReleasesByProject);
 router.get('/testcases/folders', releaseController.getTestFolders);
 router.get('/folders/:folderId/testcases', releaseController.getFolderTestCases);
+router.post('/', releaseController.createRelease);
+
+// 테스트케이스 상태 변경 라우트 - :id 라우트보다 먼저 정의
+router.put('/:id/testcases/:testCaseId/status', releaseController.updateTestCaseStatus);
 router.get('/:id/testcases', releaseController.getReleaseTestCases);
 router.delete('/:id/testcases', releaseController.deleteReleaseTestCases);
-router.put('/:id/testcases/:testCaseId/status', releaseController.updateTestCaseStatus);
+router.post('/:releaseId/testcases', releaseController.addTestCasesToRelease);
+
+// 실행 통계 라우트
 router.get('/:id/execution-stats', releaseController.getReleaseExecutionStats);
 router.put('/:id/execution-stats', releaseController.updateReleaseExecutionStats);
+
+// 일반적인 CRUD 라우트 - 가장 마지막에 정의
 router.get('/:id', releaseController.getReleaseById);
-router.post('/', releaseController.createRelease);
-router.post('/:releaseId/testcases', releaseController.addTestCasesToRelease);
 router.put('/:id', releaseController.updateRelease);
 router.delete('/:id', releaseController.deleteRelease);
 

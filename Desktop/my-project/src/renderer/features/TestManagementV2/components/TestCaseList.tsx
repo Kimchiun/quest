@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FolderTree } from '../../../types/folder';
 
@@ -183,14 +183,13 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
   testCases = [], 
   selectedTestCase,
   onCreateTestCase,
-  onTestCaseSelect 
+  onTestCaseSelect
 }) => {
   console.log('🔍 TestCaseList 렌더링:', {
     selectedFolder: selectedFolder?.name,
     testCasesLength: Array.isArray(testCases) ? testCases.length : 0,
     selectedTestCase: selectedTestCase?.title
   });
-
 
   if (!selectedFolder) {
     return (

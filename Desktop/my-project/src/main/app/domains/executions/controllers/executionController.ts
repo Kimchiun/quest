@@ -40,6 +40,12 @@ import { executionService } from '../services/executionService';
 
 const router = Router();
 
+// 테스트 엔드포인트
+router.get('/test', (req: Request, res: Response) => {
+    console.log('=== Execution test endpoint called ===');
+    res.json({ message: 'Execution controller is working' });
+});
+
 /**
  * @swagger
  * /api/executions:
@@ -84,10 +90,17 @@ const router = Router();
  */
 // 실행 기록 생성
 router.post('/', async (req: Request, res: Response) => {
+    console.log('=== ExecutionController POST / called ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     try {
+        console.log('Calling executionService.createExecution...');
         const execution = await executionService.createExecution(req.body);
+        console.log('ExecutionService returned:', execution);
         res.status(201).json(execution);
     } catch (err: any) {
+        console.error('ExecutionController error:', err);
+        console.error('Error stack:', err.stack);
         res.status(400).json({ error: err.message });
     }
 });

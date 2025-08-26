@@ -674,30 +674,54 @@ export class ReleaseRepository {
         throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
       }
 
+      console.log('=== updateTestCaseStatus called ===');
+      console.log('Parameters:', { releaseId, testCaseId, status, comment });
+      console.log('Status received (already mapped):', status);
+
       // release_test_cases 테이블에서 상태 업데이트
-      const result = await pgClient.query(`
+      const updateQuery = `
         UPDATE release_test_cases
         SET status = $1, updated_at = CURRENT_TIMESTAMP
         WHERE release_id = $2 AND test_case_id = $3
         RETURNING *
-      `, [status, releaseId, testCaseId]);
+      `;
+      
+      console.log('Update query:', updateQuery);
+      console.log('Update parameters:', [status, releaseId, testCaseId]);
+
+      const result = await pgClient.query(updateQuery, [status, releaseId, testCaseId]);
 
       if (result.rows.length === 0) {
         throw new Error('테스트케이스를 찾을 수 없습니다.');
       }
 
-      // 실행 기록 추가 (executions 테이블)
-      await pgClient.query(`
-        INSERT INTO executions (
-          testcase_id, release_id, status, executed_by, executed_at, comment, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `, [testCaseId, releaseId, status, 'system', comment || '']);
+      console.log('Update result:', result.rows[0]);
 
-      console.log(`테스트케이스 ${testCaseId} 상태가 ${status}로 변경되었습니다.`);
+      // 실행 기록 추가 (executions 테이블) - 중복 처리
+      const upsertQuery = `
+        INSERT INTO executions (
+          testcase_id, release_id, status, executed_by, executed_at, comments, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (release_id, testcase_id) 
+        DO UPDATE SET 
+          status = EXCLUDED.status,
+          executed_by = EXCLUDED.executed_by,
+          executed_at = EXCLUDED.executed_at,
+          comments = EXCLUDED.comments,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+      
+      console.log('Upsert query:', upsertQuery);
+      console.log('Upsert parameters:', [testCaseId, releaseId, status, 'system', comment || '']);
+
+      await pgClient.query(upsertQuery, [testCaseId, releaseId, status, 'system', comment || '']);
+
+      console.log(`=== 테스트케이스 ${testCaseId} 상태가 ${status}로 변경되었습니다. ===`);
       
       return result.rows[0];
     } catch (error) {
-      console.error('테스트케이스 상태 변경 실패:', error);
+      console.error('=== 테스트케이스 상태 변경 실패 ===');
+      console.error('Error details:', error);
       throw error;
     }
   }
@@ -1038,7 +1062,8 @@ export class ReleaseRepository {
           COUNT(*) as total,
           COUNT(CASE WHEN status = 'Pass' THEN 1 END) as passed,
           COUNT(CASE WHEN status = 'Fail' THEN 1 END) as failed,
-          COUNT(CASE WHEN status = 'Block' THEN 1 END) as blocked,
+          COUNT(CASE WHEN status IN ('Block', 'Blocked') THEN 1 END) as blocked,
+          COUNT(CASE WHEN status = 'Skip' THEN 1 END) as skipped,
           COUNT(CASE WHEN status = 'NOT_EXECUTED' THEN 1 END) as notRun
         FROM release_test_cases
         WHERE release_id = $1::uuid
@@ -1049,6 +1074,7 @@ export class ReleaseRepository {
       const passed = parseInt(stats.passed) || 0;
       const failed = parseInt(stats.failed) || 0;
       const blocked = parseInt(stats.blocked) || 0;
+      const skipped = parseInt(stats.skipped) || 0;
       const notRun = parseInt(stats.notRun) || 0;
       const executed = total - notRun;
       const passRate = executed > 0 ? Math.round((passed / executed) * 100) : 0;
@@ -1059,7 +1085,7 @@ export class ReleaseRepository {
         passed,
         failed,
         blocked,
-        skipped: 0, // 현재는 skipped 상태가 없으므로 0
+        skipped,
         passRate
       };
     } catch (error) {
@@ -1101,7 +1127,8 @@ export class ReleaseRepository {
         SELECT 
           COUNT(CASE WHEN status = 'Pass' THEN 1 END) as passed,
           COUNT(CASE WHEN status = 'Fail' THEN 1 END) as failed,
-          COUNT(CASE WHEN status = 'Block' THEN 1 END) as blocked,
+          COUNT(CASE WHEN status IN ('Block', 'Blocked') THEN 1 END) as blocked,
+          COUNT(CASE WHEN status = 'Skip' THEN 1 END) as skipped,
           COUNT(CASE WHEN status = 'Not Run' THEN 1 END) as notRun
         FROM release_test_cases
         WHERE release_id = $1
@@ -1111,6 +1138,7 @@ export class ReleaseRepository {
       const passed = parseInt(stats.passed) || 0;
       const failed = parseInt(stats.failed) || 0;
       const blocked = parseInt(stats.blocked) || 0;
+      const skipped = parseInt(stats.skipped) || 0;
       const notRun = parseInt(stats.notRun) || 0;
       const executed = plannedCount - notRun;
       const passRate = executed > 0 ? Math.round((passed / executed) * 100) : 0;
@@ -1121,7 +1149,7 @@ export class ReleaseRepository {
         passed,
         failed,
         blocked,
-        skipped: 0,
+        skipped,
         passRate
       };
     } catch (error) {

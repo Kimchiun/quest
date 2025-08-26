@@ -8,6 +8,90 @@ import TestCaseCreateModal from './components/TestCaseCreateModal';
 import TestCaseDetailPanel from './components/TestCaseDetailPanel';
 import FolderCreateModal from './components/FolderCreateModal';
 
+// 커스텀 모달 스타일 컴포넌트
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+`;
+
+const ModalMessage = styled.p`
+  margin: 0 0 24px 0;
+  color: #4b5563;
+  line-height: 1.5;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+`;
+
+const ModalButton = styled.button<{ variant: 'primary' | 'secondary' }>`
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  ${props => props.variant === 'primary' ? `
+    background: #dc2626;
+    color: white;
+    &:hover {
+      background: #b91c1c;
+    }
+  ` : `
+    background: #f3f4f6;
+    color: #374151;
+    &:hover {
+      background: #e5e7eb;
+    }
+  `}
+`;
+
+// 토스트 알림 스타일 컴포넌트
+const Toast = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transform: translateX(${props => props.show ? '0' : '120%'});
+  opacity: ${props => props.show ? '1' : '0'};
+  transition: all 0.3s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: ${props => props.show ? 'auto' : 'none'};
+`;
 
 const Container = styled.div`
   display: flex;
@@ -83,6 +167,14 @@ const TestManagementV2Page: React.FC = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [detailPanelWidth, setDetailPanelWidth] = useState(400); // 상세 패널 기본 너비
   const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set()); // 폴더 확장 상태 관리
+  
+  // 커스텀 모달 및 토스트 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showMultiDeleteModal, setShowMultiDeleteModal] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<FolderTree | null>(null);
+  const [foldersToDelete, setFoldersToDelete] = useState<number[]>([]);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     loadFolderTree();
@@ -118,7 +210,37 @@ const TestManagementV2Page: React.FC = () => {
       }
       const data = await response.json();
       // 백엔드 API는 { testCases: [...], total: number } 형태로 반환하므로 testCases 배열만 추출
-      setTestCases(data.testCases || []);
+      const testCases = data.testCases || [];
+      
+      // 각 테스트케이스의 최신 실행 상태를 가져오기
+      const testCasesWithExecutionStatus = await Promise.all(
+        testCases.map(async (testCase: any) => {
+          try {
+            const executionResponse = await fetch(`http://localhost:3001/api/executions/testcase/${testCase.id}`);
+            if (executionResponse.ok) {
+              const executions = await executionResponse.json();
+              // 가장 최근 실행 기록의 상태를 사용
+              const latestExecution = executions.length > 0 
+                ? executions.sort((a: any, b: any) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime())[0]
+                : null;
+              
+              return {
+                ...testCase,
+                executionStatus: latestExecution ? latestExecution.status : 'Untested'
+              };
+            }
+          } catch (error) {
+            console.error(`테스트케이스 ${testCase.id} 실행 상태 로드 실패:`, error);
+          }
+          
+          return {
+            ...testCase,
+            executionStatus: 'Untested'
+          };
+        })
+      );
+      
+      setTestCases(testCasesWithExecutionStatus);
     } catch (error) {
       console.error('테스트케이스 로드 오류:', error);
       setTestCases([]);
@@ -285,17 +407,29 @@ const TestManagementV2Page: React.FC = () => {
       await loadFolderTree();
     } catch (error) {
       console.error('폴더 이름 변경 오류:', error);
-      alert('폴더 이름 변경에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('폴더 이름 변경에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     }
   };
 
   const handleDelete = async (folderId: number) => {
-    if (!confirm('정말로 이 폴더를 삭제하시겠습니까? 하위 폴더와 테스트 케이스도 함께 삭제됩니다.')) {
-      return;
+    // 삭제할 폴더 찾기
+    const folder = folders.find(f => f.id === folderId);
+    if (folder) {
+      setFolderToDelete(folder);
+      setShowDeleteModal(true);
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!folderToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/folders/${folderId}`, {
+      const response = await fetch(`http://localhost:3001/api/folders/${folderToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -306,23 +440,40 @@ const TestManagementV2Page: React.FC = () => {
       await loadFolderTree();
       
       // 삭제된 폴더가 현재 선택된 폴더였다면 선택 해제
-      if (selectedFolder?.id === folderId) {
+      if (selectedFolder?.id === folderToDelete.id) {
         setSelectedFolder(null);
       }
+
+      setShowDeleteModal(false);
+      setFolderToDelete(null);
+      
+      // 토스트 알림 표시
+      setToastMessage('폴더가 성공적으로 삭제되었습니다.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     } catch (error) {
       console.error('폴더 삭제 오류:', error);
-      alert('폴더 삭제에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('폴더 삭제에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     }
   };
 
   const handleMultiDelete = async (folderIds: number[]) => {
-    if (!confirm(`선택된 ${folderIds.length}개의 폴더를 삭제하시겠습니까? 하위 폴더와 테스트 케이스도 함께 삭제됩니다.`)) {
-      return;
-    }
+    setFoldersToDelete(folderIds);
+    setShowMultiDeleteModal(true);
+  };
 
+  const confirmMultiDelete = async () => {
     try {
       // 각 폴더를 순차적으로 삭제
-      for (const folderId of folderIds) {
+      for (const folderId of foldersToDelete) {
         const response = await fetch(`http://localhost:3001/api/folders/${folderId}`, {
           method: 'DELETE',
         });
@@ -335,14 +486,28 @@ const TestManagementV2Page: React.FC = () => {
       await loadFolderTree();
       
       // 삭제된 폴더 중 현재 선택된 폴더가 있었다면 선택 해제
-      if (selectedFolder && folderIds.includes(selectedFolder.id)) {
+      if (selectedFolder && foldersToDelete.includes(selectedFolder.id)) {
         setSelectedFolder(null);
       }
 
-      alert(`${folderIds.length}개의 폴더가 성공적으로 삭제되었습니다.`);
+      setShowMultiDeleteModal(false);
+      setFoldersToDelete([]);
+      
+      // 토스트 알림 표시
+      setToastMessage(`${foldersToDelete.length}개의 폴더가 성공적으로 삭제되었습니다.`);
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     } catch (error) {
       console.error('다중 폴더 삭제 오류:', error);
-      alert('폴더 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      setToastMessage('폴더 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     }
   };
 
@@ -378,11 +543,21 @@ const TestManagementV2Page: React.FC = () => {
       // 테스트케이스 목록에 추가
       setTestCases(prev => [...prev, newTestCase]);
       
-      // 모달 닫기
-      setIsCreateModalOpen(false);
+      // 토스트 알림 표시
+      setToastMessage('테스트케이스가 성공적으로 생성되었습니다.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     } catch (error) {
       console.error('테스트케이스 생성 오류:', error);
-      alert('테스트케이스 생성에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('테스트케이스 생성에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     }
   };
 
@@ -433,9 +608,16 @@ const TestManagementV2Page: React.FC = () => {
       setSelectedTestCase(updatedData);
     } catch (error) {
       console.error('테스트케이스 업데이트 오류:', error);
-      alert('테스트케이스 업데이트에 실패했습니다. 다시 시도해 주세요.');
+      setToastMessage('테스트케이스 업데이트에 실패했습니다. 다시 시도해 주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     }
   };
+
+
 
   const handleMoveToFolder = (testCaseId: string, targetFolderId: string) => {
     console.log('🔄 handleMoveToFolder 호출됨:', { testCaseId, targetFolderId });
@@ -771,6 +953,73 @@ const TestManagementV2Page: React.FC = () => {
         onClose={() => setIsFolderCreateModalOpen(false)}
         onCreateFolder={handleCreateRootFolderSubmit}
       />
+      
+      {/* 커스텀 삭제 확인 모달 */}
+      {showDeleteModal && folderToDelete && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>폴더 삭제</ModalTitle>
+            <ModalMessage>
+              <strong>"{folderToDelete.name}"</strong> 폴더를 삭제하시겠습니까?<br />
+              하위 폴더와 테스트 케이스도 함께 삭제됩니다.<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setFolderToDelete(null);
+                }}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={confirmDelete}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+      
+      {/* 커스텀 다중 삭제 확인 모달 */}
+      {showMultiDeleteModal && foldersToDelete.length > 0 && (
+        <ModalOverlay onClick={() => setShowMultiDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>다중 폴더 삭제</ModalTitle>
+            <ModalMessage>
+              선택된 <strong>{foldersToDelete.length}개</strong>의 폴더를 삭제하시겠습니까?<br />
+              하위 폴더와 테스트 케이스도 함께 삭제됩니다.<br />
+              이 작업은 되돌릴 수 없습니다.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton 
+                variant="secondary"
+                onClick={() => {
+                  setShowMultiDeleteModal(false);
+                  setFoldersToDelete([]);
+                }}
+              >
+                취소
+              </ModalButton>
+              <ModalButton 
+                variant="primary"
+                onClick={confirmMultiDelete}
+              >
+                삭제
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+      
+      {/* 토스트 알림 */}
+      <Toast show={showToast}>
+        {toastMessage}
+      </Toast>
       
     </Container>
   );

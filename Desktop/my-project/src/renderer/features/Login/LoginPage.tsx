@@ -4,6 +4,25 @@ import styled from 'styled-components';
 import api from '../../utils/axios';
 import { setMe } from '../../store';
 
+// 토스트 알림 스타일 컴포넌트
+const Toast = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #dc2626;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transform: translateX(${props => props.show ? '0' : '120%'});
+  opacity: ${props => props.show ? '1' : '0'};
+  transition: all 0.3s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: ${props => props.show ? 'auto' : 'none'};
+`;
+
 // Styled Components
 const Container = styled.div`
   position: relative;
@@ -273,6 +292,8 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
     email: '',
     confirmPassword: ''
   });
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     // 초기 애니메이션 설정
@@ -316,32 +337,57 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
         if (onLogin) {
           onLogin(user);
         }
-      } else {
-        console.error('❌ 로그인 실패: 사용자 정보 없음');
-        alert('로그인 실패: 사용자 정보 없음');
+              } else {
+          console.error('❌ 로그인 실패: 사용자 정보 없음');
+          setToastMessage('로그인 실패: 사용자 정보 없음');
+          setShowToast(true);
+          setTimeout(() => {
+            setShowToast(false);
+            setTimeout(() => setToastMessage(''), 300);
+          }, 3000);
+        }
+          } catch (e: any) {
+        console.error('❌ 로그인 실패:', e);
+        const errorMessage = e?.response?.data?.message || e.message || '알 수 없는 오류';
+        setToastMessage('로그인 실패: ' + errorMessage);
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          setTimeout(() => setToastMessage(''), 300);
+        }, 3000);
       }
-    } catch (e: any) {
-      console.error('❌ 로그인 실패:', e);
-      const errorMessage = e?.response?.data?.message || e.message || '알 수 없는 오류';
-      alert('로그인 실패: ' + errorMessage);
-    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert('비밀번호가 일치하지 않습니다.');
-      return;
-    }
+          if (formData.password !== formData.confirmPassword) {
+        setToastMessage('비밀번호가 일치하지 않습니다.');
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          setTimeout(() => setToastMessage(''), 300);
+        }, 3000);
+        return;
+      }
     
-    try {
-      console.log('📝 회원가입 시도:', formData.username);
-      // TODO: 회원가입 API 구현
-      alert('회원가입 기능은 준비 중입니다.');
-    } catch (e: any) {
-      console.error('❌ 회원가입 실패:', e);
-      alert('회원가입 실패: ' + e.message);
-    }
+          try {
+        console.log('📝 회원가입 시도:', formData.username);
+        // TODO: 회원가입 API 구현
+        setToastMessage('회원가입 기능은 준비 중입니다.');
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          setTimeout(() => setToastMessage(''), 300);
+        }, 3000);
+      } catch (e: any) {
+        console.error('❌ 회원가입 실패:', e);
+        setToastMessage('회원가입 실패: ' + e.message);
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          setTimeout(() => setToastMessage(''), 300);
+        }, 3000);
+      }
   };
   
   return (
@@ -474,6 +520,7 @@ const LoginPage: React.FC<{ onLogin?: (values: any) => void }> = ({ onLogin }) =
           </Text>
         </ContentCol>
       </ContentRow>
+      <Toast show={showToast}>{toastMessage}</Toast>
       </Container>
   );
 };

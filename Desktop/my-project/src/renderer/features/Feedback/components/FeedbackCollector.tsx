@@ -13,6 +13,25 @@ interface FeedbackData {
   screenResolution: string;
 }
 
+// 토스트 알림 스타일 컴포넌트
+const Toast = styled.div<{ show: boolean }>`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transform: translateX(${props => props.show ? '0' : '120%'});
+  opacity: ${props => props.show ? '1' : '0'};
+  transition: all 0.3s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: ${props => props.show ? 'auto' : 'none'};
+`;
+
 // 스타일 컴포넌트
 const FeedbackModal = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -94,6 +113,8 @@ const FeedbackCollector: React.FC = () => {
   const [comment, setComment] = useState('');
   const [category, setCategory] = useState<'usability' | 'performance' | 'accessibility' | 'bug'>('usability');
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackData[]>([]);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   // 현재 페이지/단계 감지
   useEffect(() => {
@@ -112,7 +133,12 @@ const FeedbackCollector: React.FC = () => {
   // 피드백 제출
   const submitFeedback = async () => {
     if (rating === 0) {
-      alert('평점을 선택해주세요.');
+      setToastMessage('평점을 선택해주세요.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
       return;
     }
 
@@ -152,7 +178,12 @@ const FeedbackCollector: React.FC = () => {
     setIsModalOpen(false);
 
     // 성공 메시지
-    alert('피드백이 성공적으로 제출되었습니다. 감사합니다!');
+    setToastMessage('피드백이 성공적으로 제출되었습니다. 감사합니다!');
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+      setTimeout(() => setToastMessage(''), 300);
+    }, 3000);
   };
 
   // 피드백 통계 계산
@@ -315,6 +346,11 @@ const FeedbackCollector: React.FC = () => {
           )}
         </ModalContent>
       </FeedbackModal>
+      
+      {/* 토스트 알림 */}
+      <Toast show={showToast}>
+        {toastMessage}
+      </Toast>
     </>
   );
 };

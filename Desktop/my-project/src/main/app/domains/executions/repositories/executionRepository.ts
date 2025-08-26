@@ -9,26 +9,29 @@ export const executionRepository = {
             throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
         }
         const now = new Date();
-        const result = await pgClient.query(
-            `INSERT INTO executions 
-                (testcase_id, suite_id, release_id, status, executed_by, executed_at, repro_steps, screenshot_path, log_file_path, comment, created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-             RETURNING *`,
-            [
-                execution.testcaseId,
-                execution.suiteId ?? null,
-                execution.releaseId ?? null,
-                execution.status,
-                execution.executedBy,
-                execution.executedAt,
-                execution.reproSteps ?? null,
-                execution.screenshotPath ?? null,
-                execution.logFilePath ?? null,
-                execution.comment ?? null,
-                now,
-                now
-            ]
-        );
+        
+        console.log('Inserting execution:', execution);
+        
+        const sql = `INSERT INTO executions 
+            (testcase_id, release_id, status, executed_by, executed_at, comments, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`;
+        
+        const params = [
+            execution.testcaseId,
+            execution.releaseId,
+            execution.status,
+            execution.executedBy,
+            execution.executedAt,
+            execution.comment || null,
+            now,
+            now
+        ];
+        
+        console.log('Executing SQL:', sql);
+        console.log('With params:', params);
+        
+        const result = await pgClient.query(sql, params);
         return mapRowToExecution(result.rows[0]);
     },
 
@@ -58,15 +61,40 @@ export const executionRepository = {
         if (!pgClient) {
             throw new Error('PostgreSQL 클라이언트가 초기화되지 않았습니다.');
         }
-        // 동적 쿼리 빌드(간단화)
-        const fields = Object.keys(update);
-        if (fields.length === 0) return this.findById(id);
-        const setClause = fields.map((f, i) => `${toSnakeCase(f)} = $${i + 1}`).join(', ');
-        const values = fields.map(f => (update as any)[f]);
-        values.push(new Date()); // updated_at
+        
+        const setClauses: string[] = [];
+        const values: any[] = [];
+        let paramIndex = 1;
+        
+        if (update.status !== undefined) {
+            setClauses.push(`status = $${paramIndex++}`);
+            values.push(update.status);
+        }
+        
+        if (update.executedBy !== undefined) {
+            setClauses.push(`executed_by = $${paramIndex++}`);
+            values.push(update.executedBy);
+        }
+        
+        if (update.executedAt !== undefined) {
+            setClauses.push(`executed_at = $${paramIndex++}`);
+            values.push(update.executedAt);
+        }
+        
+        if (update.comment !== undefined) {
+            setClauses.push(`comments = $${paramIndex++}`);
+            values.push(update.comment);
+        }
+        
+        if (setClauses.length === 0) return this.findById(id);
+        
+        setClauses.push(`updated_at = $${paramIndex++}`);
+        values.push(new Date());
+        values.push(id);
+        
         const result = await pgClient.query(
-            `UPDATE executions SET ${setClause}, updated_at = $${fields.length + 1} WHERE id = $${fields.length + 2} RETURNING *`,
-            [...values, id]
+            `UPDATE executions SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+            values
         );
         return result.rows[0] ? mapRowToExecution(result.rows[0]) : null;
     },
@@ -85,20 +113,12 @@ function mapRowToExecution(row: any): Execution {
     return {
         id: row.id,
         testcaseId: row.testcase_id,
-        suiteId: row.suite_id,
         releaseId: row.release_id,
         status: row.status,
         executedBy: row.executed_by,
         executedAt: row.executed_at,
-        reproSteps: row.repro_steps,
-        screenshotPath: row.screenshot_path,
-        logFilePath: row.log_file_path,
-        comment: row.comment,
+        comment: row.comments,
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };
 }
-
-function toSnakeCase(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-} 
