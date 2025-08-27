@@ -261,18 +261,6 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
     return statusMap[status] || 'draft';
   };
 
-  // 프론트엔드 상태를 백엔드 상태로 매핑
-  const mapFrontendStatusToBackend = (status: string): string => {
-    const statusMap: { [key: string]: string } = {
-      'draft': 'Draft',
-      'in-progress': 'Active',
-      'testing': 'Active',
-      'ready': 'Complete',
-      'released': 'Archived'
-    };
-    return statusMap[status] || 'Draft';
-  };
-
   const validateForm = (): boolean => {
     const newErrors: Partial<ReleaseFormData> = {};
 
