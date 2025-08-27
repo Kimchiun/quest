@@ -630,9 +630,9 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
                 </CardContent>
 
                 <InfoItem>
-                  <InfoLabel>진행률</InfoLabel>
+                  <InfoLabel>통과율</InfoLabel>
                   <ProgressBar>
-                    <ProgressFill progress={release.progress} />
+                    <ProgressFill progress={release.passRate} />
                   </ProgressBar>
                 </InfoItem>
 

@@ -196,7 +196,7 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   ${props => props.variant === 'primary' ? `
     background: #3b82f6;
     color: white;
@@ -222,6 +222,8 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
   onSubmit,
   release
 }) => {
+  console.log('ReleaseEditModal - 렌더링', { isOpen, release });
+
   const [formData, setFormData] = useState<ReleaseFormData>({
     name: '',
     version: '',
@@ -237,6 +239,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
 
   // 릴리즈 데이터가 변경될 때 폼 데이터 업데이트
   useEffect(() => {
+    console.log('ReleaseEditModal - 릴리즈 데이터 업데이트', release);
     if (release) {
       setFormData({
         name: release.name || '',
@@ -256,7 +259,8 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
       'Draft': 'draft',
       'Active': 'in-progress',
       'Complete': 'ready',
-      'Archived': 'released'
+      'Archived': 'released',
+      'planning': 'draft' // 추가 매핑
     };
     return statusMap[status] || 'draft';
   };
@@ -294,7 +298,8 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    console.log('ReleaseEditModal - 제출 시도', formData);
+
     if (!validateForm()) {
       return;
     }
@@ -311,6 +316,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
   };
 
   const handleClose = () => {
+    console.log('ReleaseEditModal - 닫기');
     setErrors({});
     setIsSubmitting(false);
     onClose();
@@ -321,7 +327,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
       ...prev,
       [field]: value
     }));
-    
+
     // 에러 메시지 제거
     if (errors[field]) {
       setErrors(prev => ({
@@ -331,7 +337,10 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
     }
   };
 
-  if (!release) return null;
+  if (!release) {
+    console.log('ReleaseEditModal - 릴리즈 데이터 없음');
+    return null;
+  }
 
   return (
     <ModalOverlay isOpen={isOpen}>
@@ -351,7 +360,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="릴리즈명을 입력하세요"
-                className={errors.name ? 'error' : ''}
+                error={!!errors.name}
               />
               {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
             </FormGroup>
@@ -364,7 +373,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
                 value={formData.version}
                 onChange={(e) => handleInputChange('version', e.target.value)}
                 placeholder="예: v1.0.0"
-                className={errors.version ? 'error' : ''}
+                error={!!errors.version}
               />
               {errors.version && <ErrorMessage>{errors.version}</ErrorMessage>}
             </FormGroup>
@@ -388,7 +397,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className={errors.startDate ? 'error' : ''}
+                error={!!errors.startDate}
               />
               {errors.startDate && <ErrorMessage>{errors.startDate}</ErrorMessage>}
             </FormGroup>
@@ -400,7 +409,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className={errors.endDate ? 'error' : ''}
+                error={!!errors.endDate}
               />
               {errors.endDate && <ErrorMessage>{errors.endDate}</ErrorMessage>}
             </FormGroup>
@@ -415,7 +424,7 @@ const ReleaseEditModal: React.FC<ReleaseEditModalProps> = ({
                 value={formData.assignee}
                 onChange={(e) => handleInputChange('assignee', e.target.value)}
                 placeholder="담당자명"
-                className={errors.assignee ? 'error' : ''}
+                error={!!errors.assignee}
               />
               {errors.assignee && <ErrorMessage>{errors.assignee}</ErrorMessage>}
             </FormGroup>

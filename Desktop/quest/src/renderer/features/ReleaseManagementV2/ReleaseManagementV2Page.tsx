@@ -78,6 +78,27 @@ const Toast = styled.div<{ show: boolean }>`
 const ReleaseManagementV2Page: React.FC = () => {
   const [releases, setReleases] = useState<Release[]>([]);
   
+  // 각 릴리즈의 실행 통계를 가져오는 함수
+  const fetchExecutionStats = async (releaseId: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/releases/${releaseId}/execution-stats`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const stats = data.data;
+          return {
+            progress: stats.planned > 0 ? Math.round((stats.executed / stats.planned) * 100) : 0,
+            passRate: stats.executed > 0 ? Math.round((stats.passed / stats.executed) * 100) : 0,
+            blockers: stats.blocked || 0
+          };
+        }
+      }
+    } catch (error) {
+      console.error(`릴리즈 ${releaseId} 실행 통계 가져오기 실패:`, error);
+    }
+    return { progress: 0, passRate: 0, blockers: 0 };
+  };
+
   // 실제 API에서 릴리즈 데이터 가져오기
   useEffect(() => {
     const fetchReleases = async () => {
@@ -87,20 +108,27 @@ const ReleaseManagementV2Page: React.FC = () => {
           const data = await response.json();
           if (data.success && data.data) {
             // API 응답을 컴포넌트에서 사용하는 형식으로 변환
-            const transformedReleases = data.data.map((release: any) => ({
-              id: release.id,
-              name: release.name,
-              version: release.version,
-              status: release.status.toLowerCase().replace('_', '-') as any,
-              startDate: release.startAt ? release.startAt.split('T')[0] : '',
-              endDate: release.endAt ? release.endAt.split('T')[0] : '',
-              progress: 0, // API에서 제공하지 않는 경우 기본값
-              passRate: 0, // API에서 제공하지 않는 경우 기본값
-              blockers: 0, // API에서 제공하지 않는 경우 기본값
-              assignee: release.assignee_name || release.owners?.[0] || 'admin',
-              folder: '/프로젝트/Quest',
-              updatedAt: release.updatedAt
-            }));
+            const transformedReleases = await Promise.all(
+              data.data.map(async (release: any) => {
+                // 각 릴리즈의 실행 통계 가져오기
+                const stats = await fetchExecutionStats(release.id);
+                
+                return {
+                  id: release.id,
+                  name: release.name,
+                  version: release.version,
+                  status: release.status.toLowerCase().replace('_', '-') as any,
+                  startDate: release.startAt ? release.startAt.split('T')[0] : '',
+                  endDate: release.endAt ? release.endAt.split('T')[0] : '',
+                  progress: stats.progress, // 실시간 진행률
+                  passRate: stats.passRate, // 실시간 통과율
+                  blockers: stats.blockers, // 실시간 차단 수
+                  assignee: release.assignee_name || release.owners?.[0] || 'admin',
+                  folder: '/프로젝트/Quest',
+                  updatedAt: release.updatedAt
+                };
+              })
+            );
             setReleases(transformedReleases);
           }
         }
@@ -110,11 +138,19 @@ const ReleaseManagementV2Page: React.FC = () => {
     };
     
     fetchReleases();
+    
+    // 5초마다 진행률 업데이트
+    const interval = setInterval(() => {
+      fetchReleases();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
   const [selectedReleases, setSelectedReleases] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
-  const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRelease, setEditingRelease] = useState<Release | null>(null);  const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
   const [currentTab, setCurrentTab] = useState('overview');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -154,7 +190,14 @@ const ReleaseManagementV2Page: React.FC = () => {
 
   // 릴리즈 수정 핸들러
   const handleEditRelease = (releaseId: string) => {
-    // 여기에 릴리즈 수정 모달을 여는 로직 추가
+    console.log('handleEditRelease 호출됨:', releaseId);
+    const release = releases.find(r => r.id === releaseId);
+    console.log('찾은 릴리즈:', release);
+    if (release) {
+      console.log('수정 모달 열기');
+      setEditingRelease(release);
+      setIsEditModalOpen(true);
+    }
   };
 
   // 릴리즈 삭제 핸들러
@@ -261,7 +304,72 @@ const ReleaseManagementV2Page: React.FC = () => {
     }
   };
 
-  // 다중 삭제 핸들러
+
+  // 릴리즈 수정 제출 핸들러
+  const handleEditReleaseSubmit = async (releaseData: any) => {
+    try {
+      if (!editingRelease) return;
+
+      console.log("수정 데이터 제출:", releaseData);
+
+      // API 호출하여 릴리즈 수정
+      const response = await fetch(`http://localhost:3001/api/releases/${editingRelease.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: releaseData.name,
+          version: releaseData.version,
+          description: releaseData.description,
+          startAt: releaseData.startDate ? new Date(releaseData.startDate).toISOString() : null,
+          endAt: releaseData.endDate ? new Date(releaseData.endDate).toISOString() : null,
+          assignee: releaseData.assignee,
+          status: mapStatusToBackend(releaseData.status)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("릴리즈 수정에 실패했습니다.");
+      }
+
+      const updatedRelease = await response.json();
+      
+      // 로컬 상태에 수정된 릴리즈 업데이트
+      const modifiedRelease: Release = {
+        ...editingRelease,
+        name: updatedRelease.data.name,
+        version: updatedRelease.data.version,
+        status: mapBackendStatusToFrontend(updatedRelease.data.status),
+        startDate: updatedRelease.data.startAt ? updatedRelease.data.startAt.split("T")[0] : "",
+        endDate: updatedRelease.data.endAt ? updatedRelease.data.endAt.split("T")[0] : "",
+        assignee: updatedRelease.data.assignee_name || updatedRelease.data.owners?.[0] || "admin",
+        updatedAt: new Date().toISOString()
+      };
+      
+      setReleases(prev => prev.map(r => r.id === editingRelease.id ? modifiedRelease : r));
+      
+      // 모달 닫기
+      setIsEditModalOpen(false);
+      setEditingRelease(null);
+      
+      // 성공 메시지
+      setToastMessage("릴리즈가 성공적으로 수정되었습니다.");
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(""), 300);
+      }, 3000);
+    } catch (error) {
+      console.error("릴리즈 수정 실패:", error);
+      setToastMessage("릴리즈 수정에 실패했습니다.");
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(""), 300);
+      }, 3000);
+    }
+  };  // 다중 삭제 핸들러
   const handleBulkDelete = async (releaseIds: string[]) => {
     try {
       // 각 릴리즈를 순차적으로 삭제
@@ -327,6 +435,16 @@ const ReleaseManagementV2Page: React.FC = () => {
         onSubmit={handleCreateReleaseSubmit}
       />
       
+      <ReleaseEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          console.log("수정 모달 닫기");
+          setIsEditModalOpen(false);
+          setEditingRelease(null);
+        }}
+        onSubmit={handleEditReleaseSubmit}
+        release={editingRelease}
+      />      
       {/* 토스트 알림 */}
       <Toast show={showToast}>
         {toastMessage}

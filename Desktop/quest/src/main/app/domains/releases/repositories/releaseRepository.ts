@@ -1098,6 +1098,20 @@ export class ReleaseRepository {
       const executed = total - notRun;
       const passRate = executed > 0 ? Math.round((passed / executed) * 100) : 0;
 
+      console.log('=== 실행 통계 계산 ===');
+      console.log('releaseId:', releaseId);
+      console.log('raw stats:', stats);
+      console.log('calculated values:', {
+        total,
+        passed,
+        failed,
+        blocked,
+        skipped,
+        notRun,
+        executed,
+        passRate
+      });
+
       return {
         planned: total,
         executed,

@@ -152,10 +152,10 @@ const ReleaseCardView: React.FC<ReleaseCardViewProps> = ({
               
               <ProgressSection>
                 <ProgressHeader>
-                  <ProgressLabel>진행률</ProgressLabel>
-                  <ProgressValue>{release.progress}%</ProgressValue>
+                  <ProgressLabel>통과율</ProgressLabel>
+                  <ProgressValue>{release.passRate}%</ProgressValue>
                 </ProgressHeader>
-                <ProgressBar $progress={release.progress} />
+                <ProgressBar $progress={release.passRate} />
                 <ProgressStats>
                   <StatItem>
                     <StatValue>{release.testCases}</StatValue>
