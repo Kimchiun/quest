@@ -1,56 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FolderTree } from '../../../types/folder';
+import EmptyState from '../../../shared/components/EmptyState';
+import AutoHeightContainer from '../../../shared/components/EmptyState/AutoHeightContainer';
 
 const Container = styled.div`
   flex: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 400px; /* 최소 높이 유지 */
+  /* 최소 높이 제거 - 자동 높이 관리 */
 `;
 
-const EmptyState = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #6b7280;
-  text-align: center;
-  padding: 40px;
-`;
-
-const EmptyIcon = styled.div`
-  width: 64px;
-  height: 64px;
-  background: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  font-size: 24px;
-`;
-
-const EmptyTitle = styled.h3`
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-`;
-
-const EmptyDescription = styled.p`
-  margin: 0 0 24px 0;
-  font-size: 14px;
-  color: #6b7280;
-  max-width: 400px;
-`;
-
-const EmptyActions = styled.div`
-  display: flex;
-  gap: 12px;
-`;
+// 기존 EmptyState 스타일 컴포넌트들 제거 - 새로운 EmptyState 컴포넌트 사용
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   padding: 8px 16px;
@@ -73,7 +35,7 @@ const ListContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   background: #ffffff;
-  min-height: 300px;
+  /* 최소 높이 제거 - 자동 높이 관리 */
 `;
 
 const TestCaseItem = styled.div<{ isSelected?: boolean }>`
@@ -193,15 +155,15 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
 
   if (!selectedFolder) {
     return (
-      <Container>
-        <EmptyState>
-          <EmptyIcon>📁</EmptyIcon>
-          <EmptyTitle>폴더를 선택하세요</EmptyTitle>
-          <EmptyDescription>
-            좌측의 폴더 트리에서 테스트케이스를 확인할 폴더를 선택하세요.
-          </EmptyDescription>
-        </EmptyState>
-      </Container>
+      <AutoHeightContainer hasData={false} type="list">
+        <EmptyState
+          icon="📁"
+          title="폴더를 선택하세요"
+          description="좌측의 폴더 트리에서 테스트케이스를 확인할 폴더를 선택하세요."
+          size="md"
+          container="card"
+        />
+      </AutoHeightContainer>
     );
   }
 
@@ -234,29 +196,30 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
   if (filteredTestCases.length === 0) {
     console.log('⚠️ TestCaseList: 빈 상태 표시됨 - 테스트케이스가 전혀 없음');
     return (
-      <Container>
-        <EmptyState>
-          <EmptyIcon>📝</EmptyIcon>
-          <EmptyTitle>테스트케이스가 없습니다</EmptyTitle>
-          <EmptyDescription>
-            "{selectedFolder.name}" 폴더에 테스트케이스가 없습니다.
-            새로운 테스트케이스를 생성해보세요.
-          </EmptyDescription>
-          <EmptyActions>
-            <Button variant="primary" onClick={onCreateTestCase}>
-              새 테스트케이스
-            </Button>
-            <Button>폴더 설정</Button>
-          </EmptyActions>
-        </EmptyState>
-      </Container>
+      <AutoHeightContainer hasData={false} type="list">
+        <EmptyState
+          icon="📝"
+          title="테스트케이스가 없습니다"
+          description={`"${selectedFolder.name}" 폴더에 테스트케이스가 없습니다. 새로운 테스트케이스를 생성해보세요.`}
+          size="md"
+          container="card"
+          actions={
+            <>
+              <Button variant="primary" onClick={onCreateTestCase}>
+                새 테스트케이스
+              </Button>
+              <Button>폴더 설정</Button>
+            </>
+          }
+        />
+      </AutoHeightContainer>
     );
   }
 
   console.log('✅ TestCaseList: 테스트케이스 목록 렌더링 시작', filteredTestCases.length, '개');
   
   return (
-    <Container>
+    <AutoHeightContainer hasData={true} type="list">
       <ListContainer>
         {filteredTestCases.map((testCase) => (
           <TestCaseItem 
@@ -287,7 +250,7 @@ const TestCaseList: React.FC<TestCaseListProps> = ({
           </TestCaseItem>
         ))}
       </ListContainer>
-    </Container>
+    </AutoHeightContainer>
   );
 };
 

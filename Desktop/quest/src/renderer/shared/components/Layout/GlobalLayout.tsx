@@ -14,15 +14,23 @@ const LayoutContainer = styled.div<{ sidebarCollapsed: boolean }>`
   grid-template-areas:
     "nav header"
     "nav main";
-  grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '280px'} 1fr;
+  grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '220px'} 1fr;
   grid-template-rows: 60px 1fr;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   transition: grid-template-columns 0.3s ease;
   
+  @media (max-width: 1440px) {
+    grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '200px'} 1fr;
+  }
+  
+  @media (max-width: 1280px) {
+    grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '180px'} 1fr;
+  }
+  
   @media (max-width: 1024px) {
-    grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '240px'} 1fr;
+    grid-template-columns: ${props => props.sidebarCollapsed ? '60px' : '160px'} 1fr;
   }
   
   @media (max-width: 768px) {
@@ -40,13 +48,17 @@ const Navigation = styled.nav<{ collapsed: boolean }>`
   grid-area: nav;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  padding: ${props => props.collapsed ? '20px 10px' : '20px'};
+  padding: ${props => props.collapsed ? '16px 8px' : '16px'};
   overflow-y: auto;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   transition: padding 0.3s ease;
   
+  @media (max-width: 1280px) {
+    padding: ${props => props.collapsed ? '14px 6px' : '14px'};
+  }
+  
   @media (max-width: 768px) {
-    padding: 15px;
+    padding: 12px;
   }
 `;
 
@@ -111,22 +123,32 @@ const ToggleButton = styled.button<{ collapsed: boolean }>`
 const NavigationContainer = styled.div<{ collapsed: boolean }>`
   position: relative;
   height: 100%;
-  padding-right: ${props => props.collapsed ? '0' : '15px'};
+  padding-right: ${props => props.collapsed ? '0' : '12px'};
+  
+  @media (max-width: 1280px) {
+    padding-right: ${props => props.collapsed ? '0' : '8px'};
+  }
 `;
 
 // 네비게이션 메뉴 아이템
 const NavItem = styled.div<{ active?: boolean; onClick?: () => void; collapsed?: boolean }>`
-  padding: ${props => props.collapsed ? '12px 8px' : '12px 16px'};
-  margin: 4px 0;
-  border-radius: 8px;
+  padding: ${props => props.collapsed ? '10px 6px' : '10px 12px'};
+  margin: 3px 0;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
   display: flex;
   align-items: center;
-  gap: ${props => props.collapsed ? '0' : '12px'};
+  gap: ${props => props.collapsed ? '0' : '10px'};
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
   position: relative;
+  
+  @media (max-width: 1280px) {
+    padding: ${props => props.collapsed ? '8px 4px' : '8px 10px'};
+    margin: 2px 0;
+    gap: ${props => props.collapsed ? '0' : '8px'};
+  }
   
   &:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -164,12 +186,16 @@ const NavIcon = styled.div`
 
 const NavText = styled.span<{ collapsed?: boolean }>`
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   opacity: ${props => props.collapsed ? '0' : '1'};
   transition: opacity 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
+  
+  @media (max-width: 1280px) {
+    font-size: 12px;
+  }
 `;
 
 // 헤더 타이틀
@@ -253,8 +279,12 @@ const DropdownItem = styled.button<{ isLogout?: boolean }>`
 
 // 브랜드 영역
 const BrandArea = styled.div<{ collapsed: boolean }>`
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   text-align: ${props => props.collapsed ? 'center' : 'left'};
+  
+  @media (max-width: 1280px) {
+    margin-bottom: 20px;
+  }
 `;
 
 const BrandTitle = styled.h2<{ collapsed: boolean }>`

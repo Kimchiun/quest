@@ -57,7 +57,8 @@ CREATE TABLE IF NOT EXISTS tree_nodes (
     created_by VARCHAR(100) NOT NULL,
     is_archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, type, parent_id)
 );
 
 -- 인덱스 생성
@@ -79,9 +80,9 @@ VALUES ('루트', '최상위 폴더', NULL, 0, 'system')
 ON CONFLICT (id) DO NOTHING;
 
 -- 루트 폴더를 tree_nodes에도 추가
-INSERT INTO tree_nodes (name, type, created_by) 
-VALUES ('루트', 'folder', 'system')
-ON CONFLICT DO NOTHING;
+INSERT INTO tree_nodes (name, type, parent_id, created_by) 
+VALUES ('루트', 'folder', NULL, 'system')
+ON CONFLICT (name, type, parent_id) DO NOTHING;
 
 -- 트리거 함수 업데이트
 CREATE OR REPLACE FUNCTION update_updated_at_column()

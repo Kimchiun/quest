@@ -202,6 +202,45 @@ const KPILabel = styled.div`
 
 // 반응형 조정
 const ResponsiveContainer = styled.div`
+  @media (max-width: 1440px) {
+    ${KPISection} {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 16px 32px;
+    }
+    
+    ${KPICard} {
+      padding: 16px;
+    }
+  }
+  
+  @media (max-width: 1280px) {
+    ${MainHeader} {
+      padding: 16px 24px;
+      gap: 12px;
+    }
+    
+    ${KPISection} {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 16px 24px;
+    }
+    
+    ${KPICard} {
+      height: 72px;
+      padding: 14px;
+    }
+    
+    ${KPIValue} {
+      font-size: 20px;
+      line-height: 26px;
+    }
+    
+    ${KPILabel} {
+      font-size: 12px;
+    }
+  }
+  
   @media (max-width: 1200px) {
     ${KPISection} {
       grid-template-columns: repeat(3, 1fr);
@@ -214,7 +253,7 @@ const ResponsiveContainer = styled.div`
       flex-direction: column;
       align-items: flex-start;
       height: auto;
-      padding: 16px 0;
+      padding: 16px 20px;
       gap: 12px;
     }
     
@@ -231,7 +270,7 @@ const ResponsiveContainer = styled.div`
     ${KPISection} {
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
-      padding: 12px 0;
+      padding: 12px 20px;
     }
     
     ${KPICard} {

@@ -122,6 +122,37 @@ const TabDivider = styled.div`
 
 // 반응형 조정
 const ResponsiveContainer = styled.div`
+  @media (max-width: 1440px) {
+    ${TabBarContainer} {
+      padding: 0 20px;
+    }
+    
+    ${TabButton} {
+      padding: 0 14px;
+      font-size: 13px;
+    }
+  }
+  
+  @media (max-width: 1280px) {
+    ${TabBarContainer} {
+      padding: 0 16px;
+      height: 40px;
+    }
+    
+    ${TabButton} {
+      padding: 0 12px;
+      font-size: 13px;
+      height: 40px;
+      gap: 6px;
+    }
+    
+    ${Badge} {
+      min-width: 16px;
+      height: 16px;
+      font-size: 10px;
+    }
+  }
+  
   @media (max-width: 1024px) {
     ${TabBarContainer} {
       padding: 0 16px;
@@ -136,16 +167,24 @@ const ResponsiveContainer = styled.div`
   @media (max-width: 768px) {
     ${TabBarContainer} {
       padding: 0 12px;
+      height: 36px;
     }
     
     ${TabButton} {
       padding: 0 8px;
       font-size: 12px;
       gap: 4px;
+      height: 36px;
     }
     
     ${TabIcon} {
       font-size: 14px;
+    }
+    
+    ${Badge} {
+      min-width: 14px;
+      height: 14px;
+      font-size: 9px;
     }
   }
 `;

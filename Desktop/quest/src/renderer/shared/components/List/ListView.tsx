@@ -310,22 +310,38 @@ const PageButton = styled(PaginationButton)<{ active?: boolean }>`
   }
 `;
 
-// 빈 상태
-const EmptyState = styled.div`
-  padding: 60px 20px;
-  text-align: center;
-  color: #6b7280;
+// 빈 상태 - 전역 규칙 적용
+const EmptyStateContainer = styled.div`
+  /* 자동 높이 관리 */
+  min-height: auto;
+  padding: 0;
+  
+  /* 전역 클래스 적용 */
+  &.table-empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6b7280;
+    
+    @media (max-width: 768px) {
+      padding: 24px 16px;
+    }
+    
+    @media (max-width: 480px) {
+      padding: 16px 12px;
+    }
+  }
 `;
 
 const EmptyIcon = styled.div`
   font-size: 48px;
   margin-bottom: 16px;
-  opacity: 0.5;
+  opacity: 0.7;
 `;
 
 const EmptyMessage = styled.p`
   font-size: 16px;
   margin: 0;
+  color: #6b7280;
 `;
 
 const ListView: React.FC<ListViewProps> = ({
@@ -511,11 +527,11 @@ const ListView: React.FC<ListViewProps> = ({
           <TableBody>
             {currentItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length + (selectable ? 1 : 0)}>
-                  <EmptyState>
+                <TableCell colSpan={columns.length + (selectable ? 1 : 0)} className="table-empty-state">
+                  <EmptyStateContainer className="table-empty-state">
                     <EmptyIcon>📋</EmptyIcon>
                     <EmptyMessage>{emptyMessage}</EmptyMessage>
-                  </EmptyState>
+                  </EmptyStateContainer>
                 </TableCell>
               </TableRow>
             ) : (

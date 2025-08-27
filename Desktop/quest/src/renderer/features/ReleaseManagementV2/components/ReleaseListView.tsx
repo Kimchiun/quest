@@ -578,14 +578,25 @@ const ReleaseListView: React.FC<ReleaseListViewProps> = ({
         </Toolbar>
 
         {filteredReleases.length === 0 ? (
-          <EmptyState>
-            <EmptyIcon>📦</EmptyIcon>
-            <EmptyTitle>릴리즈가 없습니다</EmptyTitle>
-            <EmptyDescription>
-              {searchTerm ? '검색 결과가 없습니다.' : '새로운 릴리즈를 생성해보세요.'}
-            </EmptyDescription>
-
-          </EmptyState>
+          <div className="empty-state-container">
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              padding: '60px 20px',
+              textAlign: 'center',
+              color: '#6b7280'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.7 }}>📦</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: '#374151' }}>
+                릴리즈가 없습니다
+              </h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', maxWidth: '400px' }}>
+                {searchTerm ? '검색 결과가 없습니다.' : '새로운 릴리즈를 생성해보세요.'}
+              </p>
+            </div>
+          </div>
         ) : (
           <ReleaseGrid>
             {filteredReleases.map((release) => (

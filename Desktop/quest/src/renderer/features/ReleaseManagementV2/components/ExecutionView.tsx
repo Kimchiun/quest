@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useGetReleaseTestCasesQuery, useUpdateReleaseExecutionStatsMutation, useGetReleaseExecutionStatsQuery, useUpdateTestCaseStatusMutation, useGetTestFoldersQuery, useGetImportedFoldersQuery, useAddImportedFoldersMutation, useRemoveImportedFolderMutation } from '../../../services/api';
 
@@ -47,6 +48,7 @@ interface ExecutionViewProps {
   onTestCaseUpdate: (testCaseId: string, updates: Partial<TestCase>) => void;
   onBulkUpdate: (testCaseIds: string[], updates: Partial<TestCase>) => void;
   onAddTestCases?: (newTestCases: TestCase[]) => void;
+  onTestCasesLoad?: (testCases: TestCase[]) => void;
 }
 
 // 스타일 컴포넌트
@@ -55,7 +57,7 @@ const ExecutionContainer = styled.div`
   flex-direction: column;
   height: 100%;
   background: #f8fafc;
-  margin: -20px;
+  margin: 0; // 패딩 상쇄 제거
 `;
 
 // 상단 컨텍스트 바 - 흰색 컨셉 디자인
@@ -76,6 +78,18 @@ const TopContextBar = styled.div<{ isCollapsed: boolean }>`
     right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, #cbd5e1 50%, transparent 100%);
+  }
+  
+  @media (max-width: 1440px) {
+    padding: ${props => props.isCollapsed ? '14px 20px' : '20px 20px'};
+  }
+  
+  @media (max-width: 1280px) {
+    padding: ${props => props.isCollapsed ? '12px 16px' : '16px 16px'};
+  }
+  
+  @media (max-width: 768px) {
+    padding: ${props => props.isCollapsed ? '10px 12px' : '12px 12px'};
   }
 `;
 
@@ -614,6 +628,11 @@ const MainContent = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0; // flex 아이템이 축소될 수 있도록 함
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 // 좌측 필터 패널
@@ -625,6 +644,27 @@ const FilterPanel = styled.div<{ width: number }>`
   flex-direction: column;
   overflow-y: auto;
   position: relative;
+  height: 100%; // 전체 높이 사용
+  min-height: 0; // flex 축소 허용
+  
+  @media (max-width: 1440px) {
+    width: ${props => Math.max(props.width * 0.9, 200)}px;
+  }
+  
+  @media (max-width: 1280px) {
+    width: ${props => Math.max(props.width * 0.7, 180)}px;
+  }
+  
+  @media (max-width: 1024px) {
+    width: ${props => Math.max(props.width * 0.6, 160)}px;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
 `;
 
 // 좌측 패널 크기 조절 핸들
@@ -772,12 +812,27 @@ const TestListContainer = styled.div`
   display: flex;
   flex-direction: column;
   background: white;
+  min-width: 0; // flex 아이템이 축소될 수 있도록 함
+  height: 100%; // 전체 높이 사용
+  min-height: 0; // flex 축소 허용
 `;
 
 const TestListHeader = styled.div`
   padding: 16px 24px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
+  
+  @media (max-width: 1440px) {
+    padding: 14px 20px;
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 12px 16px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+  }
 `;
 
 const TestListTitle = styled.h3`
@@ -790,11 +845,13 @@ const TestListTitle = styled.h3`
 const TestTable = styled.div`
   flex: 1;
   overflow-y: auto;
+  min-height: 0; // flex 아이템이 축소될 수 있도록 함
+  height: 100%; // 전체 높이 사용
 `;
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 40px 80px 80px 1fr 120px 120px 100px 120px 100px;
+  grid-template-columns: 40px 80px 80px 1fr 120px 120px 100px 120px 120px;
   gap: 16px;
   padding: 12px 24px;
   background: #f8fafc;
@@ -805,20 +862,137 @@ const TableHeader = styled.div`
   position: sticky;
   top: 0;
   z-index: 10;
+  
+  @media (max-width: 1440px) {
+    grid-template-columns: 40px 70px 70px 1fr 100px 100px 90px 100px 90px;
+    gap: 12px;
+    padding: 10px 20px;
+    font-size: 11px;
+  }
+  
+  @media (max-width: 1280px) {
+    grid-template-columns: 35px 60px 60px 1fr 90px 90px 80px 90px 80px;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 11px;
+  }
+  
+  @media (max-width: 1024px) {
+    grid-template-columns: 30px 50px 50px 1fr 80px 80px 70px;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    display: none; // 모바일에서는 카드 형태로 변경
+  }
 `;
 
-const TableRow = styled.div<{ isSelected?: boolean }>`
+const TableRow = styled.div<{ isSelected?: boolean; status?: string }>`
   display: grid;
-  grid-template-columns: 40px 80px 80px 1fr 120px 120px 100px 120px 100px;
+  grid-template-columns: 40px 80px 80px 1fr 120px 120px 100px 120px 120px;
   gap: 16px;
   padding: 12px 24px;
   border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
-  transition: background 0.2s;
-  background: ${props => props.isSelected ? '#eff6ff' : 'white'};
+  transition: all 0.2s;
+  position: relative;
+  
+  /* 실행되지 않은 케이스 - 흐릿하게 표시 */
+  opacity: ${props => {
+    const isExecuted = props.status && props.status !== 'Not Run' && props.status !== 'Inactive';
+    return isExecuted ? 1 : 0.6;
+  }};
+  
+  /* 실행 상태에 따른 배경색 */
+  background: ${props => {
+    if (props.isSelected) return '#eff6ff';
+    const isExecuted = props.status && props.status !== 'Not Run' && props.status !== 'Inactive';
+    if (!isExecuted) return '#fafafa'; // 실행되지 않은 케이스는 회색 배경
+    
+    switch (props.status) {
+      case 'Pass': return '#f0fdf4';
+      case 'Fail': return '#fef2f2';
+      case 'Block': return '#fffbeb';
+      case 'Skip': return '#faf5ff';
+      default: return '#ffffff';
+    }
+  }};
+  
+  /* 실행된 케이스는 좌측에 상태 표시 바 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: ${props => {
+      if (props.isSelected) return '#3b82f6';
+      const isExecuted = props.status && props.status !== 'Not Run' && props.status !== 'Inactive';
+      if (!isExecuted) return 'transparent';
+      
+      switch (props.status) {
+        case 'Pass': return '#10b981';
+        case 'Fail': return '#ef4444';
+        case 'Block': return '#f59e0b';
+        case 'Skip': return '#8b5cf6';
+        default: return 'transparent';
+      }
+    }};
+  }
+  
+  /* 실행되지 않은 케이스에 점선 테두리 */
+  border: ${props => {
+    const isExecuted = props.status && props.status !== 'Not Run' && props.status !== 'Inactive';
+    return isExecuted ? 'none' : '1px dashed #d1d5db';
+  }};
   
   &:hover {
-    background: ${props => props.isSelected ? '#dbeafe' : '#f8fafc'};
+    opacity: 1;
+    background: ${props => {
+      if (props.isSelected) return '#dbeafe';
+      const isExecuted = props.status && props.status !== 'Not Run' && props.status !== 'Inactive';
+      if (!isExecuted) return '#f3f4f6';
+      
+      switch (props.status) {
+        case 'Pass': return '#ecfdf5';
+        case 'Fail': return '#fef2f2';
+        case 'Block': return '#fefce8';
+        case 'Skip': return '#f5f3ff';
+        default: return '#f8fafc';
+      }
+    }};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: 1440px) {
+    grid-template-columns: 40px 70px 70px 1fr 100px 100px 90px 100px 90px;
+    gap: 12px;
+    padding: 10px 20px;
+  }
+  
+  @media (max-width: 1280px) {
+    grid-template-columns: 35px 60px 60px 1fr 90px 90px 80px 90px 80px;
+    gap: 10px;
+    padding: 8px 16px;
+  }
+  
+  @media (max-width: 1024px) {
+    grid-template-columns: 30px 50px 50px 1fr 80px 80px 70px;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  @media (max-width: 768px) {
+    display: block; // 카드 형태로 변경
+    padding: 16px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -830,32 +1004,68 @@ const TableCell = styled.div`
 `;
 
 const StatusBadge = styled.span<{ status: string }>`
-  padding: 4px 8px;
-  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid transparent;
+  min-width: 80px;
+  justify-content: center;
   
   background: ${props => {
     switch (props.status) {
-      case 'Not Run': return '#f3f4f6';
-      case 'Pass': return '#d1fae5';
+      case 'Not Run': return '#f8fafc';
+      case 'Pass': return '#dcfce7';
       case 'Fail': return '#fee2e2';
       case 'Block': return '#fef3c7';
       case 'Skip': return '#f3e8ff';
-      default: return '#f3f4f6';
+      default: return '#f8fafc';
+    }
+  }};
+  
+  border-color: ${props => {
+    switch (props.status) {
+      case 'Not Run': return '#e2e8f0';
+      case 'Pass': return '#10b981';
+      case 'Fail': return '#ef4444';
+      case 'Block': return '#f59e0b';
+      case 'Skip': return '#8b5cf6';
+      default: return '#e2e8f0';
     }
   }};
   
   color: ${props => {
     switch (props.status) {
-      case 'Not Run': return '#6b7280';
+      case 'Not Run': return '#64748b';
       case 'Pass': return '#065f46';
       case 'Fail': return '#dc2626';
-      case 'Block': return '#d97706';
-      case 'Skip': return '#7c3aed';
-      default: return '#6b7280';
+      case 'Block': return '#92400e';
+      case 'Skip': return '#6b21a8';
+      default: return '#64748b';
     }
   }};
+  
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => {
+      switch (props.status) {
+        case 'Not Run': return '#94a3b8';
+        case 'Pass': return '#10b981';
+        case 'Fail': return '#ef4444';
+        case 'Block': return '#f59e0b';
+        case 'Skip': return '#8b5cf6';
+        default: return '#94a3b8';
+      }
+    }};
+  }
 `;
 
 const PriorityBadge = styled.span<{ priority: string }>`
@@ -885,29 +1095,247 @@ const PriorityBadge = styled.span<{ priority: string }>`
   }};
 `;
 
-const QuickActionButton = styled.button<{ action: string }>`
-  padding: 4px 8px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
+// 드롭다운 컨테이너
+const StatusDropdownContainer = styled.div`
+  position: relative;
+  display: inline-block;
+  z-index: 999999; /* 최상단 z-index */
+`;
+
+// 드롭다운 버튼
+const StatusDropdownButton = styled.button<{ isOpen: boolean; status?: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-right: 4px;
+  min-width: 110px;
+  justify-content: space-between;
   
+  /* 상태별 스타일 */
   background: ${props => {
-    switch (props.action) {
-      case 'pass': return '#10b981';
-      case 'fail': return '#ef4444';
-      case 'block': return '#f59e0b';
-      case 'skip': return '#8b5cf6';
-      default: return '#6b7280';
+    switch (props.status) {
+      case 'Pass': return '#f0fdf4';
+      case 'Fail': return '#fef2f2';
+      case 'Block': return '#fffbeb';
+      case 'Skip': return '#faf5ff';
+      case 'Not Run':
+      case 'Inactive':
+      default: return 'white';
     }
   }};
-  color: white;
+  
+  border-color: ${props => {
+    if (props.isOpen) return '#3b82f6';
+    switch (props.status) {
+      case 'Pass': return '#10b981';
+      case 'Fail': return '#ef4444';
+      case 'Block': return '#f59e0b';
+      case 'Skip': return '#8b5cf6';
+      case 'Not Run':
+      case 'Inactive':
+      default: return '#d1d5db';
+    }
+  }};
+  
+  color: ${props => {
+    switch (props.status) {
+      case 'Pass': return '#065f46';
+      case 'Fail': return '#dc2626';
+      case 'Block': return '#92400e';
+      case 'Skip': return '#6b21a8';
+      case 'Not Run':
+      case 'Inactive':
+      default: return '#374151';
+    }
+  }};
   
   &:hover {
-    opacity: 0.9;
+    border-color: #3b82f6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  ${props => props.isOpen && `
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  `}
+`;
+
+// 상태 표시 점
+const StatusDot = styled.span<{ status?: string }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${props => {
+    switch (props.status) {
+      case 'Pass': return '#10b981';
+      case 'Fail': return '#ef4444';
+      case 'Block': return '#f59e0b';
+      case 'Skip': return '#8b5cf6';
+      case 'Not Run':
+      case 'Inactive':
+      default: return '#94a3b8';
+    }
+  }};
+`;
+
+// 상태 텍스트
+const StatusText = styled.span`
+  flex: 1;
+  text-align: left;
+`;
+
+// 드롭다운 화살표
+const DropdownArrow = styled.span<{ isOpen: boolean }>`
+  font-size: 12px;
+  transition: transform 0.2s;
+  transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+`;
+
+// 상태 표시 정보 함수
+const getStatusDisplay = (status?: string) => {
+  switch (status) {
+    case 'Pass': return { text: 'Pass', color: '#10b981' };
+    case 'Fail': return { text: 'Fail', color: '#ef4444' };
+    case 'Block': return { text: 'Block', color: '#f59e0b' };
+    case 'Skip': return { text: 'Skip', color: '#8b5cf6' };
+    case 'Not Run': return { text: 'Not Run', color: '#94a3b8' };
+    case 'Inactive': return { text: 'Inactive', color: '#6b7280' };
+    case 'Untested': return { text: 'Untested', color: '#9ca3af' };
+    case '': 
+    case null:
+    case undefined:
+    default: return { text: 'Not Run', color: '#94a3b8' };
+  }
+};
+
+// Portal용 드롭다운 메뉴 - 절대 위치로 렌더링
+const PortalDropdownMenu = styled.div<{ rect: DOMRect; isOpen: boolean }>`
+  position: fixed;
+  top: ${props => props.rect.bottom + 4}px;
+  left: ${props => props.rect.left}px;
+  width: ${props => props.rect.width}px;
+  z-index: 99999999; /* 최상단 z-index */
+  min-width: 140px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  opacity: ${props => props.isOpen ? '1' : '0'};
+  transform: ${props => props.isOpen ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)'};
+  transition: all 0.15s ease-out;
+  transform-origin: top center;
+`;
+
+// 기존 드롭다운 메뉴 (Portal 사용하지 않을 때)
+const StatusDropdownMenu = styled.div<{ isOpen: boolean; position: 'top' | 'bottom' }>`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999999; /* 최상단 z-index */
+  min-width: 140px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  opacity: ${props => props.isOpen ? '1' : '0'};
+  transform: ${props => props.isOpen ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)'};
+  transition: all 0.15s ease-out;
+  transform-origin: top center;
+`;
+
+// 드롭다운 아이템
+const StatusDropdownItem = styled.button<{ status: string; isSelected?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: ${props => props.isSelected ? 
+    (() => {
+      switch (props.status) {
+        case 'Pass': return '#f0fdf4';
+        case 'Fail': return '#fef2f2';
+        case 'Block': return '#fffbeb';
+        case 'Skip': return '#faf5ff';
+        default: return '#f8fafc';
+      }
+    })() : 'white'
+  };
+  color: #374151;
+  font-size: 14px;
+  font-weight: ${props => props.isSelected ? '600' : '500'};
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+  position: relative;
+  z-index: 9999999; /* 최상단 z-index */
+  
+  /* 선택된 항목 표시 */
+  ${props => props.isSelected && `
+    &::after {
+      content: '✓';
+      position: absolute;
+      right: 12px;
+      color: ${(() => {
+        switch (props.status) {
+          case 'Pass': return '#10b981';
+          case 'Fail': return '#ef4444';
+          case 'Block': return '#f59e0b';
+          case 'Skip': return '#8b5cf6';
+          default: return '#94a3b8';
+        }
+      })()};
+      font-weight: bold;
+      font-size: 16px;
+    }
+  `}
+  
+  &:hover {
+    background: ${props => {
+      switch (props.status) {
+        case 'Pass': return '#f0fdf4';
+        case 'Fail': return '#fef2f2';
+        case 'Block': return '#fffbeb';
+        case 'Skip': return '#faf5ff';
+        default: return '#f8fafc';
+      }
+    }};
+  }
+  
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => {
+      switch (props.status) {
+        case 'Pass': return '#10b981';
+        case 'Fail': return '#ef4444';
+        case 'Block': return '#f59e0b';
+        case 'Skip': return '#8b5cf6';
+        default: return '#94a3b8';
+      }
+    }};
   }
 `;
 
@@ -922,6 +1350,27 @@ const DetailPanel = styled.div<{ isOpen: boolean; width: number }>`
   height: 100%;
   display: flex;
   flex-direction: column;
+  
+  @media (max-width: 1440px) {
+    width: ${props => props.isOpen ? `${Math.min(props.width, 320)}px` : '0'};
+  }
+  
+  @media (max-width: 1280px) {
+    width: ${props => props.isOpen ? `${Math.min(props.width, 280)}px` : '0'};
+  }
+  
+  @media (max-width: 1024px) {
+    width: ${props => props.isOpen ? `${Math.min(props.width, 250)}px` : '0'};
+  }
+  
+  @media (max-width: 768px) {
+    width: ${props => props.isOpen ? '100%' : '0'};
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const ResizeHandle = styled.div`
@@ -1215,7 +1664,7 @@ const HistoryChange = styled.div`
   color: #1e293b;
 `;
 
-const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], onTestCaseUpdate, onBulkUpdate, onAddTestCases }) => {
+const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], onTestCaseUpdate, onBulkUpdate, onAddTestCases, onTestCasesLoad }) => {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [selectedTestCases, setSelectedTestCases] = useState<string[]>([]);
   const [filters, setFilters] = useState({
@@ -1226,7 +1675,11 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     search: ''
   });
   const [isLive, setIsLive] = useState(true);
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+  const [dropdownPositions, setDropdownPositions] = useState<Record<string, 'top' | 'bottom'>>({});
+  const [dropdownRects, setDropdownRects] = useState<Record<string, DOMRect>>({});
   const [currentComment, setCurrentComment] = useState('');
+  const [localTestCases, setLocalTestCases] = useState<any[]>([]);
   
   // 폴더 가져오기 관련 상태
   const [showTestCaseModal, setShowTestCaseModal] = useState(false);
@@ -1236,15 +1689,30 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   const [selectedImportedFolder, setSelectedImportedFolder] = useState<any>(null);
   const [folderTestCases, setFolderTestCases] = useState<any[]>([]);
   const [importedFolders, setImportedFolders] = useState<any[]>([]);
-  const [detailPanelWidth, setDetailPanelWidth] = useState(400);
+  const [detailPanelWidth, setDetailPanelWidth] = useState(350); // 400 → 350으로 축소
   const [isResizing, setIsResizing] = useState(false);
-  const [leftPanelWidth, setLeftPanelWidth] = useState(280);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(240); // 280 → 240으로 축소
   const [isLeftPanelResizing, setIsLeftPanelResizing] = useState(false);
 
   // API 호출 - 자동으로 테스트케이스 조회
   const { data: apiTestCases = [], isLoading, error, refetch } = useGetReleaseTestCasesQuery(release.id, {
     pollingInterval: 5000, // 5초마다 자동 갱신
   });
+  
+  // API 응답 디버깅
+  console.log('=== API 응답 디버깅 ===');
+  console.log('Release ID:', release.id);
+  console.log('API 데이터:', apiTestCases);
+  console.log('API 로딩 상태:', isLoading);
+  console.log('API 에러:', error);
+  console.log('API 데이터 타입:', typeof apiTestCases);
+  console.log('API 데이터 배열 여부:', Array.isArray(apiTestCases));
+  console.log('API 데이터.data 존재 여부:', !!apiTestCases?.data);
+  console.log('API 데이터.data 배열 여부:', Array.isArray(apiTestCases?.data));
+  if (apiTestCases?.data && Array.isArray(apiTestCases.data)) {
+    console.log('API 데이터.data 길이:', apiTestCases.data.length);
+    console.log('첫 번째 아이템:', apiTestCases.data[0]);
+  }
   const [updateExecutionStats] = useUpdateReleaseExecutionStatsMutation();
   
   // 실행 통계 데이터 가져오기 - 실시간 업데이트
@@ -1383,11 +1851,100 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
 
   const progressPercentage = executionStats?.data?.passRate || 0;
 
-  // API에서 가져온 테스트케이스 사용 - 배열인지 확인
-  const allTestCases = Array.isArray(apiTestCases) ? apiTestCases : [];
+  // API에서 가져온 테스트케이스 사용 - API 응답 구조에 맞게 처리
+  const apiTestCasesArray = apiTestCases?.data && Array.isArray(apiTestCases.data) ? apiTestCases.data : [];
   
-  // 필터링된 테스트 케이스
-  const filteredTestCases = allTestCases.filter((testCase: any) => {
+  // 로컬 스토리지 키
+  const LOCAL_STORAGE_KEY = `testCases_release_${release.id}`;
+  
+  // 로컬 스토리지에서 저장된 테스트케이스 불러오기
+  const getStoredTestCases = () => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('로컬 스토리지에서 테스트케이스 불러오기 실패:', error);
+      return null;
+    }
+  };
+  
+  // 로컬 스토리지에 테스트케이스 저장하기
+  const saveTestCasesToStorage = (testCases: any[]) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(testCases));
+      console.log('테스트케이스를 로컬 스토리지에 저장했습니다:', testCases.length, '개');
+    } catch (error) {
+      console.error('로컬 스토리지에 테스트케이스 저장 실패:', error);
+    }
+  };
+
+  // 로컬 스토리지에서 저장된 테스트케이스만 사용 (더미 데이터 제거)
+  const storedTestCases = getStoredTestCases();
+  
+  // 더미 데이터가 저장되어 있으면 삭제 (한 번만 실행)
+  useEffect(() => {
+    if (storedTestCases && storedTestCases.length > 0) {
+      const isDummyData = storedTestCases.some((testCase: any) => 
+        testCase.id === '81' || testCase.id === '82' || 
+        testCase.name === 'Test Case 1' || testCase.name === 'Test Case 2'
+      );
+      if (isDummyData) {
+        console.log('더미 데이터 감지, 로컬 스토리지 정리 중...');
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
+    }
+  }, [LOCAL_STORAGE_KEY, storedTestCases]);
+  
+  // 더미 데이터 완전 제거 - API 데이터 또는 저장된 데이터만 사용
+  const dummyTestCases = [];
+  
+  // 데이터 우선순위: 1) 부모 props, 2) 저장된 데이터, 3) API 데이터
+  const allTestCases = testCases.length > 0 ? testCases : (storedTestCases && storedTestCases.length > 0 ? storedTestCases : apiTestCasesArray);
+  
+  console.log('=== 데이터 소스 확인 ===');
+  console.log('Props testCases:', testCases.length);
+  console.log('Stored testCases:', storedTestCases ? storedTestCases.length : 0);
+  console.log('API testCases:', apiTestCasesArray.length);
+  console.log('Final allTestCases:', allTestCases.length);
+  
+  // API 데이터가 변경될 때 로컬 상태 업데이트 (부모 데이터가 없을 때만)
+  useEffect(() => {
+    if (testCases.length === 0) {
+      if (storedTestCases && storedTestCases.length > 0) {
+        console.log('저장된 데이터 사용, 부모에게 전달:', storedTestCases.length, '개 테스트케이스');
+        setLocalTestCases(storedTestCases);
+        // 부모 컴포넌트에 저장된 데이터 전달
+        if (onTestCasesLoad) {
+          onTestCasesLoad(storedTestCases);
+        }
+      } else if (apiTestCasesArray.length > 0) {
+        console.log('API 데이터 업데이트, 부모에게 전달:', apiTestCasesArray.length, '개 테스트케이스');
+        setLocalTestCases(apiTestCasesArray);
+        // 부모 컴포넌트에 API 데이터 전달
+        if (onTestCasesLoad) {
+          onTestCasesLoad(apiTestCasesArray);
+        }
+      }
+    } else if (testCases.length > 0) {
+      console.log('부모 props 데이터 사용:', testCases.length, '개 테스트케이스');
+      setLocalTestCases(testCases);
+    }
+  }, [testCases, apiTestCasesArray, storedTestCases, onTestCasesLoad]);
+  
+  // 실제 렌더링에 사용할 테스트 케이스 (부모 props 우선)
+  const displayTestCases = testCases.length > 0 ? testCases : (localTestCases.length > 0 ? localTestCases : allTestCases);
+  
+  // 디버깅: 렌더링할 테스트 케이스 상태 확인
+  console.log('렌더링 테스트케이스:', {
+    propsTestCasesCount: testCases.length,
+    localTestCasesCount: localTestCases.length,
+    apiTestCasesCount: apiTestCasesArray.length,
+    displayTestCasesCount: displayTestCases.length,
+    firstTestCaseStatus: displayTestCases[0]?.status
+  });
+  
+  // 필터링된 테스트 케이스 - 로컬 상태 우선 사용
+  const filteredTestCases = displayTestCases.filter((testCase: any) => {
     if (filters.status && testCase.status !== filters.status) return false;
     if (filters.priority && testCase.priority !== filters.priority) return false;
     if (filters.suite && testCase.suite !== filters.suite) return false;
@@ -1417,6 +1974,47 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
   // API 훅 추가
   const [updateTestCaseStatus] = useUpdateTestCaseStatusMutation();
 
+  // 드롭다운 위치 계산 함수 - 임시로 항상 아래쪽으로 열리도록 설정
+  const calculateDropdownPosition = useCallback((testCaseId: string, buttonElement: HTMLElement): 'top' | 'bottom' => {
+    // 임시로 항상 아래쪽으로 열리도록 설정 (클릭 문제 해결을 위해)
+    console.log('드롭다운 위치: 항상 아래쪽으로 열림 (임시 설정)');
+    return 'bottom';
+  }, []);
+
+  // 드롭다운 토글 처리
+  const toggleDropdown = useCallback((testCaseId: string, buttonElement?: HTMLElement) => {
+    const isCurrentlyOpen = openDropdowns[testCaseId];
+    
+    if (!isCurrentlyOpen && buttonElement) {
+      // 드롭다운을 열 때 위치 계산 및 저장
+      const rect = buttonElement.getBoundingClientRect();
+      const position = calculateDropdownPosition(testCaseId, buttonElement);
+      
+      setDropdownRects(prev => ({
+        ...prev,
+        [testCaseId]: rect
+      }));
+      
+      setDropdownPositions(prev => ({
+        ...prev,
+        [testCaseId]: position
+      }));
+    }
+    
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [testCaseId]: !prev[testCaseId]
+    }));
+  }, [openDropdowns, calculateDropdownPosition]);
+
+  // 드롭다운 닫기
+  const closeDropdown = useCallback((testCaseId: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [testCaseId]: false
+    }));
+  }, []);
+
   // 상태 변경 처리
   const handleStatusChange = useCallback(async (testCaseId: string, newStatus: TestCase['status'], comment?: string) => {
     try {
@@ -1425,21 +2023,23 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       console.log('새로운 상태:', newStatus);
       console.log('댓글:', comment);
       
-      // API 호출로 상태 변경
-      const result = await updateTestCaseStatus({
-        releaseId: release.id,
-        testCaseId,
-        status: newStatus,
-        comment: comment || currentComment
-      }).unwrap();
+      // 드롭다운 먼저 닫기 (즉시 UI 반응)
+      closeDropdown(testCaseId);
       
-      console.log('API 호출 성공:', result);
-
-      // 로컬 상태 업데이트
+      // 부모 컴포넌트 상태 업데이트 (즉시 UI 반영)
       onTestCaseUpdate(testCaseId, { 
         status: newStatus,
         lastUpdated: new Date().toISOString()
       });
+      
+      // 로컬 스토리지에도 즉시 반영
+      const currentTestCases = testCases.length > 0 ? testCases : (storedTestCases && storedTestCases.length > 0 ? storedTestCases : apiTestCasesArray);
+      const updatedTestCases = currentTestCases.map((testCase: any) => 
+        testCase.id === testCaseId 
+          ? { ...testCase, status: newStatus, lastUpdated: new Date().toISOString() }
+          : testCase
+      );
+      saveTestCasesToStorage(updatedTestCases);
       
       // 선택된 테스트케이스가 변경된 경우 상태 업데이트
       if (selectedTestCase?.id === testCaseId) {
@@ -1450,12 +2050,36 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
         });
       }
       
-      // 댓글 초기화
-      setCurrentComment('');
-      
-      // 데이터 새로고침
+      // API 호출로 상태 변경 (백그라운드)
+      try {
+        const result = await updateTestCaseStatus({
+          releaseId: release.id,
+          testCaseId,
+          status: newStatus,
+          comment: comment || currentComment
+        }).unwrap();
+        
+        console.log('API 호출 성공:', result);
+        
+        // 데이터 새로고침 (백그라운드)
       await refetch();
       await refetchStats();
+      } catch (apiError) {
+        console.error('API 호출 실패, 상태 되돌리기:', apiError);
+        // API 실패 시 부모 컴포넌트 상태 되돌리기
+        const originalTestCase = allTestCases.find((tc: any) => tc.id === testCaseId);
+        if (originalTestCase) {
+          onTestCaseUpdate(testCaseId, { 
+            status: originalTestCase.status,
+            lastUpdated: new Date().toISOString()
+          });
+        }
+        alert(`상태 변경에 실패했습니다: ${apiError}`);
+        return;
+      }
+      
+      // 댓글 초기화
+      setCurrentComment('');
 
       console.log('=== 상태 변경 완료 ===');
     } catch (error) {
@@ -1464,7 +2088,82 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       // 에러 처리 (필요시 토스트 메시지 표시)
       alert(`상태 변경에 실패했습니다: ${error}`);
     }
-  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase, currentComment, refetch, refetchStats]);
+  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase, currentComment, refetch, refetchStats, closeDropdown, allTestCases]);
+
+  // Portal 드롭다운 렌더링 함수
+  const renderPortalDropdowns = () => {
+    return Object.entries(openDropdowns)
+      .filter(([_, isOpen]) => isOpen)
+      .map(([testCaseId, isOpen]) => {
+        const rect = dropdownRects[testCaseId];
+        if (!rect) return null;
+
+        return createPortal(
+          <PortalDropdownMenu
+            key={testCaseId}
+            rect={rect}
+            isOpen={isOpen}
+          >
+            <StatusDropdownItem
+              status="Pass"
+              isSelected={displayTestCases.find(tc => tc.id === testCaseId)?.status === 'Pass'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(testCaseId, 'Pass');
+              }}
+            >
+              Pass
+            </StatusDropdownItem>
+            <StatusDropdownItem
+              status="Fail"
+              isSelected={displayTestCases.find(tc => tc.id === testCaseId)?.status === 'Fail'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(testCaseId, 'Fail');
+              }}
+            >
+              Fail
+            </StatusDropdownItem>
+            <StatusDropdownItem
+              status="Block"
+              isSelected={displayTestCases.find(tc => tc.id === testCaseId)?.status === 'Block'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(testCaseId, 'Block');
+              }}
+            >
+              Block
+            </StatusDropdownItem>
+            <StatusDropdownItem
+              status="Skip"
+              isSelected={displayTestCases.find(tc => tc.id === testCaseId)?.status === 'Skip'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(testCaseId, 'Skip');
+              }}
+            >
+              Skip
+            </StatusDropdownItem>
+          </PortalDropdownMenu>,
+          document.body
+        );
+      });
+  };
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('[data-dropdown]')) {
+        setOpenDropdowns({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 일괄 상태 변경
   const handleBulkStatusChange = useCallback((status: TestCase['status']) => {
@@ -1935,7 +2634,18 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                 </FolderList>
               </div>
             ) : (
-              <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+              <div style={{ 
+                padding: '20px', 
+                textAlign: 'center', 
+                color: '#6b7280',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                minHeight: '400px',
+                flex: '1'
+              }}>
                 가져온 테스트케이스가 없습니다.
                 <br />
                 <button 
@@ -2034,6 +2744,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
               <TableRow
                 key={testCase.id}
                 isSelected={selectedTestCases.includes(testCase.id)}
+                status={testCase.status}
                 onClick={() => handleTestCaseClick(testCase)}
               >
                 <TableCell>
@@ -2069,24 +2780,32 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                   {testCase.lastUpdated ? new Date(testCase.lastUpdated).toLocaleDateString() : '-'}
                 </TableCell>
                 <TableCell>
-                  <QuickActionButton
-                    action="pass"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStatusChange(testCase.id, 'Pass');
-                    }}
-                  >
-                    Pass
-                  </QuickActionButton>
-                  <QuickActionButton
-                    action="fail"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStatusChange(testCase.id, 'Fail');
-                    }}
-                  >
-                    Fail
-                  </QuickActionButton>
+                  <StatusDropdownContainer data-dropdown>
+                    <StatusDropdownButton
+                      isOpen={openDropdowns[testCase.id] || false}
+                      status={testCase.status}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDropdown(testCase.id, e.currentTarget);
+                      }}
+                    >
+                      <StatusDot status={testCase.status} />
+                      <StatusText>
+                        {(() => {
+                          const display = getStatusDisplay(testCase.status);
+                          console.log(`테스트케이스 ${testCase.id} 상태 표시:`, { 
+                            status: testCase.status, 
+                            displayText: display.text 
+                          });
+                          return display.text;
+                        })()}
+                      </StatusText>
+                      <DropdownArrow isOpen={openDropdowns[testCase.id] || false}>
+                        ▼
+                      </DropdownArrow>
+                    </StatusDropdownButton>
+                    {/* Portal 드롭다운은 별도로 렌더링됨 */}
+                  </StatusDropdownContainer>
                 </TableCell>
               </TableRow>
             ))}
@@ -2309,6 +3028,9 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
           </ModalContent>
         </ModalOverlay>
       )}
+
+      {/* Portal 드롭다운 렌더링 */}
+      {renderPortalDropdowns()}
     </ExecutionContainer>
   );
 };

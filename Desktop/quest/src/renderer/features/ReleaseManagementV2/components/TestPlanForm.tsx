@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import { theme } from '../../../shared/theme';
+
+// Global gtag type declaration
+declare global {
+  interface Window {
+    gtag?: (
+      command: string,
+      action: string,
+      parameters?: Record<string, any>
+    ) => void;
+  }
+}
 
 interface TestPlanFormProps {
   onSave?: (data: any) => void;
@@ -7,85 +19,252 @@ interface TestPlanFormProps {
   onExport?: () => void;
 }
 
+// Animations
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+`;
+
+const float = keyframes`
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+`;
+
 // Modern Container
 const Container = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px 60px;
-  background: white;
-  min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: ${theme.color.surface.primary};
+  min-height: auto;
+  font-family: ${theme.typography.fontFamily.primary};
   line-height: 1.6;
+`;
+
+// Inner content wrapper
+const ContentWrapper = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  animation: ${fadeInUp} 0.6s ease-out;
+  
+  @media (max-width: 1440px) {
+    padding: 0 32px;
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 0 24px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0 16px;
+  }
 `;
 
 // Header Section
 const Header = styled.div`
-  background: white;
-  padding: 0 0 40px 0;
-  margin-bottom: 40px;
-  border-bottom: 2px solid #e9ecef;
+  padding: 24px 40px;
+  margin: 0 -40px 24px;
+  background: ${theme.color.surface.secondary};
+  border-bottom: 1px solid ${theme.color.border.primary};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  @media (max-width: 1440px) {
+    padding: 20px 32px;
+    margin: 0 -32px 20px;
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 16px 24px;
+    margin: 0 -24px 16px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 16px 20px;
+    margin: 0 -20px 16px;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+`;
+
+const HeaderContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  @media (max-width: 1280px) {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 8px;
+  
+  @media (max-width: 1280px) {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
 `;
 
 const Title = styled.h1`
-  font-size: 32px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  font-weight: 600;
+  color: ${theme.color.text.primary};
+  margin: 0 0 8px 0;
   text-align: center;
 `;
 
 const Subtitle = styled.p`
-  font-size: 18px;
-  color: #7f8c8d;
-  margin: 0 0 32px 0;
-  line-height: 1.5;
+  font-size: 14px;
+  color: ${theme.color.text.secondary};
+  margin: 0;
   text-align: center;
+  font-weight: 400;
 `;
 
 const TitleInput = styled.input`
   width: 100%;
-  font-size: 24px;
-  font-weight: 600;
-  padding: 16px 0;
-  border: none;
-  border-bottom: 2px solid #e9ecef;
-  background: white;
-  color: #2c3e50;
+  max-width: 600px;
+  font-size: 20px;
+  font-weight: 500;
+  padding: 16px 24px;
+  border: 1px solid ${theme.color.border.primary};
+  border-radius: 8px;
+  background: ${theme.color.surface.primary};
+  color: ${theme.color.text.primary};
   text-align: center;
   transition: all 0.2s ease;
+  margin: 20px auto 0;
+  display: block;
   
   &:focus {
     outline: none;
-    border-bottom-color: #3498db;
+    border-color: ${theme.color.primary[500]};
+    box-shadow: 0 0 0 3px ${theme.color.primary[100]};
   }
   
   &::placeholder {
-    color: #bdc3c7;
-    font-weight: 400;
+    color: ${theme.color.text.tertiary};
+  }
+  
+  @media (max-width: 1440px) {
+    max-width: 500px;
+    font-size: 19px;
+    padding: 15px 22px;
+  }
+  
+  @media (max-width: 1280px) {
+    max-width: 100%;
+    font-size: 18px;
+    padding: 14px 20px;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    font-size: 18px;
+    padding: 14px 20px;
   }
 `;
 
 // Content Section
 const ContentGrid = styled.div`
   display: grid;
-  gap: 40px;
+  gap: 24px;
   grid-template-columns: 1fr;
+  padding-bottom: 24px;
 `;
 
 const Card = styled.div`
-  background: white;
-  padding: 0;
-  margin-bottom: 32px;
+  background: ${theme.color.surface.primary};
+  padding: 24px;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid ${theme.color.border.primary};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: ${theme.color.border.secondary};
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  
+  @media (max-width: 1440px) {
+    padding: 20px;
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 16px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+    border-radius: 8px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ecf0f1;
+  font-size: 18px;
+  font-weight: 600;
+  color: ${theme.color.text.primary};
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${theme.color.border.primary};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &::before {
+    content: '';
+    width: 3px;
+    height: 18px;
+    background: ${theme.color.primary[500]};
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
 `;
 
 const SectionIcon = styled.div`
@@ -94,48 +273,74 @@ const SectionIcon = styled.div`
 
 const TextArea = styled.textarea`
   width: 100%;
-  min-height: 150px;
-  padding: 20px 0;
-  border: none;
-  border-bottom: 1px solid #ecf0f1;
-  background: white;
-  color: #2c3e50;
-  font-size: 16px;
-  line-height: 1.7;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px solid ${theme.color.border.primary};
+  border-radius: 8px;
+  background: ${theme.color.surface.primary};
+  color: ${theme.color.text.primary};
+  font-size: 14px;
+  line-height: 1.6;
   resize: vertical;
   font-family: inherit;
   transition: all 0.2s ease;
   
   &:focus {
     outline: none;
-    border-bottom-color: #3498db;
+    border-color: ${theme.color.primary[500]};
+    box-shadow: 0 0 0 3px ${theme.color.primary[100]};
+  }
+  
+  &:hover:not(:focus) {
+    border-color: ${theme.color.border.secondary};
   }
   
   &::placeholder {
-    color: #bdc3c7;
-    font-style: italic;
+    color: ${theme.color.text.tertiary};
+    font-style: normal;
   }
 `;
 
 // Table Styles
 const TableCard = styled(Card)`
   overflow: hidden;
+  padding: 0;
+`;
+
+const TableWrapper = styled.div`
+  padding: 24px;
 `;
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 16px;
+  background: ${theme.color.surface.primary};
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid ${theme.color.border.primary};
+  
+  @media (max-width: 1280px) {
+    font-size: 14px;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 13px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 `;
   
 const TableHeader = styled.th`
-  background: #f8f9fa;
-  padding: 16px 20px;
-    text-align: left;
+  background: ${theme.color.surface.secondary};
+  padding: 12px 16px;
+  text-align: left;
   font-weight: 600;
-    font-size: 14px;
-  color: #1a1a1a;
-  border-bottom: 2px solid #e9ecef;
+  font-size: 13px;
+  color: ${theme.color.text.primary};
+  border-bottom: 1px solid ${theme.color.border.primary};
   
   &:first-child {
     border-radius: 8px 0 0 0;
@@ -147,24 +352,44 @@ const TableHeader = styled.th`
 `;
 
 const TableCell = styled.td`
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  border-bottom: 1px solid ${theme.color.border.tertiary};
   vertical-align: top;
+  font-size: 14px;
+  
+  tr:last-child & {
+    border-bottom: none;
+  }
 `;
 
 const TableInput = styled.input`
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid ${theme.color.border.primary};
   border-radius: 6px;
-  background: white;
-  font-size: 14px;
+  background: ${theme.color.surface.primary};
+  font-size: 13px;
   transition: all 0.2s ease;
   
   &:focus {
     outline: none;
-    border-color: #0066ff;
-    box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.1);
+    border-color: ${theme.color.primary[500]};
+    box-shadow: 0 0 0 3px ${theme.color.primary[100]};
+  }
+  
+  &:hover:not(:focus) {
+    border-color: ${theme.color.border.secondary};
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 120px;
   }
 `;
 
@@ -172,25 +397,121 @@ const TableTextArea = styled.textarea`
   width: 100%;
   min-height: 60px;
   padding: 8px 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid ${theme.color.border.primary};
   border-radius: 6px;
-  background: white;
-  font-size: 14px;
+  background: ${theme.color.surface.primary};
+  font-size: 13px;
   font-family: inherit;
   resize: vertical;
+  line-height: 1.4;
   transition: all 0.2s ease;
   
   &:focus {
     outline: none;
-    border-color: #0066ff;
-    box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.1);
+    border-color: ${theme.color.primary[500]};
+    box-shadow: 0 0 0 3px ${theme.color.primary[100]};
+  }
+  
+  &:hover:not(:focus) {
+    border-color: ${theme.color.border.secondary};
+  }
+  
+  @media (max-width: 1280px) {
+    min-height: 50px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  @media (max-width: 768px) {
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 150px;
   }
 `;
 
 const AddButton = styled.button`
-  margin-top: 16px;
+  margin: 16px 24px 0;
+  padding: 10px 16px;
+  background: ${theme.color.primary[500]};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  &::before {
+    content: '+';
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  &:hover {
+    background: ${theme.color.primary[600]};
+  }
+  
+  &:active {
+    background: ${theme.color.primary[700]};
+  }
+`;
+
+const RemoveButton = styled.button`
+  padding: 6px 12px;
+  background: ${theme.color.danger[500]};
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${theme.color.danger[600]};
+  }
+  
+  &:active {
+    background: ${theme.color.danger[700]};
+  }
+`;
+
+// Action Buttons
+const ActionBar = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 24px 0 0;
+  padding: 20px 0;
+  border-top: 1px solid ${theme.color.border.primary};
+  
+  @media (max-width: 1280px) {
+    margin: 20px 0 0;
+    padding: 16px 0;
+    gap: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    margin: 16px 0 0;
+    padding: 16px 0;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+  }
+`;
+
+const SaveButton = styled.button`
   padding: 12px 24px;
-  background: #0066ff;
+  background: ${theme.color.success[500]};
   color: white;
   border: none;
   border-radius: 8px;
@@ -198,152 +519,296 @@ const AddButton = styled.button`
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 100px;
   
   &:hover {
-    background: #0052cc;
-    transform: translateY(-1px);
+    background: ${theme.color.success[600]};
   }
   
   &:active {
-    transform: translateY(0);
-  }
-`;
-
-const RemoveButton = styled.button`
-  padding: 6px 12px;
-  background: #ff4757;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: #ff3742;
-  }
-`;
-
-// Action Buttons
-const ActionBar = styled.div`
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-top: 60px;
-  padding: 40px 0;
-  border-top: 2px solid #ecf0f1;
-`;
-
-const SaveButton = styled.button`
-  padding: 14px 28px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 120px;
-  
-  &:hover {
-    background: #2980b9;
-    transform: translateY(-1px);
+    background: ${theme.color.success[700]};
   }
   
-  &:active {
-    transform: translateY(0);
+  @media (max-width: 1280px) {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 90px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 18px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 200px;
   }
 `;
 
 const PreviewButton = styled.button`
-  padding: 14px 28px;
-  background: white;
-  color: #7f8c8d;
-  border: 2px solid #bdc3c7;
-  border-radius: 6px;
+  padding: 12px 24px;
+  background: ${theme.color.surface.primary};
+  color: ${theme.color.text.secondary};
+  border: 1px solid ${theme.color.border.secondary};
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  min-width: 100px;
   
   &:hover {
-    background: #ecf0f1;
-    color: #2c3e50;
-    transform: translateY(-1px);
+    background: ${theme.color.surface.secondary};
+    color: ${theme.color.text.primary};
+    border-color: ${theme.color.primary[400]};
   }
   
-  &:active {
-    transform: translateY(0);
+  @media (max-width: 1280px) {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 90px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 18px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 200px;
   }
 `;
 
 const EditButton = styled.button`
-  padding: 14px 28px;
-  background: #3498db;
+  padding: 12px 24px;
+  background: ${theme.color.primary[500]};
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  min-width: 100px;
   
   &:hover {
-    background: #2980b9;
-    transform: translateY(-1px);
+    background: ${theme.color.primary[600]};
   }
   
   &:active {
-    transform: translateY(0);
+    background: ${theme.color.primary[700]};
+  }
+  
+  @media (max-width: 1280px) {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 90px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 18px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 200px;
   }
 `;
 
 const CancelButton = styled.button`
-  padding: 14px 28px;
-  background: #95a5a6;
+  padding: 12px 24px;
+  background: ${theme.color.secondary[400]};
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  min-width: 100px;
   
   &:hover {
-    background: #7f8c8d;
-    transform: translateY(-1px);
+    background: ${theme.color.secondary[500]};
   }
   
   &:active {
-    transform: translateY(0);
+    background: ${theme.color.secondary[600]};
   }
+  
+  @media (max-width: 1280px) {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 90px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 18px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 200px;
+  }
+`;
+
+// Kebab Menu Button (3 dots)
+const KebabButton = styled.button`
+  padding: 8px;
+  background: transparent;
+  color: ${theme.color.text.secondary};
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  position: relative;
+  
+  &:hover:not(:disabled) {
+    background: ${theme.color.surface.tertiary};
+    color: ${theme.color.text.primary};
+  }
+  
+  &:active:not(:disabled) {
+    background: ${theme.color.surface.quaternary};
+  }
+  
+  &:disabled {
+    color: ${theme.color.text.disabled};
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px ${theme.color.primary[100]};
+  }
+  
+  &::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 
+      0 -8px 0 currentColor,
+      0 8px 0 currentColor;
+  }
+  
+  @media (max-width: 480px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
+
+// Dropdown Menu
+const DropdownMenu = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: ${theme.color.surface.primary};
+  border: 1px solid ${theme.color.border.primary};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 120px;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-8px)'};
+  transition: all 0.2s ease;
+  margin-top: 4px;
+`;
+
+const DropdownItem = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: ${theme.color.text.primary};
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+  
+  &:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+  
+  &:only-child {
+    border-radius: 8px;
+  }
+  
+  &:hover {
+    background: ${theme.color.surface.secondary};
+  }
+  
+  &:focus {
+    outline: none;
+    background: ${theme.color.surface.secondary};
+  }
+`;
+
+const KebabMenuContainer = styled.div`
+  position: relative;
 `;
 
 // 읽기 모드용 컴포넌트들
 const ReadOnlyText = styled.div`
-  padding: 20px 0;
-  background: white;
-  border-bottom: 1px solid #ecf0f1;
-  color: #2c3e50;
-  font-size: 16px;
-  line-height: 1.7;
+  padding: 16px;
+  background: ${theme.color.surface.secondary};
+  border-radius: 8px;
+  color: ${theme.color.text.primary};
+  font-size: 14px;
+  line-height: 1.6;
   white-space: pre-wrap;
-  min-height: 150px;
+  min-height: 120px;
+  border: 1px solid ${theme.color.border.tertiary};
 `;
 
 const ReadOnlyTitle = styled.div`
-  font-size: 24px;
-  font-weight: 600;
-  padding: 16px 0;
-  background: white;
-  border-bottom: 2px solid #e9ecef;
-  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 500;
+  padding: 16px 24px;
+  background: ${theme.color.surface.primary};
+  border: 1px solid ${theme.color.border.primary};
+  border-radius: 8px;
+  color: ${theme.color.text.primary};
   text-align: center;
+  margin: 20px auto 0;
+  max-width: 600px;
+  
+  @media (max-width: 1440px) {
+    max-width: 500px;
+    font-size: 19px;
+    padding: 15px 22px;
+  }
+  
+  @media (max-width: 1280px) {
+    max-width: 100%;
+    font-size: 18px;
+    padding: 14px 20px;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    font-size: 18px;
+    padding: 14px 20px;
+  }
 `;
 
 const ReadOnlyTable = styled.div`
@@ -396,6 +861,7 @@ const ReadOnlyTableCell = styled.div`
 
 const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport }) => {
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isKebabMenuOpen, setIsKebabMenuOpen] = useState(false);
   
   // 컴포넌트 마운트 시 localStorage 클리어
   useEffect(() => {
@@ -429,6 +895,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
           responsibilities: '전체 테스트 진행 관리 및 품질 보증'
         }
       ],
+
       riskFactors: [
         {
           riskName: '일정 지연',
@@ -437,6 +904,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
           mitigation: '버퍼 시간 확보 및 우선순위 조정'
         }
       ],
+
       referenceDocuments: [
         {
           title: '요구사항 문서',
@@ -502,7 +970,15 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
     setIsEditMode(false);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (source: 'top' | 'bottom' = 'bottom') => {
+    // 추적 이벤트 전송
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', source === 'top' ? 'click_edit_top' : 'click_edit_bottom', {
+        event_category: 'test_plan',
+        event_label: 'edit_mode_enter'
+      });
+    }
+    
     setIsEditMode(true);
   };
 
@@ -511,24 +987,72 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
     // 필요시 원래 데이터로 복원 로직 추가
   };
 
+  const toggleKebabMenu = () => {
+    setIsKebabMenuOpen(!isKebabMenuOpen);
+  };
+
+  const handleKebabMenuEdit = () => {
+    handleEdit('top');
+    setIsKebabMenuOpen(false);
+  };
+
+  // 케밥 메뉴 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isKebabMenuOpen && !target.closest('[data-kebab-menu]')) {
+        setIsKebabMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isKebabMenuOpen]);
+
   return (
     <Container>
-            <Header>
-        <Title>테스트 계획</Title>
-        <Subtitle>프로젝트의 테스트 계획을 체계적으로 작성하고 관리하세요</Subtitle>
-          {isEditMode ? (
-          <TitleInput
-              type="text"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-            placeholder="테스트 계획 제목을 입력해주세요"
-            />
-          ) : (
-          <ReadOnlyTitle>
-            {formData.title || '제목을 입력해주세요'}
-          </ReadOnlyTitle>
-        )}
-      </Header>
+      <ContentWrapper>
+        <Header>
+          <HeaderContent>
+            {isEditMode ? (
+              <TitleInput
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                placeholder="테스트 계획 제목을 입력해주세요"
+                aria-label="테스트 계획 제목 입력"
+              />
+            ) : (
+              <ReadOnlyTitle>
+                {formData.title || '제목을 입력해주세요'}
+              </ReadOnlyTitle>
+            )}
+          </HeaderContent>
+          
+          {!isEditMode && (
+            <HeaderActions>
+              <KebabMenuContainer data-kebab-menu>
+                <KebabButton
+                  onClick={toggleKebabMenu}
+                  aria-label="테스트 계획 메뉴 열기"
+                  aria-expanded={isKebabMenuOpen}
+                  aria-haspopup="menu"
+                />
+                <DropdownMenu isOpen={isKebabMenuOpen} role="menu">
+                  <DropdownItem
+                    onClick={handleKebabMenuEdit}
+                    role="menuitem"
+                    aria-label="테스트 계획 수정하기"
+                  >
+                    수정
+                  </DropdownItem>
+                </DropdownMenu>
+              </KebabMenuContainer>
+            </HeaderActions>
+          )}
+        </Header>
 
       <ContentGrid>
                 {/* 프로젝트 개요 */}
@@ -571,10 +1095,11 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
 
         {/* 일정 */}
         <TableCard>
-          <SectionTitle>
-            <SectionIcon />
-            일정
-          </SectionTitle>
+          <TableWrapper>
+            <SectionTitle>
+              <SectionIcon />
+              일정
+            </SectionTitle>
             <Table>
               <thead>
                 <tr>
@@ -583,7 +1108,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <TableHeader>종료일</TableHeader>
                 <TableHeader>작업</TableHeader>
                 <TableHeader>테스트 방법</TableHeader>
-                <TableHeader>작업</TableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -624,13 +1148,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                       placeholder="테스트 방법"
                     />
                   </TableCell>
-                  <TableCell>
-                    {isEditMode && formData.schedule.length > 1 && (
-                      <RemoveButton onClick={() => removeArrayItem('schedule', index)}>
-                        삭제
-                      </RemoveButton>
-                    )}
-                  </TableCell>
                   </tr>
                 ))}
               </tbody>
@@ -646,14 +1163,16 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
               일정 추가
             </AddButton>
           )}
+          </TableWrapper>
         </TableCard>
 
         {/* 담당자 */}
         <TableCard>
-          <SectionTitle>
-            <SectionIcon />
-            담당자
-          </SectionTitle>
+          <TableWrapper>
+            <SectionTitle>
+              <SectionIcon />
+              담당자
+            </SectionTitle>
             <Table>
               <thead>
                 <tr>
@@ -661,7 +1180,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <TableHeader>이름</TableHeader>
                 <TableHeader>이메일</TableHeader>
                 <TableHeader>책임사항</TableHeader>
-                <TableHeader>작업</TableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -696,13 +1214,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                       placeholder="책임사항"
                     />
                   </TableCell>
-                  <TableCell>
-                    {formData.responsibleParties.length > 1 && (
-                      <RemoveButton onClick={() => removeArrayItem('responsibleParties', index)}>
-                        삭제
-                      </RemoveButton>
-                    )}
-                  </TableCell>
                   </tr>
                 ))}
               </tbody>
@@ -715,14 +1226,16 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
           })}>
             담당자 추가
           </AddButton>
+          </TableWrapper>
         </TableCard>
 
         {/* 위험 요소 */}
         <TableCard>
-          <SectionTitle>
-            <SectionIcon />
-            위험 요소
-          </SectionTitle>
+          <TableWrapper>
+            <SectionTitle>
+              <SectionIcon />
+              위험 요소
+            </SectionTitle>
             <Table>
               <thead>
                 <tr>
@@ -730,7 +1243,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                 <TableHeader>영향도</TableHeader>
                 <TableHeader>발생 확률</TableHeader>
                 <TableHeader>대응 방안</TableHeader>
-                <TableHeader>작업</TableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -764,13 +1276,6 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
                       placeholder="대응 방안"
                     />
                   </TableCell>
-                  <TableCell>
-                    {formData.riskFactors.length > 1 && (
-                      <RemoveButton onClick={() => removeArrayItem('riskFactors', index)}>
-                        삭제
-                      </RemoveButton>
-                    )}
-                  </TableCell>
                   </tr>
                 ))}
               </tbody>
@@ -783,6 +1288,7 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
           })}>
             위험 요소 추가
           </AddButton>
+          </TableWrapper>
         </TableCard>
 
         {/* 테스트 접근법 */}
@@ -893,15 +1399,22 @@ const TestPlanForm: React.FC<TestPlanFormProps> = ({ onSave, onPreview, onExport
           </>
         ) : (
           <>
-            <PreviewButton onClick={onPreview}>
+            <PreviewButton 
+              onClick={onPreview}
+              aria-label="테스트 계획 미리보기"
+            >
               미리보기
             </PreviewButton>
-            <EditButton onClick={handleEdit}>
+            <EditButton 
+              onClick={() => handleEdit('bottom')}
+              aria-label="테스트 계획 수정하기 (하단)"
+            >
               수정
             </EditButton>
           </>
         )}
       </ActionBar>
+      </ContentWrapper>
     </Container>
   );
 };

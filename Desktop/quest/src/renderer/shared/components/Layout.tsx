@@ -7,12 +7,16 @@ const LayoutRoot = styled.div`
   background: #f8fafc;
 `;
 const SidebarArea = styled.aside`
-  width: 220px;
+  width: 200px;
   background: #1e293b;
   color: #fff;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  
+  @media (max-width: 1280px) {
+    width: 180px;
+  }
 `;
 const MainArea = styled.main`
   flex: 1;

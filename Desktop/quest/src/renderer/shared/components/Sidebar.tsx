@@ -3,13 +3,18 @@ import styled from 'styled-components';
 import Typography from './Typography';
 
 const SidebarRoot = styled.aside`
-  width: 220px;
+  width: 200px;
   background: #1e293b;
   color: #fff;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 24px 0;
+  padding: 20px 0;
+  
+  @media (max-width: 1280px) {
+    width: 180px;
+    padding: 16px 0;
+  }
 `;
 const Nav = styled.nav`
   display: flex;

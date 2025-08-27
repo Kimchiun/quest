@@ -55,8 +55,30 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 
   // 테스트 케이스 업데이트 함수
   const handleTestCaseUpdate = (testCaseId: string, updates: any) => {
-    console.log('테스트 케이스 업데이트:', testCaseId, updates);
-    // TODO: 실제 API 호출로 업데이트
+    console.log('=== 부모 컴포넌트 테스트 케이스 업데이트 ===');
+    console.log('테스트 케이스 ID:', testCaseId);
+    console.log('업데이트 내용:', updates);
+    
+    // 로컬 상태 업데이트
+    setTestCases(prev => {
+      const updated = prev.map(testCase => 
+        testCase.id === testCaseId 
+          ? { ...testCase, ...updates }
+          : testCase
+      );
+      console.log('부모 컴포넌트 상태 업데이트 완료');
+      
+      // 부모에서도 로컬 스토리지에 저장
+      const localStorageKey = `testCases_release_${release.id}`;
+      try {
+        localStorage.setItem(localStorageKey, JSON.stringify(updated));
+        console.log('부모 컴포넌트에서 로컬 스토리지에 저장 완료');
+      } catch (error) {
+        console.error('부모 컴포넌트 로컬 스토리지 저장 실패:', error);
+      }
+      
+      return updated;
+    });
   };
 
   // 일괄 업데이트 함수
@@ -69,6 +91,13 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
   const handleAddTestCases = (newTestCases: any[]) => {
     console.log('테스트케이스 추가:', newTestCases);
     setTestCases(prev => [...prev, ...newTestCases]);
+  };
+
+  // API에서 테스트케이스 로드 함수
+  const handleTestCasesLoad = (loadedTestCases: any[]) => {
+    console.log('=== API에서 테스트케이스 로드 ===');
+    console.log('로드된 테스트케이스 개수:', loadedTestCases.length);
+    setTestCases(loadedTestCases);
   };
 
   // 아이콘 렌더링 함수
@@ -291,6 +320,7 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
             onTestCaseUpdate={handleTestCaseUpdate}
             onBulkUpdate={handleBulkUpdate}
             onAddTestCases={handleAddTestCases}
+            onTestCasesLoad={handleTestCasesLoad}
           />
         )}
 
@@ -308,11 +338,19 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 // Styled Components
 const PageContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100%;
   background: ${({ theme }) => theme.color.surface.primary};
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  
+  @media (max-width: 1280px) {
+    height: 100%;
+  }
+  
+  @media (max-width: 768px) {
+    height: 100%;
+  }
 `;
 
 
@@ -354,6 +392,21 @@ const ProgressSection = styled.div`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
   background: ${({ theme }) => theme.color.surface.secondary};
   border-bottom: 1px solid ${({ theme }) => theme.color.border.primary};
+  
+  @media (max-width: 1440px) {
+    padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  }
+  
+  @media (max-width: 1280px) {
+    padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+    flex-direction: column;
+    gap: ${({ theme }) => theme.spacing.sm};
+    align-items: stretch;
+  }
+  
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing.sm};
+  }
 `;
 
 
@@ -368,6 +421,17 @@ const TabNavigation = styled.div`
   top: 0;
   z-index: 999;
   flex-shrink: 0;
+  
+  @media (max-width: 1280px) {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+    align-items: stretch;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 4px 0;
+  }
 `;
 
 const TabLeft = styled.div`
@@ -378,6 +442,15 @@ const TabRight = styled.div`
   display: flex;
   align-items: center;
   padding-right: ${({ theme }) => theme.spacing.md};
+  
+  @media (max-width: 1280px) {
+    padding-right: 0;
+    justify-content: center;
+  }
+  
+  @media (max-width: 768px) {
+    padding-right: 0;
+  }
 `;
 
 const TabButton = styled.button<{ active: boolean }>`
@@ -400,9 +473,9 @@ const ContentArea = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: ${({ theme }) => theme.spacing.xl};
+  padding: 0; // ExecutionView가 자체 패딩을 관리하도록 함
   scroll-behavior: smooth;
-  min-height: calc(100vh - 60px);
+  min-height: 0; // flex 축소 허용
   
   /* 스크롤바 스타일링 */
   &::-webkit-scrollbar {
