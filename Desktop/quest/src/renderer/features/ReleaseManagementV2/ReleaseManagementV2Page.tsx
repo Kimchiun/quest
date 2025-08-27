@@ -96,7 +96,7 @@ const ReleaseManagementV2Page: React.FC = () => {
               progress: 0, // API에서 제공하지 않는 경우 기본값
               passRate: 0, // API에서 제공하지 않는 경우 기본값
               blockers: 0, // API에서 제공하지 않는 경우 기본값
-              assignee: release.owners?.[0] || 'admin',
+              assignee: release.assignee_name || release.owners?.[0] || 'admin',
               folder: '/프로젝트/Quest',
               updatedAt: release.updatedAt
             }));
@@ -231,7 +231,7 @@ const ReleaseManagementV2Page: React.FC = () => {
         progress: 0,
         passRate: 0,
         blockers: 0,
-        assignee: newRelease.data.owners?.[0] || 'admin',
+        assignee: newRelease.data.assignee_name || newRelease.data.owners?.[0] || 'admin',
         folder: '/프로젝트/Quest',
         updatedAt: new Date().toISOString()
       };
