@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import ReleaseListView from './components/ReleaseListView';
 import ReleaseCreateModal from './components/ReleaseCreateModal';
+import ReleaseEditModal from './components/ReleaseEditModal';
 import ReleaseDetailPage from './components/ReleaseDetailPage';
 
 
