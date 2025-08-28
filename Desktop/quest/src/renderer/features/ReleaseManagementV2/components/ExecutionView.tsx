@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useGetReleaseTestCasesQuery, useUpdateReleaseExecutionStatsMutation, useGetReleaseExecutionStatsQuery, useUpdateTestCaseStatusMutation, useGetTestFoldersQuery, useGetImportedFoldersQuery, useAddImportedFoldersMutation, useRemoveImportedFolderMutation } from '../../../services/api';
+import SimpleStatusDropdown from './SimpleStatusDropdown';
 
 
 // 타입 정의
@@ -2015,7 +2016,130 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
     }));
   }, []);
 
-  // 상태 변경 처리
+  // SimpleStatusDropdown용 간단한 상태 변경 처리
+  const handleSimpleStatusChange = useCallback(async (testCaseId: string, newStatus: string) => {
+    try {
+      console.log('=== SimpleStatusDropdown 상태 변경 시작 ===');
+      console.log('테스트케이스 ID:', testCaseId);
+      console.log('새로운 상태:', newStatus);
+      console.log('현재 폴더 선택 상태:', !!selectedImportedFolder);
+      
+      // 부모 컴포넌트 상태 업데이트 (즉시 UI 반영)
+      onTestCaseUpdate(testCaseId, { 
+        status: newStatus as TestCase['status'],
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // 선택된 테스트케이스가 변경된 경우 상태 업데이트
+      if (selectedTestCase?.id === testCaseId) {
+        setSelectedTestCase({
+          ...selectedTestCase,
+          status: newStatus as TestCase['status'],
+          lastUpdated: new Date().toISOString()
+        });
+      }
+      
+      // 폴더 선택 상태인 경우 folderTestCases 즉시 업데이트
+      if (selectedImportedFolder) {
+        console.log('폴더 선택 상태에서 상태 변경 - 업데이트 전:', folderTestCases.find(tc => tc.id === testCaseId)?.status);
+        console.log('현재 폴더 테스트케이스 수:', folderTestCases.length);
+        
+        setFolderTestCases(prev => {
+          console.log('=== 폴더 테스트케이스 업데이트 시작 ===');
+          console.log('업데이트 전 상태들:', prev.map(tc => ({ id: tc.id, status: tc.status })));
+          console.log('변경할 테스트케이스 ID:', testCaseId);
+          console.log('새로운 상태:', newStatus);
+          
+          // 특정 테스트케이스만 업데이트하고 나머지는 그대로 유지
+          const updated = prev.map(tc => {
+            if (tc.id === testCaseId) {
+              console.log(`✅ 테스트케이스 ${testCaseId} 상태 변경: ${tc.status} -> ${newStatus}`);
+              return { 
+                ...tc, 
+                status: newStatus as TestCase['status'], 
+                lastUpdated: new Date().toISOString() 
+              };
+            }
+            // 다른 테스트케이스는 상태를 그대로 유지 (불변성 보장)
+            console.log(`⏸️ 테스트케이스 ${tc.id} 상태 유지: ${tc.status}`);
+            return { ...tc };
+          });
+          
+          console.log('업데이트 후 상태들:', updated.map(tc => ({ id: tc.id, status: tc.status })));
+          
+          // 상태 변경 검증
+          const changedTestCase = updated.find(tc => tc.id === testCaseId);
+          const unchangedTestCases = updated.filter(tc => tc.id !== testCaseId);
+          
+          console.log('✅ 변경된 테스트케이스:', changedTestCase?.id, changedTestCase?.status);
+          console.log('⏸️ 변경되지 않은 테스트케이스들:', unchangedTestCases.map(tc => ({ id: tc.id, status: tc.status })));
+          
+          // 검증: 변경된 테스트케이스가 올바르게 업데이트되었는지 확인
+          if (changedTestCase && changedTestCase.status !== newStatus) {
+            console.error('❌ 상태 업데이트 실패!', { expected: newStatus, actual: changedTestCase.status });
+          } else {
+            console.log('✅ 상태 업데이트 성공!');
+          }
+          
+          // 추가 검증: 모든 테스트케이스가 올바른 상태를 가지고 있는지 확인
+          const allCorrect = updated.every(tc => {
+            if (tc.id === testCaseId) {
+              return tc.status === newStatus;
+            } else {
+              // 다른 테스트케이스는 원래 상태를 유지해야 함
+              const originalTc = prev.find(p => p.id === tc.id);
+              return tc.status === originalTc?.status;
+            }
+          });
+          
+          if (!allCorrect) {
+            console.error('❌ 상태 업데이트 검증 실패! 일부 테스트케이스가 잘못 업데이트됨');
+          } else {
+            console.log('✅ 모든 테스트케이스 상태 검증 통과!');
+          }
+          
+          console.log('=== 폴더 테스트케이스 업데이트 완료 ===');
+          return updated;
+        });
+      }
+      
+      // API 호출 (백그라운드)
+      try {
+        const result = await updateTestCaseStatus({
+          releaseId: release.id,
+          testCaseId,
+          status: newStatus,
+          comment: currentComment
+        }).unwrap();
+        
+        console.log('API 호출 성공:', result);
+        
+        // 폴더 선택 상태가 아닌 경우에만 전체 데이터 새로고침
+        if (!selectedImportedFolder) {
+          await refetch();
+          await refetchStats();
+        } else {
+          // 폴더 선택 상태에서는 통계만 새로고침 (전체 데이터는 덮어쓰지 않음)
+          await refetchStats();
+          
+          // 폴더 선택 상태에서는 서버 데이터 새로고침을 하지 않음
+          // 로컬 상태 업데이트만 유지하여 UI 일관성 보장
+          console.log('폴더 선택 상태 - 서버 데이터 새로고침 건너뜀 (로컬 상태 유지)');
+        }
+      } catch (apiError) {
+        console.error('API 호출 실패:', apiError);
+        alert(`상태 변경에 실패했습니다: ${apiError}`);
+      }
+
+      console.log('=== SimpleStatusDropdown 상태 변경 완료 ===');
+    } catch (error) {
+      console.error('=== SimpleStatusDropdown 상태 변경 실패 ===');
+      console.error('Error details:', error);
+      alert(`상태 변경에 실패했습니다: ${error}`);
+    }
+  }, [updateTestCaseStatus, release.id, onTestCaseUpdate, selectedTestCase, currentComment, refetch, refetchStats, selectedImportedFolder]);
+
+  // 기존 상태 변경 처리 (상세 패널용)
   const handleStatusChange = useCallback(async (testCaseId: string, newStatus: TestCase['status'], comment?: string) => {
     try {
       console.log('=== 상태 변경 시작 ===');
@@ -2403,10 +2527,46 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       if (response.ok) {
         const data = await response.json();
         const testCases = data.data || [];
-        setFolderTestCases(testCases);
+        
+        // 기존 전체 테스트케이스에서 상태값을 가져와서 병합
+        const currentDisplayTestCases = displayTestCases || [];
+        const allTestCasesArray = allTestCases || [];
+        
+        console.log('=== 폴더 테스트케이스 상태 동기화 ===');
+        console.log('폴더 테스트케이스 수:', testCases.length);
+        console.log('전체 테스트케이스 수:', currentDisplayTestCases.length);
+        console.log('allTestCases 수:', allTestCasesArray.length);
+        
+        const mergedTestCases = testCases.map((folderTestCase: any) => {
+          // 우선순위: 1) displayTestCases, 2) allTestCases, 3) 폴더 데이터
+          let existingTestCase = currentDisplayTestCases.find((tc: any) => tc.id === folderTestCase.id);
+          if (!existingTestCase) {
+            existingTestCase = allTestCasesArray.find((tc: any) => tc.id === folderTestCase.id);
+          }
+          
+          if (existingTestCase) {
+            console.log(`테스트케이스 ${folderTestCase.id} 상태 동기화:`, {
+              폴더상태: folderTestCase.status,
+              전체상태: existingTestCase.status,
+              최종상태: existingTestCase.status || folderTestCase.status
+            });
+            
+            return {
+              ...folderTestCase,
+              status: existingTestCase.status || folderTestCase.status,
+              lastUpdated: existingTestCase.lastUpdated || folderTestCase.lastUpdated
+            };
+          }
+          
+          console.log(`테스트케이스 ${folderTestCase.id} 전체 데이터에서 찾을 수 없음, 폴더 상태 유지:`, folderTestCase.status);
+          return folderTestCase;
+        });
+        
+        setFolderTestCases(mergedTestCases);
+        console.log('폴더 테스트케이스 로드 완료 (상태값 동기화):', mergedTestCases.length, '개');
         
         setImportedFolders(prev => prev.map(f => 
-          f.id === folder.id ? { ...f, testCaseCount: testCases.length } : f
+          f.id === folder.id ? { ...f, testCaseCount: mergedTestCases.length } : f
         ));
       } else {
         console.error('폴더 테스트 케이스 조회 실패:', response.statusText);
@@ -2416,7 +2576,7 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
       console.error('폴더 테스트 케이스 조회 실패:', error);
       setFolderTestCases([]);
     }
-  }, []);
+  }, [displayTestCases, allTestCases]);
 
   // 폴더 배열을 트리 구조로 변환하는 함수
   const buildFolderTree = useCallback((folders: any[]): any[] => {
@@ -2780,32 +2940,11 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                   {testCase.lastUpdated ? new Date(testCase.lastUpdated).toLocaleDateString() : '-'}
                 </TableCell>
                 <TableCell>
-                  <StatusDropdownContainer data-dropdown>
-                    <StatusDropdownButton
-                      isOpen={openDropdowns[testCase.id] || false}
-                      status={testCase.status}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleDropdown(testCase.id, e.currentTarget);
-                      }}
-                    >
-                      <StatusDot status={testCase.status} />
-                      <StatusText>
-                        {(() => {
-                          const display = getStatusDisplay(testCase.status);
-                          console.log(`테스트케이스 ${testCase.id} 상태 표시:`, { 
-                            status: testCase.status, 
-                            displayText: display.text 
-                          });
-                          return display.text;
-                        })()}
-                      </StatusText>
-                      <DropdownArrow isOpen={openDropdowns[testCase.id] || false}>
-                        ▼
-                      </DropdownArrow>
-                    </StatusDropdownButton>
-                    {/* Portal 드롭다운은 별도로 렌더링됨 */}
-                  </StatusDropdownContainer>
+                  <SimpleStatusDropdown
+                    testCaseId={testCase.id}
+                    currentStatus={testCase.status || 'Inactive'}
+                    onStatusChange={handleSimpleStatusChange}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -2906,7 +3045,23 @@ const ExecutionView: React.FC<ExecutionViewProps> = ({ release, testCases = [], 
                 {selectedTestCase.steps && (
                   <DetailSection>
                     <DetailTitle>Steps</DetailTitle>
-                    <DetailText>{selectedTestCase.steps.join('\n')}</DetailText>
+                    <DetailText>
+                      {(() => {
+                        let stepsArray: string[] = [];
+                        if (selectedTestCase.steps) {
+                          if (Array.isArray(selectedTestCase.steps)) {
+                            stepsArray = selectedTestCase.steps;
+                          } else if (typeof selectedTestCase.steps === 'string') {
+                            try {
+                              stepsArray = JSON.parse(selectedTestCase.steps);
+                            } catch (e) {
+                              stepsArray = [selectedTestCase.steps];
+                            }
+                          }
+                        }
+                        return stepsArray.join('\n');
+                      })()}
+                    </DetailText>
                   </DetailSection>
                 )}
 
