@@ -1,0 +1,51 @@
+1aa9a463b83a515c0d37bb1fa47590aa
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.swaggerUi = exports.specs = void 0;
+const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+exports.swaggerUi = swagger_ui_express_1.default;
+const options = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'ITMS API Documentation',
+            version: '1.0.0',
+            description: 'ITMS (지능형 테스트 관리 시스템) API 문서',
+            contact: {
+                name: 'ITMS Development Team',
+                email: 'dev@itms.com'
+            }
+        },
+        servers: [
+            {
+                url: 'http://localhost:3001',
+                description: 'Development server'
+            }
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        },
+        security: [
+            {
+                bearerAuth: []
+            }
+        ]
+    },
+    apis: [
+        './src/main/app/domains/**/controllers/*.ts',
+        './src/main/app/domains/**/routes/*.ts'
+    ]
+};
+const specs = (0, swagger_jsdoc_1.default)(options);
+exports.specs = specs;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3NyYy9tYWluL2FwcC9pbmZyYXN0cnVjdHVyZS9zd2FnZ2VyL3N3YWdnZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQUEsa0VBQXlDO0FBQ3pDLDRFQUEyQztBQTJDM0Isb0JBM0NULDRCQUFTLENBMkNTO0FBekN6QixNQUFNLE9BQU8sR0FBRztJQUNkLFVBQVUsRUFBRTtRQUNWLE9BQU8sRUFBRSxPQUFPO1FBQ2hCLElBQUksRUFBRTtZQUNKLEtBQUssRUFBRSx3QkFBd0I7WUFDL0IsT0FBTyxFQUFFLE9BQU87WUFDaEIsV0FBVyxFQUFFLDhCQUE4QjtZQUMzQyxPQUFPLEVBQUU7Z0JBQ1AsSUFBSSxFQUFFLHVCQUF1QjtnQkFDN0IsS0FBSyxFQUFFLGNBQWM7YUFDdEI7U0FDRjtRQUNELE9BQU8sRUFBRTtZQUNQO2dCQUNFLEdBQUcsRUFBRSx1QkFBdUI7Z0JBQzVCLFdBQVcsRUFBRSxvQkFBb0I7YUFDbEM7U0FDRjtRQUNELFVBQVUsRUFBRTtZQUNWLGVBQWUsRUFBRTtnQkFDZixVQUFVLEVBQUU7b0JBQ1YsSUFBSSxFQUFFLE1BQU07b0JBQ1osTUFBTSxFQUFFLFFBQVE7b0JBQ2hCLFlBQVksRUFBRSxLQUFLO2lCQUNwQjthQUNGO1NBQ0Y7UUFDRCxRQUFRLEVBQUU7WUFDUjtnQkFDRSxVQUFVLEVBQUUsRUFBRTthQUNmO1NBQ0Y7S0FDRjtJQUNELElBQUksRUFBRTtRQUNKLDRDQUE0QztRQUM1Qyx1Q0FBdUM7S0FDeEM7Q0FDRixDQUFDO0FBRUYsTUFBTSxLQUFLLEdBQUcsSUFBQSx1QkFBWSxFQUFDLE9BQU8sQ0FBQyxDQUFDO0FBRTNCLHNCQUFLIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9Vc2Vycy8zaS1hMS0yMDIxLTAxNy9Eb2N1bWVudHMvcXVlc3QvRGVza3RvcC9xdWVzdC9zcmMvbWFpbi9hcHAvaW5mcmFzdHJ1Y3R1cmUvc3dhZ2dlci9zd2FnZ2VyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBzd2FnZ2VySnNkb2MgZnJvbSAnc3dhZ2dlci1qc2RvYyc7XG5pbXBvcnQgc3dhZ2dlclVpIGZyb20gJ3N3YWdnZXItdWktZXhwcmVzcyc7XG5cbmNvbnN0IG9wdGlvbnMgPSB7XG4gIGRlZmluaXRpb246IHtcbiAgICBvcGVuYXBpOiAnMy4wLjAnLFxuICAgIGluZm86IHtcbiAgICAgIHRpdGxlOiAnSVRNUyBBUEkgRG9jdW1lbnRhdGlvbicsXG4gICAgICB2ZXJzaW9uOiAnMS4wLjAnLFxuICAgICAgZGVzY3JpcHRpb246ICdJVE1TICjsp4DriqXtmJUg7YWM7Iqk7Yq4IOq0gOumrCDsi5zsiqTthZwpIEFQSSDrrLjshJwnLFxuICAgICAgY29udGFjdDoge1xuICAgICAgICBuYW1lOiAnSVRNUyBEZXZlbG9wbWVudCBUZWFtJyxcbiAgICAgICAgZW1haWw6ICdkZXZAaXRtcy5jb20nXG4gICAgICB9XG4gICAgfSxcbiAgICBzZXJ2ZXJzOiBbXG4gICAgICB7XG4gICAgICAgIHVybDogJ2h0dHA6Ly9sb2NhbGhvc3Q6MzAwMScsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAnRGV2ZWxvcG1lbnQgc2VydmVyJ1xuICAgICAgfVxuICAgIF0sXG4gICAgY29tcG9uZW50czoge1xuICAgICAgc2VjdXJpdHlTY2hlbWVzOiB7XG4gICAgICAgIGJlYXJlckF1dGg6IHtcbiAgICAgICAgICB0eXBlOiAnaHR0cCcsXG4gICAgICAgICAgc2NoZW1lOiAnYmVhcmVyJyxcbiAgICAgICAgICBiZWFyZXJGb3JtYXQ6ICdKV1QnXG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9LFxuICAgIHNlY3VyaXR5OiBbXG4gICAgICB7XG4gICAgICAgIGJlYXJlckF1dGg6IFtdXG4gICAgICB9XG4gICAgXVxuICB9LFxuICBhcGlzOiBbXG4gICAgJy4vc3JjL21haW4vYXBwL2RvbWFpbnMvKiovY29udHJvbGxlcnMvKi50cycsXG4gICAgJy4vc3JjL21haW4vYXBwL2RvbWFpbnMvKiovcm91dGVzLyoudHMnXG4gIF1cbn07XG5cbmNvbnN0IHNwZWNzID0gc3dhZ2dlckpzZG9jKG9wdGlvbnMpO1xuXG5leHBvcnQgeyBzcGVjcywgc3dhZ2dlclVpIH07XG4iXSwidmVyc2lvbiI6M30=

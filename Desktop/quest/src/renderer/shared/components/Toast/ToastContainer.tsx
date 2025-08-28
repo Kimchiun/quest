@@ -4,12 +4,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import { removeNotification } from '../../../store/notificationSlice';
 import Toast from './Toast';
+import { Z_INDEX } from '../../theme';
 
 const ToastWrapper = styled.div`
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 9999;
+  z-index: ${Z_INDEX.NOTIFICATION};
   display: flex;
   flex-direction: column;
   align-items: flex-end;

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 import * as ReactDOM from 'react-dom';
-import { Theme } from '../theme';
+import { Theme, Z_INDEX } from '../theme';
 
 interface ModalProps {
   isOpen: boolean;
@@ -45,7 +45,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: ${Z_INDEX.MODAL};
   animation: ${fadeIn} 0.2s ease-out;
   padding: 16px;
 `;

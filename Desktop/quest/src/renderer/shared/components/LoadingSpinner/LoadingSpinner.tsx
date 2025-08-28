@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { Z_INDEX } from '../../theme';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
@@ -30,7 +31,7 @@ const SpinnerContainer = styled.div<{ overlay: boolean }>`
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
+    z-index: ${Z_INDEX.LOADING};
     animation: ${fadeIn} 0.3s ease-in-out;
   `}
 `;

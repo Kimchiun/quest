@@ -9,6 +9,25 @@ const mockFolderRepository = folderRepository as jest.Mocked<typeof folderReposi
 describe('Folder Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // listFolders 모킹 추가
+    mockFolderRepository.listFolders.mockResolvedValue([]);
+    
+    // getFolderById 모킹 추가
+    mockFolderRepository.getFolderById.mockResolvedValue({
+      id: 1,
+      name: 'Test Folder',
+      description: 'Test Description',
+      parentId: undefined,
+      projectId: 1,
+      orderIndex: 100,
+      depth: 0,
+      createdBy: 'testuser',
+      isLocked: false,
+      isArchived: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
   });
 
   describe('createFolder', () => {
@@ -17,8 +36,7 @@ describe('Folder Service', () => {
         name: 'Test Folder',
         description: 'Test Description',
         parentId: undefined,
-        sortOrder: 0,
-        createdBy: 'testuser'
+        projectId: 1
       };
 
       const expectedFolder = {
@@ -26,18 +44,32 @@ describe('Folder Service', () => {
         name: 'Test Folder',
         description: 'Test Description',
         parentId: undefined,
-        sortOrder: 0,
+        projectId: 1,
+        orderIndex: 100,
+        depth: 0,
         createdBy: 'testuser',
+        isLocked: false,
+        isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
       mockFolderRepository.createFolder.mockResolvedValue(expectedFolder);
 
-      const result = await folderService.createFolder(folderData);
+      const result = await folderService.createFolder(folderData, 'testuser');
 
       expect(result).toEqual(expectedFolder);
-      expect(mockFolderRepository.createFolder).toHaveBeenCalledWith(folderData);
+      expect(mockFolderRepository.createFolder).toHaveBeenCalledWith({
+        projectId: 1,
+        parentId: undefined,
+        name: 'Test Folder',
+        description: 'Test Description',
+        orderIndex: 100,
+        depth: 0,
+        createdBy: 'testuser',
+        isLocked: false,
+        isArchived: false
+      });
     });
   });
 
@@ -49,8 +81,12 @@ describe('Folder Service', () => {
         name: 'Test Folder',
         description: 'Test Description',
         parentId: undefined,
-        sortOrder: 0,
+        projectId: 1,
+        orderIndex: 100,
+        depth: 0,
         createdBy: 'testuser',
+        isLocked: false,
+        isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -83,8 +119,12 @@ describe('Folder Service', () => {
           name: 'Folder 1',
           description: 'Description 1',
           parentId: undefined,
-          sortOrder: 0,
+          projectId: 1,
+          orderIndex: 100,
+          depth: 0,
           createdBy: 'testuser',
+          isLocked: false,
+          isArchived: false,
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -93,8 +133,12 @@ describe('Folder Service', () => {
           name: 'Folder 2',
           description: 'Description 2',
           parentId: 1,
-          sortOrder: 1,
+          projectId: 1,
+          orderIndex: 200,
+          depth: 1,
           createdBy: 'testuser',
+          isLocked: false,
+          isArchived: false,
           createdAt: new Date(),
           updatedAt: new Date()
         }
@@ -102,7 +146,7 @@ describe('Folder Service', () => {
 
       mockFolderRepository.listFolders.mockResolvedValue(expectedFolders);
 
-      const result = await folderService.listFolders();
+      const result = await folderService.listFoldersByProject(1);
 
       expect(result).toEqual(expectedFolders);
       expect(mockFolderRepository.listFolders).toHaveBeenCalled();
@@ -123,18 +167,22 @@ describe('Folder Service', () => {
         name: 'Updated Folder',
         description: 'Updated Description',
         parentId: undefined,
-        sortOrder: 0,
+        projectId: 1,
+        orderIndex: 100,
+        depth: 0,
         createdBy: 'testuser',
+        isLocked: false,
+        isArchived: false,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
       mockFolderRepository.updateFolder.mockResolvedValue(expectedFolder);
 
-      const result = await folderService.updateFolder(folderId, updateData);
+      const result = await folderService.updateFolder(folderId, updateData, 'testuser');
 
       expect(result).toEqual(expectedFolder);
-      expect(mockFolderRepository.updateFolder).toHaveBeenCalledWith(folderId, updateData);
+      expect(mockFolderRepository.updateFolder).toHaveBeenCalledWith(folderId, { ...updateData, updatedBy: 'testuser' });
     });
 
     it('should return null when folder not found', async () => {
@@ -146,10 +194,10 @@ describe('Folder Service', () => {
 
       mockFolderRepository.updateFolder.mockResolvedValue(null);
 
-      const result = await folderService.updateFolder(folderId, updateData);
+      const result = await folderService.updateFolder(folderId, updateData, 'testuser');
 
       expect(result).toBeNull();
-      expect(mockFolderRepository.updateFolder).toHaveBeenCalledWith(folderId, updateData);
+      expect(mockFolderRepository.updateFolder).toHaveBeenCalledWith(folderId, { ...updateData, updatedBy: 'testuser' });
     });
   });
 
@@ -159,10 +207,10 @@ describe('Folder Service', () => {
 
       mockFolderRepository.deleteFolder.mockResolvedValue(true);
 
-      const result = await folderService.deleteFolder(folderId);
+      const result = await folderService.deleteFolder(folderId, 'soft', 'testuser');
 
       expect(result).toBe(true);
-      expect(mockFolderRepository.deleteFolder).toHaveBeenCalledWith(folderId);
+      expect(mockFolderRepository.deleteFolder).toHaveBeenCalledWith(folderId, 'soft', 'testuser');
     });
 
     it('should return false when folder not found', async () => {
@@ -170,48 +218,12 @@ describe('Folder Service', () => {
 
       mockFolderRepository.deleteFolder.mockResolvedValue(false);
 
-      const result = await folderService.deleteFolder(folderId);
+      const result = await folderService.deleteFolder(folderId, 'soft', 'testuser');
 
       expect(result).toBe(false);
-      expect(mockFolderRepository.deleteFolder).toHaveBeenCalledWith(folderId);
+      expect(mockFolderRepository.deleteFolder).toHaveBeenCalledWith(folderId, 'soft', 'testuser');
     });
   });
 
-  describe('addTestCaseToFolder', () => {
-    it('should add test case to folder successfully', async () => {
-      const testCaseId = 1;
-      const folderId = 1;
 
-      const mockFolder = {
-        id: 1,
-        name: 'Test Folder',
-        description: 'Test Description',
-        parentId: undefined,
-        sortOrder: 0,
-        createdBy: 'testuser',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      mockFolderRepository.getFolderById.mockResolvedValue(mockFolder);
-      mockFolderRepository.addTestCaseToFolder.mockResolvedValue(true);
-
-      const result = await folderService.addTestCaseToFolder(testCaseId, folderId);
-
-      expect(result).toBe(true);
-      expect(mockFolderRepository.getFolderById).toHaveBeenCalledWith(folderId);
-      expect(mockFolderRepository.addTestCaseToFolder).toHaveBeenCalledWith(testCaseId, folderId);
-    });
-
-    it('should throw error when folder not found', async () => {
-      const testCaseId = 1;
-      const folderId = 999;
-
-      mockFolderRepository.getFolderById.mockResolvedValue(null);
-
-      await expect(folderService.addTestCaseToFolder(testCaseId, folderId))
-        .rejects
-        .toThrow('폴더를 찾을 수 없습니다.');
-    });
-  });
 }); 

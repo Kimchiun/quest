@@ -6,6 +6,8 @@ ALTER TABLE testcases ADD COLUMN IF NOT EXISTS folder_id INTEGER REFERENCES fold
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft';
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'medium';
+ALTER TABLE testcases ADD COLUMN IF NOT EXISTS type VARCHAR(50) DEFAULT 'Functional';
+ALTER TABLE testcases ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS created_by VARCHAR(100) DEFAULT 'system';
 ALTER TABLE testcases ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
@@ -74,15 +76,13 @@ CREATE INDEX IF NOT EXISTS idx_executions_testcase_id ON executions(testcase_id)
 CREATE INDEX IF NOT EXISTS idx_tree_nodes_parent_id ON tree_nodes(parent_id);
 CREATE INDEX IF NOT EXISTS idx_tree_nodes_type ON tree_nodes(type);
 
--- 샘플 데이터 삽입
+-- 샘플 데이터 삽입 (단순화)
 INSERT INTO folders (name, description, parent_id, sort_order, created_by) 
-VALUES ('루트', '최상위 폴더', NULL, 0, 'system')
-ON CONFLICT (id) DO NOTHING;
+VALUES ('루트', '최상위 폴더', NULL, 0, 'system');
 
--- 루트 폴더를 tree_nodes에도 추가
+-- 루트 폴더를 tree_nodes에도 추가 (단순화)
 INSERT INTO tree_nodes (name, type, parent_id, created_by) 
-VALUES ('루트', 'folder', NULL, 'system')
-ON CONFLICT (name, type, parent_id) DO NOTHING;
+VALUES ('루트', 'folder', NULL, 'system');
 
 -- 트리거 함수 업데이트
 CREATE OR REPLACE FUNCTION update_updated_at_column()

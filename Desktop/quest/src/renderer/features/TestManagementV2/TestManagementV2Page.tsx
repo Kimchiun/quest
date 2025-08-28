@@ -627,11 +627,13 @@ const TestManagementV2Page: React.FC = () => {
       // 백엔드 API 형식에 맞게 데이터 변환
       const apiData = {
         title: updatedTestCase.title,
+        description: updatedTestCase.description,
         prereq: updatedTestCase.preconditions || updatedTestCase.prereq,
         steps: updatedTestCase.steps,
         expected: updatedTestCase.expectedResult || updatedTestCase.expected,
-        priority: updatedTestCase.priority === 'high' ? 'High' : updatedTestCase.priority === 'medium' ? 'Medium' : 'Low',
-        status: updatedTestCase.status === 'active' ? 'Active' : 'Inactive',
+        priority: updatedTestCase.priority,
+        type: updatedTestCase.type,
+        status: updatedTestCase.status,
         folderId: updatedTestCase.folderId,
         createdBy: updatedTestCase.createdBy || 'admin'
       };
@@ -658,6 +660,39 @@ const TestManagementV2Page: React.FC = () => {
       
       // 선택된 테스트케이스도 업데이트
       setSelectedTestCase(updatedData);
+      
+      // 릴리즈 관리의 로컬 스토리지도 업데이트
+      // 모든 릴리즈의 로컬 스토리지를 확인하고 업데이트
+      const updateReleaseStorage = () => {
+        const keys = Object.keys(localStorage);
+        const releaseKeys = keys.filter(key => key.startsWith('testCases_release_'));
+        
+        releaseKeys.forEach(key => {
+          try {
+            const storedData = localStorage.getItem(key);
+            if (storedData) {
+              const testCases = JSON.parse(storedData);
+              const updatedTestCases = testCases.map((tc: any) => 
+                tc.id === updatedTestCase.id ? { ...tc, ...updatedData } : tc
+              );
+              localStorage.setItem(key, JSON.stringify(updatedTestCases));
+              console.log(`릴리즈 스토리지 업데이트 완료: ${key}`);
+            }
+          } catch (error) {
+            console.error(`릴리즈 스토리지 업데이트 실패: ${key}`, error);
+          }
+        });
+      };
+      
+      updateReleaseStorage();
+      
+      // 성공 메시지 표시
+      setToastMessage('테스트케이스가 성공적으로 업데이트되었습니다. 릴리즈 관리에도 반영됩니다.');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        setTimeout(() => setToastMessage(''), 300);
+      }, 3000);
     } catch (error) {
       console.error('테스트케이스 업데이트 오류:', error);
       setToastMessage('테스트케이스 업데이트에 실패했습니다. 다시 시도해 주세요.');

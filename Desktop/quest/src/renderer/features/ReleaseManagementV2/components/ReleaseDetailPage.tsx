@@ -55,9 +55,7 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 
   // 테스트 케이스 업데이트 함수
   const handleTestCaseUpdate = (testCaseId: string, updates: any) => {
-    console.log('=== 부모 컴포넌트 테스트 케이스 업데이트 ===');
-    console.log('테스트 케이스 ID:', testCaseId);
-    console.log('업데이트 내용:', updates);
+    console.log('👨‍👦 부모 컴포넌트 테스트 케이스 업데이트:', { testCaseId, updates });
     
     // 로컬 상태 업데이트
     setTestCases(prev => {
@@ -66,13 +64,13 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
           ? { ...testCase, ...updates }
           : testCase
       );
-      console.log('부모 컴포넌트 상태 업데이트 완료');
+      // console.log('부모 컴포넌트 상태 업데이트 완료');
       
       // 부모에서도 로컬 스토리지에 저장
       const localStorageKey = `testCases_release_${release.id}`;
       try {
         localStorage.setItem(localStorageKey, JSON.stringify(updated));
-        console.log('부모 컴포넌트에서 로컬 스토리지에 저장 완료');
+        // console.log('부모 컴포넌트에서 로컬 스토리지에 저장 완료');
       } catch (error) {
         console.error('부모 컴포넌트 로컬 스토리지 저장 실패:', error);
       }
@@ -95,8 +93,8 @@ const ReleaseDetailPage: React.FC<ReleaseDetailPageProps> = ({ release, currentT
 
   // API에서 테스트케이스 로드 함수
   const handleTestCasesLoad = (loadedTestCases: any[]) => {
-    console.log('=== API에서 테스트케이스 로드 ===');
-    console.log('로드된 테스트케이스 개수:', loadedTestCases.length);
+    // console.log('=== API에서 테스트케이스 로드 ===');
+    // console.log('로드된 테스트케이스 개수:', loadedTestCases.length);
     setTestCases(loadedTestCases);
   };
 

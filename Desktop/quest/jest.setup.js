@@ -1,4 +1,5 @@
 // Jest setup file for global polyfills
+require('@testing-library/jest-dom');
 const { TextEncoder, TextDecoder } = require('util');
 
 global.TextEncoder = TextEncoder;

@@ -29,6 +29,39 @@ const GlobalStyle = createGlobalStyle`
     font-size: inherit;
   }
 
+  /* Z-Index 가이드라인을 위한 CSS 변수 */
+  :root {
+    /* 기본 레이어 (0-99) */
+    --z-base: 0;
+    --z-background: 1;
+    --z-content: 2;
+    
+    /* 컴포넌트 레이어 (100-999) */
+    --z-card: 100;
+    --z-button: 200;
+    --z-input: 300;
+    --z-table-row: 400;
+    --z-table-header: 500;
+    
+    /* 오버레이 레이어 (1000-9999) */
+    --z-dropdown: 1000;
+    --z-tooltip: 2000;
+    --z-modal-backdrop: 3000;
+    --z-modal: 4000;
+    --z-sidebar: 5000;
+    --z-header: 6000;
+    
+    /* 최상위 레이어 (10000+) */
+    --z-notification: 10000;
+    --z-loading: 11000;
+    --z-error-boundary: 12000;
+    --z-dev-tools: 13000;
+    
+    /* 드롭다운 전용 (최우선) */
+    --z-dropdown-menu: 99999;
+    --z-dropdown-item: 99999;
+  }
+
   /* Empty State 전역 규칙 */
   .empty-state-container {
     min-height: auto !important;

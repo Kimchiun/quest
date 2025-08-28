@@ -1,0 +1,352 @@
+c38aea66153f9f0dd2771b179c07a6bc
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const testCaseService = __importStar(require("../services/testCaseService"));
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TestCase:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 테스트케이스 ID
+ *         title:
+ *           type: string
+ *           description: 테스트케이스 제목
+ *         description:
+ *           type: string
+ *           description: 테스트케이스 설명
+ *         priority:
+ *           type: string
+ *           enum: [High, Medium, Low]
+ *           description: 우선순위
+ *         status:
+ *           type: string
+ *           enum: [Active, Inactive, Draft]
+ *           description: 상태
+ *         folderId:
+ *           type: integer
+ *           description: 폴더 ID
+ *         createdBy:
+ *           type: string
+ *           description: 생성자
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: 생성일
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: 수정일
+ */
+const router = (0, express_1.Router)();
+/**
+ * @swagger
+ * /api/testcases:
+ *   get:
+ *     summary: 테스트케이스 목록 조회
+ *     description: 페이지네이션, 검색, 필터링을 지원하는 테스트케이스 목록을 조회합니다.
+ *     tags: [Test Cases]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 페이지 번호
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 페이지당 항목 수
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: 검색어
+ *       - in: query
+ *         name: folderId
+ *         schema:
+ *           type: integer
+ *         description: 폴더 ID로 필터링
+ *     responses:
+ *       200:
+ *         description: 테스트케이스 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TestCase'
+ *       500:
+ *         description: 서버 오류
+ */
+// 테스트케이스 목록 조회
+router.get('/', async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search, folderId } = req.query;
+        const testCases = await testCaseService.getTestCases({
+            page: Number(page),
+            limit: Number(limit),
+            search: search,
+            folderId: folderId ? Number(folderId) : undefined
+        });
+        res.json(testCases);
+    }
+    catch (error) {
+        console.error('테스트케이스 조회 실패:', error);
+        res.status(500).json({ message: '테스트케이스 조회에 실패했습니다.' });
+    }
+});
+/**
+ * @swagger
+ * /api/testcases/{id}:
+ *   get:
+ *     summary: 특정 테스트케이스 조회
+ *     description: ID로 특정 테스트케이스를 조회합니다.
+ *     tags: [Test Cases]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 테스트케이스 ID
+ *     responses:
+ *       200:
+ *         description: 테스트케이스 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TestCase'
+ *       404:
+ *         description: 테스트케이스를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+// 특정 테스트케이스 조회
+router.get('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const testCase = await testCaseService.getTestCaseById(id);
+        if (!testCase) {
+            return res.status(404).json({ message: '테스트케이스를 찾을 수 없습니다.' });
+        }
+        res.json(testCase);
+    }
+    catch (error) {
+        console.error('테스트케이스 조회 실패:', error);
+        res.status(500).json({ message: '테스트케이스 조회에 실패했습니다.' });
+    }
+});
+/**
+ * @swagger
+ * /api/testcases:
+ *   post:
+ *     summary: 테스트케이스 생성
+ *     description: 새로운 테스트케이스를 생성합니다.
+ *     tags: [Test Cases]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - priority
+ *               - status
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: 테스트케이스 제목
+ *               description:
+ *                 type: string
+ *                 description: 테스트케이스 설명
+ *               priority:
+ *                 type: string
+ *                 enum: [High, Medium, Low]
+ *                 description: 우선순위
+ *               status:
+ *                 type: string
+ *                 enum: [Active, Inactive, Draft]
+ *                 description: 상태
+ *               folderId:
+ *                 type: integer
+ *                 description: 폴더 ID
+ *     responses:
+ *       201:
+ *         description: 테스트케이스 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TestCase'
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+// 테스트케이스 생성
+router.post('/', async (req, res) => {
+    try {
+        const testCase = await testCaseService.createTestCase(req.body);
+        res.status(201).json(testCase);
+    }
+    catch (error) {
+        console.error('테스트케이스 생성 실패:', error);
+        res.status(400).json({ message: '테스트케이스 생성에 실패했습니다.' });
+    }
+});
+/**
+ * @swagger
+ * /api/testcases/{id}:
+ *   put:
+ *     summary: 테스트케이스 수정
+ *     description: 특정 테스트케이스를 수정합니다.
+ *     tags: [Test Cases]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 테스트케이스 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: 테스트케이스 제목
+ *               description:
+ *                 type: string
+ *                 description: 테스트케이스 설명
+ *               priority:
+ *                 type: string
+ *                 enum: [High, Medium, Low]
+ *                 description: 우선순위
+ *               status:
+ *                 type: string
+ *                 enum: [Active, Inactive, Draft]
+ *                 description: 상태
+ *               folderId:
+ *                 type: integer
+ *                 description: 폴더 ID
+ *     responses:
+ *       200:
+ *         description: 테스트케이스 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TestCase'
+ *       404:
+ *         description: 테스트케이스를 찾을 수 없음
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+// 테스트케이스 수정
+router.put('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const testCase = await testCaseService.updateTestCase(id, req.body);
+        if (!testCase) {
+            return res.status(404).json({ message: '테스트케이스를 찾을 수 없습니다.' });
+        }
+        res.json(testCase);
+    }
+    catch (error) {
+        console.error('테스트케이스 수정 실패:', error);
+        res.status(400).json({ message: '테스트케이스 수정에 실패했습니다.' });
+    }
+});
+/**
+ * @swagger
+ * /api/testcases/{id}:
+ *   delete:
+ *     summary: 테스트케이스 삭제
+ *     description: 특정 테스트케이스를 삭제합니다.
+ *     tags: [Test Cases]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 테스트케이스 ID
+ *     responses:
+ *       200:
+ *         description: 테스트케이스 삭제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: '테스트케이스가 성공적으로 삭제되었습니다.'
+ *       404:
+ *         description: 테스트케이스를 찾을 수 없음
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+// 테스트케이스 삭제
+router.delete('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const success = await testCaseService.deleteTestCase(id);
+        if (!success) {
+            return res.status(404).json({ message: '테스트케이스를 찾을 수 없습니다.' });
+        }
+        res.json({ message: '테스트케이스가 성공적으로 삭제되었습니다.' });
+    }
+    catch (error) {
+        console.error('테스트케이스 삭제 실패:', error);
+        res.status(400).json({ message: '테스트케이스 삭제에 실패했습니다.' });
+    }
+});
+exports.default = router;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3NyYy9tYWluL2FwcC9kb21haW5zL3Rlc3RjYXNlcy9jb250cm9sbGVycy90ZXN0Q2FzZUNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSxxQ0FBaUM7QUFDakMsNkVBQStEO0FBRS9EOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXNDRztBQUVILE1BQU0sTUFBTSxHQUFHLElBQUEsZ0JBQU0sR0FBRSxDQUFDO0FBRXhCOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXlDRztBQUNILGVBQWU7QUFDZixNQUFNLENBQUMsR0FBRyxDQUFDLEdBQUcsRUFBRSxLQUFLLEVBQUUsR0FBRyxFQUFFLEdBQUcsRUFBRSxFQUFFO0lBQy9CLElBQUksQ0FBQztRQUNELE1BQU0sRUFBRSxJQUFJLEdBQUcsQ0FBQyxFQUFFLEtBQUssR0FBRyxFQUFFLEVBQUUsTUFBTSxFQUFFLFFBQVEsRUFBRSxHQUFHLEdBQUcsQ0FBQyxLQUFLLENBQUM7UUFDN0QsTUFBTSxTQUFTLEdBQUcsTUFBTSxlQUFlLENBQUMsWUFBWSxDQUFDO1lBQ2pELElBQUksRUFBRSxNQUFNLENBQUMsSUFBSSxDQUFDO1lBQ2xCLEtBQUssRUFBRSxNQUFNLENBQUMsS0FBSyxDQUFDO1lBQ3BCLE1BQU0sRUFBRSxNQUFnQjtZQUN4QixRQUFRLEVBQUUsUUFBUSxDQUFDLENBQUMsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLENBQUMsQ0FBQyxDQUFDLFNBQVM7U0FDcEQsQ0FBQyxDQUFDO1FBQ0gsR0FBRyxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQztJQUN4QixDQUFDO0lBQUMsT0FBTyxLQUFLLEVBQUUsQ0FBQztRQUNiLE9BQU8sQ0FBQyxLQUFLLENBQUMsZUFBZSxFQUFFLEtBQUssQ0FBQyxDQUFDO1FBQ3RD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LENBQUM7UUFDdEMsR0FBRyxDQUFDLE1BQU0sQ0FBQyxHQUFHLENBQUMsQ0FBQyxJQUFJLENBQUMsRUFBRSxPQUFPLEVBQUUsb0JBQW9CLEVBQUUsQ0FBQyxDQUFDO0lBQzVELENBQUM7QUFDTCxDQUFDLENBQUMsQ0FBQztBQUVIOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBK0JHO0FBQ0gsWUFBWTtBQUNaLE1BQU0sQ0FBQyxNQUFNLENBQUMsTUFBTSxFQUFFLEtBQUssRUFBRSxHQUFHLEVBQUUsR0FBRyxFQUFFLEVBQUU7SUFDckMsSUFBSSxDQUFDO1FBQ0QsTUFBTSxFQUFFLEdBQUcsUUFBUSxDQUFDLEdBQUcsQ0FBQyxNQUFNLENBQUMsRUFBRSxDQUFDLENBQUM7UUFDbkMsTUFBTSxPQUFPLEdBQUcsTUFBTSxlQUFlLENBQUMsY0FBYyxDQUFDLEVBQUUsQ0FBQyxDQUFDO1FBQ3pELElBQUksQ0FBQyxPQUFPLEVBQUUsQ0FBQztZQUNYLE9BQU8sR0FBRyxDQUFDLE1BQU0sQ0FBQyxHQUFHLENBQUMsQ0FBQyxJQUFJLENBQUMsRUFBRSxPQUFPLEVBQUUsb0JBQW9CLEVBQUUsQ0FBQyxDQUFDO1FBQ25FLENBQUM7UUFDRCxHQUFHLENBQUMsSUFBSSxDQUFDLEVBQUUsT0FBTyxFQUFFLHdCQUF3QixFQUFFLENBQUMsQ0FBQztJQUNwRCxDQUFDO0lBQUMsT0FBTyxLQUFLLEVBQUUsQ0FBQztRQUNiLE9BQU8sQ0FBQyxLQUFLLENBQUMsZUFBZSxFQUFFLEtBQUssQ0FBQyxDQUFDO1FBQ3RDLEdBQUcsQ0FBQyxNQUFNLENBQUMsR0FBRyxDQUFDLENBQUMsSUFBSSxDQUFDLEVBQUUsT0FBTyxFQUFFLG9CQUFvQixFQUFFLENBQUMsQ0FBQztJQUM1RCxDQUFDO0FBQ0wsQ0FBQyxDQUFDLENBQUM7QUFFSCxrQkFBZSxNQUFNLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3NyYy9tYWluL2FwcC9kb21haW5zL3Rlc3RjYXNlcy9jb250cm9sbGVycy90ZXN0Q2FzZUNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgUm91dGVyIH0gZnJvbSAnZXhwcmVzcyc7XG5pbXBvcnQgKiBhcyB0ZXN0Q2FzZVNlcnZpY2UgZnJvbSAnLi4vc2VydmljZXMvdGVzdENhc2VTZXJ2aWNlJztcblxuLyoqXG4gKiBAc3dhZ2dlclxuICogY29tcG9uZW50czpcbiAqICAgc2NoZW1hczpcbiAqICAgICBUZXN0Q2FzZTpcbiAqICAgICAgIHR5cGU6IG9iamVjdFxuICogICAgICAgcHJvcGVydGllczpcbiAqICAgICAgICAgaWQ6XG4gKiAgICAgICAgICAgdHlwZTogaW50ZWdlclxuICogICAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQgSURcbiAqICAgICAgICAgdGl0bGU6XG4gKiAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCDsoJzrqqlcbiAqICAgICAgICAgZGVzY3JpcHRpb246XG4gKiAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCDshKTrqoVcbiAqICAgICAgICAgcHJpb3JpdHk6XG4gKiAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgZW51bTogW0hpZ2gsIE1lZGl1bSwgTG93XVxuICogICAgICAgICAgIGRlc2NyaXB0aW9uOiDsmrDshKDsiJzsnIRcbiAqICAgICAgICAgc3RhdHVzOlxuICogICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgIGVudW06IFtBY3RpdmUsIEluYWN0aXZlLCBEcmFmdF1cbiAqICAgICAgICAgICBkZXNjcmlwdGlvbjog7IOB7YOcXG4gKiAgICAgICAgIGZvbGRlcklkOlxuICogICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIElEXG4gKiAgICAgICAgIGNyZWF0ZWRCeTpcbiAqICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICBkZXNjcmlwdGlvbjog7IOd7ISx7J6QXG4gKiAgICAgICAgIGNyZWF0ZWRBdDpcbiAqICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICBmb3JtYXQ6IGRhdGUtdGltZVxuICogICAgICAgICAgIGRlc2NyaXB0aW9uOiDsg53shLHsnbxcbiAqICAgICAgICAgdXBkYXRlZEF0OlxuICogICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgIGZvcm1hdDogZGF0ZS10aW1lXG4gKiAgICAgICAgICAgZGVzY3JpcHRpb246IOyImOygleydvFxuICovXG5cbmNvbnN0IHJvdXRlciA9IFJvdXRlcigpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL3Rlc3RjYXNlczpcbiAqICAgZ2V0OlxuICogICAgIHN1bW1hcnk6IO2FjOyKpO2KuOy8gOydtOyKpCDrqqnroZ0g7KGw7ZqMXG4gKiAgICAgZGVzY3JpcHRpb246IO2OmOydtOyngOuEpOydtOyFmCwg6rKA7IOJLCDtlYTthLDrp4HsnYQg7KeA7JuQ7ZWY64qUIO2FjOyKpO2KuOy8gOydtOyKpCDrqqnroZ3snYQg7KGw7ZqM7ZWp64uI64ukLlxuICogICAgIHRhZ3M6IFtUZXN0IENhc2VzXVxuICogICAgIHBhcmFtZXRlcnM6XG4gKiAgICAgICAtIGluOiBxdWVyeVxuICogICAgICAgICBuYW1lOiBwYWdlXG4gKiAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgICAgZGVmYXVsdDogMVxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y6Y7J207KeAIOuyiO2YuFxuICogICAgICAgLSBpbjogcXVlcnlcbiAqICAgICAgICAgbmFtZTogbGltaXRcbiAqICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgICBkZWZhdWx0OiAyMFxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y6Y7J207KeA64u5IO2VreuqqSDsiJhcbiAqICAgICAgIC0gaW46IHF1ZXJ5XG4gKiAgICAgICAgIG5hbWU6IHNlYXJjaFxuICogICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDqsoDsg4nslrRcbiAqICAgICAgIC0gaW46IHF1ZXJ5XG4gKiAgICAgICAgIG5hbWU6IGZvbGRlcklkXG4gKiAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQgSUTroZwg7ZWE7YSw66eBXG4gKiAgICAgcmVzcG9uc2VzOlxuICogICAgICAgMjAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7YWM7Iqk7Yq47LyA7J207IqkIOuqqeuhnSDsobDtmowg7ISx6rO1XG4gKiAgICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgICAgdHlwZTogYXJyYXlcbiAqICAgICAgICAgICAgICAgaXRlbXM6XG4gKiAgICAgICAgICAgICAgICAgJHJlZjogJyMvY29tcG9uZW50cy9zY2hlbWFzL1Rlc3RDYXNlJ1xuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDthYzsiqTtirjsvIDsnbTsiqQg66qp66GdIOyhsO2ajFxucm91dGVyLmdldCgnLycsIGFzeW5jIChyZXEsIHJlcykgPT4ge1xuICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IHsgcGFnZSA9IDEsIGxpbWl0ID0gMjAsIHNlYXJjaCwgZm9sZGVySWQgfSA9IHJlcS5xdWVyeTtcbiAgICAgICAgY29uc3QgdGVzdENhc2VzID0gYXdhaXQgdGVzdENhc2VTZXJ2aWNlLmdldFRlc3RDYXNlcyh7XG4gICAgICAgICAgICBwYWdlOiBOdW1iZXIocGFnZSksXG4gICAgICAgICAgICBsaW1pdDogTnVtYmVyKGxpbWl0KSxcbiAgICAgICAgICAgIHNlYXJjaDogc2VhcmNoIGFzIHN0cmluZyxcbiAgICAgICAgICAgIGZvbGRlcklkOiBmb2xkZXJJZCA/IE51bWJlcihmb2xkZXJJZCkgOiB1bmRlZmluZWRcbiAgICAgICAgfSk7XG4gICAgICAgIHJlcy5qc29uKHRlc3RDYXNlcyk7XG4gICAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICAgICAgY29uc29sZS5lcnJvcign7YWM7Iqk7Yq47LyA7J207IqkIOyhsO2ajCDsi6TtjKg6JywgZXJyb3IpO1xuICAgICAgICByZXMuc3RhdHVzKDUwMCkuanNvbih7IG1lc3NhZ2U6ICfthYzsiqTtirjsvIDsnbTsiqQg7KGw7ZqM7JeQIOyLpO2MqO2WiOyKteuLiOuLpC4nIH0pO1xuICAgIH1cbn0pO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL3Rlc3RjYXNlcy97aWR9OlxuICogICBnZXQ6XG4gKiAgICAgc3VtbWFyeTog7Yq57KCVIO2FjOyKpO2KuOy8gOydtOyKpCDsobDtmoxcbiAqICAgICBkZXNjcmlwdGlvbjogSUTroZwg7Yq57KCVIO2FjOyKpO2KuOy8gOydtOyKpOulvCDsobDtmoztlanri4jri6QuXG4gKiAgICAgdGFnczogW1Rlc3QgQ2FzZXNdXG4gKiAgICAgcGFyYW1ldGVyczpcbiAqICAgICAgIC0gaW46IHBhdGhcbiAqICAgICAgICAgbmFtZTogaWRcbiAqICAgICAgICAgcmVxdWlyZWQ6IHRydWVcbiAqICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCBJRFxuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCDsobDtmowg7ISx6rO1XG4gKiAgICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgICAgJHJlZjogJyMvY29tcG9uZW50cy9zY2hlbWFzL1Rlc3RDYXNlJ1xuICogICAgICAgNDA0OlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7YWM7Iqk7Yq47LyA7J207Iqk66W8IOywvuydhCDsiJgg7JeG7J2MXG4gKiAgICAgICA1MDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDshJzrsoQg7Jik66WYXG4gKi9cbi8vIO2KueyglSDthYzsiqTtirjsvIDsnbTsiqQg7KGw7ZqMXG5yb3V0ZXIuZ2V0KCcvOmlkJywgYXN5bmMgKHJlcSwgcmVzKSA9PiB7XG4gICAgdHJ5IHtcbiAgICAgICAgY29uc3QgaWQgPSBwYXJzZUludChyZXEucGFyYW1zLmlkKTtcbiAgICAgICAgY29uc3QgdGVzdENhc2UgPSBhd2FpdCB0ZXN0Q2FzZVNlcnZpY2UuZ2V0VGVzdENhc2VCeUlkKGlkKTtcbiAgICAgICAgaWYgKCF0ZXN0Q2FzZSkge1xuICAgICAgICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoNDA0KS5qc29uKHsgbWVzc2FnZTogJ+2FjOyKpO2KuOy8gOydtOyKpOulvCDssL7snYQg7IiYIOyXhuyKteuLiOuLpC4nIH0pO1xuICAgICAgICB9XG4gICAgICAgIHJlcy5qc29uKHRlc3RDYXNlKTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgICBjb25zb2xlLmVycm9yKCfthYzsiqTtirjsvIDsnbTsiqQg7KGw7ZqMIOyLpO2MqDonLCBlcnJvcik7XG4gICAgICAgIHJlcy5zdGF0dXMoNTAwKS5qc29uKHsgbWVzc2FnZTogJ+2FjOyKpO2KuOy8gOydtOyKpCDsobDtmozsl5Ag7Iuk7Yyo7ZaI7Iq164uI64ukLicgfSk7XG4gICAgfVxufSk7XG5cbi8qKlxuICogQHN3YWdnZXJcbiAqIC9hcGkvdGVzdGNhc2VzOlxuICogICBwb3N0OlxuICogICAgIHN1bW1hcnk6IO2FjOyKpO2KuOy8gOydtOyKpCDsg53shLFcbiAqICAgICBkZXNjcmlwdGlvbjog7IOI66Gc7Jq0IO2FjOyKpO2KuOy8gOydtOyKpOulvCDsg53shLHtlanri4jri6QuXG4gKiAgICAgdGFnczogW1Rlc3QgQ2FzZXNdXG4gKiAgICAgcmVxdWVzdEJvZHk6XG4gKiAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgY29udGVudDpcbiAqICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICB0eXBlOiBvYmplY3RcbiAqICAgICAgICAgICAgIHJlcXVpcmVkOlxuICogICAgICAgICAgICAgICAtIHRpdGxlXG4gKiAgICAgICAgICAgICAgIC0gcHJpb3JpdHlcbiAqICAgICAgICAgICAgICAgLSBzdGF0dXNcbiAqICAgICAgICAgICAgIHByb3BlcnRpZXM6XG4gKiAgICAgICAgICAgICAgIHRpdGxlOlxuICogICAgICAgICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQg7KCc66qpXG4gKiAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOlxuICogICAgICAgICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQg7ISk66qFXG4gKiAgICAgICAgICAgICAgIHByaW9yaXR5OlxuICogICAgICAgICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgICAgICAgIGVudW06IFtIaWdoLCBNZWRpdW0sIExvd11cbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7Jqw7ISg7Iic7JyEXG4gKiAgICAgICAgICAgICAgIHN0YXR1czpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBlbnVtOiBbQWN0aXZlLCBJbmFjdGl2ZSwgRHJhZnRdXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IOyDge2DnFxuICogICAgICAgICAgICAgICBmb2xkZXJJZDpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCBJRFxuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMTpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCDsg53shLEg7ISx6rO1XG4gKiAgICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgICAgJHJlZjogJyMvY29tcG9uZW50cy9zY2hlbWFzL1Rlc3RDYXNlJ1xuICogICAgICAgNDAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7J6Y66q765CcIOyalOyyrVxuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDthYzsiqTtirjsvIDsnbTsiqQg7IOd7ISxXG5yb3V0ZXIucG9zdCgnLycsIGFzeW5jIChyZXEsIHJlcykgPT4ge1xuICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IHRlc3RDYXNlID0gYXdhaXQgdGVzdENhc2VTZXJ2aWNlLmNyZWF0ZVRlc3RDYXNlKHJlcS5ib2R5KTtcbiAgICAgICAgcmVzLnN0YXR1cygyMDEpLmpzb24odGVzdENhc2UpO1xuICAgIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgICAgIGNvbnNvbGUuZXJyb3IoJ+2FjOyKpO2KuOy8gOydtOyKpCDsg53shLEg7Iuk7YyoOicsIGVycm9yKTtcbiAgICAgICAgcmVzLnN0YXR1cyg0MDApLmpzb24oeyBtZXNzYWdlOiAn7YWM7Iqk7Yq47LyA7J207IqkIOyDneyEseyXkCDsi6TtjKjtlojsirXri4jri6QuJyB9KTtcbiAgICB9XG59KTtcblxuLyoqXG4gKiBAc3dhZ2dlclxuICogL2FwaS90ZXN0Y2FzZXMve2lkfTpcbiAqICAgcHV0OlxuICogICAgIHN1bW1hcnk6IO2FjOyKpO2KuOy8gOydtOyKpCDsiJjsoJVcbiAqICAgICBkZXNjcmlwdGlvbjog7Yq57KCVIO2FjOyKpO2KuOy8gOydtOyKpOulvCDsiJjsoJXtlanri4jri6QuXG4gKiAgICAgdGFnczogW1Rlc3QgQ2FzZXNdXG4gKiAgICAgcGFyYW1ldGVyczpcbiAqICAgICAgIC0gaW46IHBhdGhcbiAqICAgICAgICAgbmFtZTogaWRcbiAqICAgICAgICAgcmVxdWlyZWQ6IHRydWVcbiAqICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpCBJRFxuICogICAgIHJlcXVlc3RCb2R5OlxuICogICAgICAgcmVxdWlyZWQ6IHRydWVcbiAqICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgICAgdHlwZTogb2JqZWN0XG4gKiAgICAgICAgICAgICBwcm9wZXJ0aWVzOlxuICogICAgICAgICAgICAgICB0aXRsZTpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7YWM7Iqk7Yq47LyA7J207IqkIOygnOuqqVxuICogICAgICAgICAgICAgICBkZXNjcmlwdGlvbjpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7YWM7Iqk7Yq47LyA7J207IqkIOyEpOuqhVxuICogICAgICAgICAgICAgICBwcmlvcml0eTpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBlbnVtOiBbSGlnaCwgTWVkaXVtLCBMb3ddXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IOyasOyEoOyInOychFxuICogICAgICAgICAgICAgICBzdGF0dXM6XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgICAgICAgZW51bTogW0FjdGl2ZSwgSW5hY3RpdmUsIERyYWZ0XVxuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDsg4Htg5xcbiAqICAgICAgICAgICAgICAgZm9sZGVySWQ6XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogaW50ZWdlclxuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQgSURcbiAqICAgICByZXNwb25zZXM6XG4gKiAgICAgICAyMDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQg7IiY7KCVIOyEseqztVxuICogICAgICAgICBjb250ZW50OlxuICogICAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICAgICRyZWY6ICcjL2NvbXBvbmVudHMvc2NoZW1hcy9UZXN0Q2FzZSdcbiAqICAgICAgIDQwNDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2FjOyKpO2KuOy8gOydtOyKpOulvCDssL7snYQg7IiYIOyXhuydjFxuICogICAgICAgNDAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7J6Y66q765CcIOyalOyyrVxuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDthYzsiqTtirjsvIDsnbTsiqQg7IiY7KCVXG5yb3V0ZXIucHV0KCcvOmlkJywgYXN5bmMgKHJlcSwgcmVzKSA9PiB7XG4gICAgdHJ5IHtcbiAgICAgICAgY29uc3QgaWQgPSBwYXJzZUludChyZXEucGFyYW1zLmlkKTtcbiAgICAgICAgY29uc3QgdGVzdENhc2UgPSBhd2FpdCB0ZXN0Q2FzZVNlcnZpY2UudXBkYXRlVGVzdENhc2UoaWQsIHJlcS5ib2R5KTtcbiAgICAgICAgaWYgKCF0ZXN0Q2FzZSkge1xuICAgICAgICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoNDA0KS5qc29uKHsgbWVzc2FnZTogJ+2FjOyKpO2KuOy8gOydtOyKpOulvCDssL7snYQg7IiYIOyXhuyKteuLiOuLpC4nIH0pO1xuICAgICAgICB9XG4gICAgICAgIHJlcy5qc29uKHRlc3RDYXNlKTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgICBjb25zb2xlLmVycm9yKCfthYzsiqTtirjsvIDsnbTsiqQg7IiY7KCVIOyLpO2MqDonLCBlcnJvcik7XG4gICAgICAgIHJlcy5zdGF0dXMoNDAwKS5qc29uKHsgbWVzc2FnZTogJ+2FjOyKpO2KuOy8gOydtOyKpCDsiJjsoJXsl5Ag7Iuk7Yyo7ZaI7Iq164uI64ukLicgfSk7XG4gICAgfVxufSk7XG5cbi8qKlxuICogQHN3YWdnZXJcbiAqIC9hcGkvdGVzdGNhc2VzL3tpZH06XG4gKiAgIGRlbGV0ZTpcbiAqICAgICBzdW1tYXJ5OiDthYzsiqTtirjsvIDsnbTsiqQg7IKt7KCcXG4gKiAgICAgZGVzY3JpcHRpb246IO2KueyglSDthYzsiqTtirjsvIDsnbTsiqTrpbwg7IKt7KCc7ZWp64uI64ukLlxuICogICAgIHRhZ3M6IFtUZXN0IENhc2VzXVxuICogICAgIHBhcmFtZXRlcnM6XG4gKiAgICAgICAtIGluOiBwYXRoXG4gKiAgICAgICAgIG5hbWU6IGlkXG4gKiAgICAgICAgIHJlcXVpcmVkOiB0cnVlXG4gKiAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQgSURcbiAqICAgICByZXNwb25zZXM6XG4gKiAgICAgICAyMDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqQg7IKt7KCcIOyEseqztVxuICogICAgICAgICBjb250ZW50OlxuICogICAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICAgIHR5cGU6IG9iamVjdFxuICogICAgICAgICAgICAgICBwcm9wZXJ0aWVzOlxuICogICAgICAgICAgICAgICAgIG1lc3NhZ2U6XG4gKiAgICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICAgIGV4YW1wbGU6ICfthYzsiqTtirjsvIDsnbTsiqTqsIAg7ISx6rO17KCB7Jy866GcIOyCreygnOuQmOyXiOyKteuLiOuLpC4nXG4gKiAgICAgICA0MDQ6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDthYzsiqTtirjsvIDsnbTsiqTrpbwg7LC+7J2EIOyImCDsl4bsnYxcbiAqICAgICAgIDQwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IOyemOuqu+uQnCDsmpTssq1cbiAqICAgICAgIDUwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IOyEnOuyhCDsmKTrpZhcbiAqL1xuLy8g7YWM7Iqk7Yq47LyA7J207IqkIOyCreygnFxucm91dGVyLmRlbGV0ZSgnLzppZCcsIGFzeW5jIChyZXEsIHJlcykgPT4ge1xuICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IGlkID0gcGFyc2VJbnQocmVxLnBhcmFtcy5pZCk7XG4gICAgICAgIGNvbnN0IHN1Y2Nlc3MgPSBhd2FpdCB0ZXN0Q2FzZVNlcnZpY2UuZGVsZXRlVGVzdENhc2UoaWQpO1xuICAgICAgICBpZiAoIXN1Y2Nlc3MpIHtcbiAgICAgICAgICAgIHJldHVybiByZXMuc3RhdHVzKDQwNCkuanNvbih7IG1lc3NhZ2U6ICfthYzsiqTtirjsvIDsnbTsiqTrpbwg7LC+7J2EIOyImCDsl4bsirXri4jri6QuJyB9KTtcbiAgICAgICAgfVxuICAgICAgICByZXMuanNvbih7IG1lc3NhZ2U6ICfthYzsiqTtirjsvIDsnbTsiqTqsIAg7ISx6rO17KCB7Jy866GcIOyCreygnOuQmOyXiOyKteuLiOuLpC4nIH0pO1xuICAgIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgICAgIGNvbnNvbGUuZXJyb3IoJ+2FjOyKpO2KuOy8gOydtOyKpCDsgq3soJwg7Iuk7YyoOicsIGVycm9yKTtcbiAgICAgICAgcmVzLnN0YXR1cyg0MDApLmpzb24oeyBtZXNzYWdlOiAn7YWM7Iqk7Yq47LyA7J207IqkIOyCreygnOyXkCDsi6TtjKjtlojsirXri4jri6QuJyB9KTtcbiAgICB9XG59KTtcblxuZXhwb3J0IGRlZmF1bHQgcm91dGVyOyAiXSwidmVyc2lvbiI6M30=

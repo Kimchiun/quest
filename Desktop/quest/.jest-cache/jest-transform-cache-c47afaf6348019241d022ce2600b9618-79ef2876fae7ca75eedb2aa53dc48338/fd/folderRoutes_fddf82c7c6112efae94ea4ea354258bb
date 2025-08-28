@@ -1,0 +1,329 @@
+fb21d115c7fc65b471a60c6dd9fff9c7
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const folderController = __importStar(require("../controllers/folderController"));
+/**
+ * @swagger
+ * /api/folders/tree:
+ *   get:
+ *     summary: 폴더 트리 조회
+ *     description: 전체 폴더 트리 구조를 조회합니다.
+ *     tags: [Folders]
+ *     responses:
+ *       200:
+ *         description: 폴더 트리 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Folder'
+ *       500:
+ *         description: 서버 오류
+ */
+const router = (0, express_1.Router)();
+// 폴더 트리 조회
+router.get('/tree', folderController.getFolderTree);
+/**
+ * @swagger
+ * /api/folders/project/{projectId}:
+ *   get:
+ *     summary: 프로젝트별 폴더 목록
+ *     description: 특정 프로젝트의 폴더 목록을 조회합니다.
+ *     tags: [Folders]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 프로젝트 ID
+ *     responses:
+ *       200:
+ *         description: 프로젝트 폴더 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Folder'
+ *       500:
+ *         description: 서버 오류
+ */
+// 프로젝트별 폴더 목록
+router.get('/project/:projectId', folderController.listFoldersByProject);
+/**
+ * @swagger
+ * /api/folders:
+ *   post:
+ *     summary: 폴더 생성
+ *     description: 새로운 폴더를 생성합니다.
+ *     tags: [Folders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - projectId
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: 폴더 이름
+ *               description:
+ *                 type: string
+ *                 description: 폴더 설명
+ *               parentId:
+ *                 type: integer
+ *                 description: 부모 폴더 ID
+ *               projectId:
+ *                 type: string
+ *                 description: 프로젝트 ID
+ *     responses:
+ *       201:
+ *         description: 폴더 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Folder'
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+// 폴더 생성
+router.post('/', folderController.createFolder);
+/**
+ * @swagger
+ * /api/folders/{id}:
+ *   get:
+ *     summary: 특정 폴더 조회
+ *     description: ID로 특정 폴더를 조회합니다.
+ *     tags: [Folders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 폴더 ID
+ *     responses:
+ *       200:
+ *         description: 폴더 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Folder'
+ *       404:
+ *         description: 폴더를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+// 특정 폴더 조회
+router.get('/:id', folderController.getFolderById);
+/**
+ * @swagger
+ * /api/folders/{id}:
+ *   patch:
+ *     summary: 폴더 수정
+ *     description: 특정 폴더를 수정합니다.
+ *     tags: [Folders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 폴더 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: 폴더 이름
+ *               description:
+ *                 type: string
+ *                 description: 폴더 설명
+ *               sortOrder:
+ *                 type: integer
+ *                 description: 정렬 순서
+ *     responses:
+ *       200:
+ *         description: 폴더 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Folder'
+ *       404:
+ *         description: 폴더를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+// 폴더 수정
+router.patch('/:id', folderController.updateFolder);
+/**
+ * @swagger
+ * /api/folders/{id}/move:
+ *   patch:
+ *     summary: 폴더 이동
+ *     description: 특정 폴더를 다른 위치로 이동합니다.
+ *     tags: [Folders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 폴더 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newParentId
+ *             properties:
+ *               newParentId:
+ *                 type: integer
+ *                 description: 새로운 부모 폴더 ID
+ *     responses:
+ *       200:
+ *         description: 폴더 이동 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Folder'
+ *       404:
+ *         description: 폴더를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+// 폴더 이동
+router.patch('/:id/move', folderController.moveFolder);
+/**
+ * @swagger
+ * /api/folders/move-batch:
+ *   patch:
+ *     summary: 폴더 배치 이동
+ *     description: 여러 폴더를 한 번에 이동합니다.
+ *     tags: [Folders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - folderIds
+ *               - newParentId
+ *             properties:
+ *               folderIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: 이동할 폴더 ID 목록
+ *               newParentId:
+ *                 type: integer
+ *                 description: 새로운 부모 폴더 ID
+ *     responses:
+ *       200:
+ *         description: 폴더 배치 이동 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+// 폴더 배치 이동 (8.13 스펙)
+router.patch('/move-batch', folderController.moveFolderBatch);
+/**
+ * @swagger
+ * /api/folders/{id}:
+ *   delete:
+ *     summary: 폴더 삭제
+ *     description: 특정 폴더를 삭제합니다.
+ *     tags: [Folders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 폴더 ID
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [soft, hard]
+ *           default: soft
+ *         description: '삭제 모드 (soft: 논리 삭제, hard: 물리 삭제)'
+ *     responses:
+ *       200:
+ *         description: 폴더 삭제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: 폴더를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
+// 폴더 삭제
+router.delete('/:id', folderController.deleteFolder);
+exports.default = router;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3NyYy9tYWluL2FwcC9kb21haW5zL2ZvbGRlcnMvcm91dGVzL2ZvbGRlclJvdXRlcy50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLHFDQUFpQztBQUNqQyxrRkFBb0U7QUFFcEU7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQWtCRztBQUVILE1BQU0sTUFBTSxHQUFHLElBQUEsZ0JBQU0sR0FBRSxDQUFDO0FBRXhCLFdBQVc7QUFDWCxNQUFNLENBQUMsR0FBRyxDQUFDLE9BQU8sRUFBRSxnQkFBZ0IsQ0FBQyxhQUFhLENBQUMsQ0FBQztBQUVwRDs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXlCRztBQUNILGNBQWM7QUFDZCxNQUFNLENBQUMsR0FBRyxDQUFDLHFCQUFxQixFQUFFLGdCQUFnQixDQUFDLG9CQUFvQixDQUFDLENBQUM7QUFFekU7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7R0F3Q0c7QUFDSCxRQUFRO0FBQ1IsTUFBTSxDQUFDLElBQUksQ0FBQyxHQUFHLEVBQUUsZ0JBQWdCLENBQUMsWUFBWSxDQUFDLENBQUM7QUFFaEQ7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7R0F5Qkc7QUFDSCxXQUFXO0FBQ1gsTUFBTSxDQUFDLEdBQUcsQ0FBQyxNQUFNLEVBQUUsZ0JBQWdCLENBQUMsYUFBYSxDQUFDLENBQUM7QUFFbkQ7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBeUNHO0FBQ0gsUUFBUTtBQUNSLE1BQU0sQ0FBQyxLQUFLLENBQUMsTUFBTSxFQUFFLGdCQUFnQixDQUFDLFlBQVksQ0FBQyxDQUFDO0FBRXBEOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBcUNHO0FBQ0gsUUFBUTtBQUNSLE1BQU0sQ0FBQyxLQUFLLENBQUMsV0FBVyxFQUFFLGdCQUFnQixDQUFDLFVBQVUsQ0FBQyxDQUFDO0FBRXZEOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXlDRztBQUNILHFCQUFxQjtBQUNyQixNQUFNLENBQUMsS0FBSyxDQUFDLGFBQWEsRUFBRSxnQkFBZ0IsQ0FBQyxlQUFlLENBQUMsQ0FBQztBQUU5RDs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXFDRztBQUNILFFBQVE7QUFDUixNQUFNLENBQUMsTUFBTSxDQUFDLE1BQU0sRUFBRSxnQkFBZ0IsQ0FBQyxZQUFZLENBQUMsQ0FBQztBQUVyRCxrQkFBZSxNQUFNLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3NyYy9tYWluL2FwcC9kb21haW5zL2ZvbGRlcnMvcm91dGVzL2ZvbGRlclJvdXRlcy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBSb3V0ZXIgfSBmcm9tICdleHByZXNzJztcbmltcG9ydCAqIGFzIGZvbGRlckNvbnRyb2xsZXIgZnJvbSAnLi4vY29udHJvbGxlcnMvZm9sZGVyQ29udHJvbGxlcic7XG5cbi8qKlxuICogQHN3YWdnZXJcbiAqIC9hcGkvZm9sZGVycy90cmVlOlxuICogICBnZXQ6XG4gKiAgICAgc3VtbWFyeTog7Y+0642UIO2KuOumrCDsobDtmoxcbiAqICAgICBkZXNjcmlwdGlvbjog7KCE7LK0IO2PtOuNlCDtirjrpqwg6rWs7KGw66W8IOyhsO2ajO2VqeuLiOuLpC5cbiAqICAgICB0YWdzOiBbRm9sZGVyc11cbiAqICAgICByZXNwb25zZXM6XG4gKiAgICAgICAyMDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQg7Yq466asIOyhsO2ajCDshLHqs7VcbiAqICAgICAgICAgY29udGVudDpcbiAqICAgICAgICAgICBhcHBsaWNhdGlvbi9qc29uOlxuICogICAgICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgICAgICB0eXBlOiBhcnJheVxuICogICAgICAgICAgICAgICBpdGVtczpcbiAqICAgICAgICAgICAgICAgICAkcmVmOiAnIy9jb21wb25lbnRzL3NjaGVtYXMvRm9sZGVyJ1xuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG5cbmNvbnN0IHJvdXRlciA9IFJvdXRlcigpO1xuXG4vLyDtj7TrjZQg7Yq466asIOyhsO2ajFxucm91dGVyLmdldCgnL3RyZWUnLCBmb2xkZXJDb250cm9sbGVyLmdldEZvbGRlclRyZWUpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL2ZvbGRlcnMvcHJvamVjdC97cHJvamVjdElkfTpcbiAqICAgZ2V0OlxuICogICAgIHN1bW1hcnk6IO2UhOuhnOygne2KuOuzhCDtj7TrjZQg66qp66GdXG4gKiAgICAgZGVzY3JpcHRpb246IO2KueyglSDtlITroZzsoJ3tirjsnZgg7Y+0642UIOuqqeuhneydhCDsobDtmoztlanri4jri6QuXG4gKiAgICAgdGFnczogW0ZvbGRlcnNdXG4gKiAgICAgcGFyYW1ldGVyczpcbiAqICAgICAgIC0gaW46IHBhdGhcbiAqICAgICAgICAgbmFtZTogcHJvamVjdElkXG4gKiAgICAgICAgIHJlcXVpcmVkOiB0cnVlXG4gKiAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2UhOuhnOygne2KuCBJRFxuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2UhOuhnOygne2KuCDtj7TrjZQg66qp66GdIOyhsO2ajCDshLHqs7VcbiAqICAgICAgICAgY29udGVudDpcbiAqICAgICAgICAgICBhcHBsaWNhdGlvbi9qc29uOlxuICogICAgICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgICAgICB0eXBlOiBhcnJheVxuICogICAgICAgICAgICAgICBpdGVtczpcbiAqICAgICAgICAgICAgICAgICAkcmVmOiAnIy9jb21wb25lbnRzL3NjaGVtYXMvRm9sZGVyJ1xuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDtlITroZzsoJ3tirjrs4Qg7Y+0642UIOuqqeuhnVxucm91dGVyLmdldCgnL3Byb2plY3QvOnByb2plY3RJZCcsIGZvbGRlckNvbnRyb2xsZXIubGlzdEZvbGRlcnNCeVByb2plY3QpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL2ZvbGRlcnM6XG4gKiAgIHBvc3Q6XG4gKiAgICAgc3VtbWFyeTog7Y+0642UIOyDneyEsVxuICogICAgIGRlc2NyaXB0aW9uOiDsg4jroZzsmrQg7Y+0642U66W8IOyDneyEse2VqeuLiOuLpC5cbiAqICAgICB0YWdzOiBbRm9sZGVyc11cbiAqICAgICByZXF1ZXN0Qm9keTpcbiAqICAgICAgIHJlcXVpcmVkOiB0cnVlXG4gKiAgICAgICBjb250ZW50OlxuICogICAgICAgICBhcHBsaWNhdGlvbi9qc29uOlxuICogICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgIHR5cGU6IG9iamVjdFxuICogICAgICAgICAgICAgcmVxdWlyZWQ6XG4gKiAgICAgICAgICAgICAgIC0gbmFtZVxuICogICAgICAgICAgICAgICAtIHByb2plY3RJZFxuICogICAgICAgICAgICAgcHJvcGVydGllczpcbiAqICAgICAgICAgICAgICAgbmFtZTpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIOydtOumhFxuICogICAgICAgICAgICAgICBkZXNjcmlwdGlvbjpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBzdHJpbmdcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIOyEpOuqhVxuICogICAgICAgICAgICAgICBwYXJlbnRJZDpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IOu2gOuqqCDtj7TrjZQgSURcbiAqICAgICAgICAgICAgICAgcHJvamVjdElkOlxuICogICAgICAgICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDtlITroZzsoJ3tirggSURcbiAqICAgICByZXNwb25zZXM6XG4gKiAgICAgICAyMDE6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQg7IOd7ISxIOyEseqztVxuICogICAgICAgICBjb250ZW50OlxuICogICAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICAgICRyZWY6ICcjL2NvbXBvbmVudHMvc2NoZW1hcy9Gb2xkZXInXG4gKiAgICAgICA0MDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDsnpjrqrvrkJwg7JqU7LKtXG4gKiAgICAgICA1MDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDshJzrsoQg7Jik66WYXG4gKi9cbi8vIO2PtOuNlCDsg53shLFcbnJvdXRlci5wb3N0KCcvJywgZm9sZGVyQ29udHJvbGxlci5jcmVhdGVGb2xkZXIpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL2ZvbGRlcnMve2lkfTpcbiAqICAgZ2V0OlxuICogICAgIHN1bW1hcnk6IO2KueyglSDtj7TrjZQg7KGw7ZqMXG4gKiAgICAgZGVzY3JpcHRpb246IElE66GcIO2KueyglSDtj7TrjZTrpbwg7KGw7ZqM7ZWp64uI64ukLlxuICogICAgIHRhZ3M6IFtGb2xkZXJzXVxuICogICAgIHBhcmFtZXRlcnM6XG4gKiAgICAgICAtIGluOiBwYXRoXG4gKiAgICAgICAgIG5hbWU6IGlkXG4gKiAgICAgICAgIHJlcXVpcmVkOiB0cnVlXG4gKiAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQgSURcbiAqICAgICByZXNwb25zZXM6XG4gKiAgICAgICAyMDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZQg7KGw7ZqMIOyEseqztVxuICogICAgICAgICBjb250ZW50OlxuICogICAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICAgICRyZWY6ICcjL2NvbXBvbmVudHMvc2NoZW1hcy9Gb2xkZXInXG4gKiAgICAgICA0MDQ6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZTrpbwg7LC+7J2EIOyImCDsl4bsnYxcbiAqICAgICAgIDUwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IOyEnOuyhCDsmKTrpZhcbiAqL1xuLy8g7Yq57KCVIO2PtOuNlCDsobDtmoxcbnJvdXRlci5nZXQoJy86aWQnLCBmb2xkZXJDb250cm9sbGVyLmdldEZvbGRlckJ5SWQpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL2ZvbGRlcnMve2lkfTpcbiAqICAgcGF0Y2g6XG4gKiAgICAgc3VtbWFyeTog7Y+0642UIOyImOyglVxuICogICAgIGRlc2NyaXB0aW9uOiDtirnsoJUg7Y+0642U66W8IOyImOygle2VqeuLiOuLpC5cbiAqICAgICB0YWdzOiBbRm9sZGVyc11cbiAqICAgICBwYXJhbWV0ZXJzOlxuICogICAgICAgLSBpbjogcGF0aFxuICogICAgICAgICBuYW1lOiBpZFxuICogICAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgdHlwZTogaW50ZWdlclxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIElEXG4gKiAgICAgcmVxdWVzdEJvZHk6XG4gKiAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgY29udGVudDpcbiAqICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICB0eXBlOiBvYmplY3RcbiAqICAgICAgICAgICAgIHByb3BlcnRpZXM6XG4gKiAgICAgICAgICAgICAgIG5hbWU6XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCDsnbTrpoRcbiAqICAgICAgICAgICAgICAgZGVzY3JpcHRpb246XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCDshKTrqoVcbiAqICAgICAgICAgICAgICAgc29ydE9yZGVyOlxuICogICAgICAgICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7KCV66CsIOyInOyEnFxuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCDsiJjsoJUg7ISx6rO1XG4gKiAgICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgICAgJHJlZjogJyMvY29tcG9uZW50cy9zY2hlbWFzL0ZvbGRlcidcbiAqICAgICAgIDQwNDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlOulvCDssL7snYQg7IiYIOyXhuydjFxuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDtj7TrjZQg7IiY7KCVXG5yb3V0ZXIucGF0Y2goJy86aWQnLCBmb2xkZXJDb250cm9sbGVyLnVwZGF0ZUZvbGRlcik7XG5cbi8qKlxuICogQHN3YWdnZXJcbiAqIC9hcGkvZm9sZGVycy97aWR9L21vdmU6XG4gKiAgIHBhdGNoOlxuICogICAgIHN1bW1hcnk6IO2PtOuNlCDsnbTrj5lcbiAqICAgICBkZXNjcmlwdGlvbjog7Yq57KCVIO2PtOuNlOulvCDri6Trpbgg7JyE7LmY66GcIOydtOuPme2VqeuLiOuLpC5cbiAqICAgICB0YWdzOiBbRm9sZGVyc11cbiAqICAgICBwYXJhbWV0ZXJzOlxuICogICAgICAgLSBpbjogcGF0aFxuICogICAgICAgICBuYW1lOiBpZFxuICogICAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgdHlwZTogaW50ZWdlclxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIElEXG4gKiAgICAgcmVxdWVzdEJvZHk6XG4gKiAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgY29udGVudDpcbiAqICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICB0eXBlOiBvYmplY3RcbiAqICAgICAgICAgICAgIHJlcXVpcmVkOlxuICogICAgICAgICAgICAgICAtIG5ld1BhcmVudElkXG4gKiAgICAgICAgICAgICBwcm9wZXJ0aWVzOlxuICogICAgICAgICAgICAgICBuZXdQYXJlbnRJZDpcbiAqICAgICAgICAgICAgICAgICB0eXBlOiBpbnRlZ2VyXG4gKiAgICAgICAgICAgICAgICAgZGVzY3JpcHRpb246IOyDiOuhnOyatCDrtoDrqqgg7Y+0642UIElEXG4gKiAgICAgcmVzcG9uc2VzOlxuICogICAgICAgMjAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642UIOydtOuPmSDshLHqs7VcbiAqICAgICAgICAgY29udGVudDpcbiAqICAgICAgICAgICBhcHBsaWNhdGlvbi9qc29uOlxuICogICAgICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgICAgICAkcmVmOiAnIy9jb21wb25lbnRzL3NjaGVtYXMvRm9sZGVyJ1xuICogICAgICAgNDA0OlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7Y+0642U66W8IOywvuydhCDsiJgg7JeG7J2MXG4gKiAgICAgICA1MDA6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDshJzrsoQg7Jik66WYXG4gKi9cbi8vIO2PtOuNlCDsnbTrj5lcbnJvdXRlci5wYXRjaCgnLzppZC9tb3ZlJywgZm9sZGVyQ29udHJvbGxlci5tb3ZlRm9sZGVyKTtcblxuLyoqXG4gKiBAc3dhZ2dlclxuICogL2FwaS9mb2xkZXJzL21vdmUtYmF0Y2g6XG4gKiAgIHBhdGNoOlxuICogICAgIHN1bW1hcnk6IO2PtOuNlCDrsLDsuZgg7J2064+ZXG4gKiAgICAgZGVzY3JpcHRpb246IOyXrOufrCDtj7TrjZTrpbwg7ZWcIOuyiOyXkCDsnbTrj5ntlanri4jri6QuXG4gKiAgICAgdGFnczogW0ZvbGRlcnNdXG4gKiAgICAgcmVxdWVzdEJvZHk6XG4gKiAgICAgICByZXF1aXJlZDogdHJ1ZVxuICogICAgICAgY29udGVudDpcbiAqICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICB0eXBlOiBvYmplY3RcbiAqICAgICAgICAgICAgIHJlcXVpcmVkOlxuICogICAgICAgICAgICAgICAtIGZvbGRlcklkc1xuICogICAgICAgICAgICAgICAtIG5ld1BhcmVudElkXG4gKiAgICAgICAgICAgICBwcm9wZXJ0aWVzOlxuICogICAgICAgICAgICAgICBmb2xkZXJJZHM6XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogYXJyYXlcbiAqICAgICAgICAgICAgICAgICBpdGVtczpcbiAqICAgICAgICAgICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjog7J2064+Z7ZWgIO2PtOuNlCBJRCDrqqnroZ1cbiAqICAgICAgICAgICAgICAgbmV3UGFyZW50SWQ6XG4gKiAgICAgICAgICAgICAgICAgdHlwZTogaW50ZWdlclxuICogICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uOiDsg4jroZzsmrQg67aA66qoIO2PtOuNlCBJRFxuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCDrsLDsuZgg7J2064+ZIOyEseqztVxuICogICAgICAgICBjb250ZW50OlxuICogICAgICAgICAgIGFwcGxpY2F0aW9uL2pzb246XG4gKiAgICAgICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgICAgIHR5cGU6IG9iamVjdFxuICogICAgICAgICAgICAgICBwcm9wZXJ0aWVzOlxuICogICAgICAgICAgICAgICAgIHN1Y2Nlc3M6XG4gKiAgICAgICAgICAgICAgICAgICB0eXBlOiBib29sZWFuXG4gKiAgICAgICAgICAgICAgICAgbWVzc2FnZTpcbiAqICAgICAgICAgICAgICAgICAgIHR5cGU6IHN0cmluZ1xuICogICAgICAgNDAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7J6Y66q765CcIOyalOyyrVxuICogICAgICAgNTAwOlxuICogICAgICAgICBkZXNjcmlwdGlvbjog7ISc67KEIOyYpOulmFxuICovXG4vLyDtj7TrjZQg67Cw7LmYIOydtOuPmSAoOC4xMyDsiqTtjpkpXG5yb3V0ZXIucGF0Y2goJy9tb3ZlLWJhdGNoJywgZm9sZGVyQ29udHJvbGxlci5tb3ZlRm9sZGVyQmF0Y2gpO1xuXG4vKipcbiAqIEBzd2FnZ2VyXG4gKiAvYXBpL2ZvbGRlcnMve2lkfTpcbiAqICAgZGVsZXRlOlxuICogICAgIHN1bW1hcnk6IO2PtOuNlCDsgq3soJxcbiAqICAgICBkZXNjcmlwdGlvbjog7Yq57KCVIO2PtOuNlOulvCDsgq3soJztlanri4jri6QuXG4gKiAgICAgdGFnczogW0ZvbGRlcnNdXG4gKiAgICAgcGFyYW1ldGVyczpcbiAqICAgICAgIC0gaW46IHBhdGhcbiAqICAgICAgICAgbmFtZTogaWRcbiAqICAgICAgICAgcmVxdWlyZWQ6IHRydWVcbiAqICAgICAgICAgc2NoZW1hOlxuICogICAgICAgICAgIHR5cGU6IGludGVnZXJcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCBJRFxuICogICAgICAgLSBpbjogcXVlcnlcbiAqICAgICAgICAgbmFtZTogbW9kZVxuICogICAgICAgICBzY2hlbWE6XG4gKiAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICAgICAgZW51bTogW3NvZnQsIGhhcmRdXG4gKiAgICAgICAgICAgZGVmYXVsdDogc29mdFxuICogICAgICAgICBkZXNjcmlwdGlvbjogJ+yCreygnCDrqqjrk5wgKHNvZnQ6IOuFvOumrCDsgq3soJwsIGhhcmQ6IOusvOumrCDsgq3soJwpJ1xuICogICAgIHJlc3BvbnNlczpcbiAqICAgICAgIDIwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IO2PtOuNlCDsgq3soJwg7ISx6rO1XG4gKiAgICAgICAgIGNvbnRlbnQ6XG4gKiAgICAgICAgICAgYXBwbGljYXRpb24vanNvbjpcbiAqICAgICAgICAgICAgIHNjaGVtYTpcbiAqICAgICAgICAgICAgICAgdHlwZTogb2JqZWN0XG4gKiAgICAgICAgICAgICAgIHByb3BlcnRpZXM6XG4gKiAgICAgICAgICAgICAgICAgc3VjY2VzczpcbiAqICAgICAgICAgICAgICAgICAgIHR5cGU6IGJvb2xlYW5cbiAqICAgICAgICAgICAgICAgICBtZXNzYWdlOlxuICogICAgICAgICAgICAgICAgICAgdHlwZTogc3RyaW5nXG4gKiAgICAgICA0MDQ6XG4gKiAgICAgICAgIGRlc2NyaXB0aW9uOiDtj7TrjZTrpbwg7LC+7J2EIOyImCDsl4bsnYxcbiAqICAgICAgIDUwMDpcbiAqICAgICAgICAgZGVzY3JpcHRpb246IOyEnOuyhCDsmKTrpZhcbiAqL1xuLy8g7Y+0642UIOyCreygnFxucm91dGVyLmRlbGV0ZSgnLzppZCcsIGZvbGRlckNvbnRyb2xsZXIuZGVsZXRlRm9sZGVyKTtcblxuZXhwb3J0IGRlZmF1bHQgcm91dGVyO1xuIl0sInZlcnNpb24iOjN9

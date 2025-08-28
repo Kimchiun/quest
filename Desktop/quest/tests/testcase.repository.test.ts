@@ -5,8 +5,10 @@ describe('TestCaseRepository', () => {
   let testcaseId: number;
   beforeAll(async () => {
     await ensurePgConnected();
-    await pgClient.query('DELETE FROM testcase_versions');
-    await pgClient.query('DELETE FROM testcases');
+    if (pgClient) {
+      await pgClient.query('DELETE FROM testcase_versions');
+      await pgClient.query('DELETE FROM testcases');
+    }
   });
 
   it('createTestCase & getTestCaseById', async () => {
@@ -27,9 +29,9 @@ describe('TestCaseRepository', () => {
   });
 
   it('updateTestCase', async () => {
-    const updated = await updateTestCase(testcaseId, { title: 'TC1-upd', steps: ['step1'], status: 'Archived' });
+    const updated = await updateTestCase(testcaseId, { title: 'TC1-upd', steps: ['step1'], status: 'Deprecated' });
     expect(updated?.title).toBe('TC1-upd');
-    expect(updated?.status).toBe('Archived');
+    expect(updated?.status).toBe('Deprecated');
   });
 
   it('listTestCases', async () => {
@@ -57,8 +59,10 @@ describe('TestCaseRepository', () => {
   });
 
   afterAll(async () => {
-    await pgClient.query('DELETE FROM testcase_versions');
-    await pgClient.query('DELETE FROM testcases');
-    await pgClient.end();
+    if (pgClient) {
+      await pgClient.query('DELETE FROM testcase_versions');
+      await pgClient.query('DELETE FROM testcases');
+      await pgClient.end();
+    }
   });
 }); 

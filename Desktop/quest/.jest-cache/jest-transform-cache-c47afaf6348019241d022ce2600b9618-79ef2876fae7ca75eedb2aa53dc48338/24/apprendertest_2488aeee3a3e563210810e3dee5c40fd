@@ -1,0 +1,19 @@
+8cc6313cd7d2ae16491b5086993798f3
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const jsx_runtime_1 = require("react/jsx-runtime");
+require("@testing-library/jest-dom");
+const react_1 = require("@testing-library/react");
+const App_1 = __importDefault(require("../src/renderer/app/App"));
+describe('App 렌더링 smoke test', () => {
+    it('최소한의 UI가 렌더링된다', () => {
+        (0, react_1.render)((0, jsx_runtime_1.jsx)(App_1.default, {}));
+        // 더 구체적인 텍스트 검색으로 변경
+        expect(react_1.screen.getByText('Quest 로그인')).toBeInTheDocument();
+        expect(react_1.screen.getByText('테스트 관리 시스템에 오신 것을 환영합니다.')).toBeInTheDocument();
+    });
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzLzNpLWExLTIwMjEtMDE3L0RvY3VtZW50cy9xdWVzdC9EZXNrdG9wL3F1ZXN0L3Rlc3RzL2FwcC5yZW5kZXIudGVzdC50c3giLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQUEscUNBQW1DO0FBRW5DLGtEQUF3RDtBQUN4RCxrRUFBMEM7QUFFMUMsUUFBUSxDQUFDLG9CQUFvQixFQUFFLEdBQUcsRUFBRTtJQUNsQyxFQUFFLENBQUMsZ0JBQWdCLEVBQUUsR0FBRyxFQUFFO1FBQ3hCLElBQUEsY0FBTSxFQUFDLHVCQUFDLGFBQUcsS0FBRyxDQUFDLENBQUM7UUFDaEIscUJBQXFCO1FBQ3JCLE1BQU0sQ0FBQyxjQUFNLENBQUMsU0FBUyxDQUFDLFdBQVcsQ0FBQyxDQUFDLENBQUMsaUJBQWlCLEVBQUUsQ0FBQztRQUMxRCxNQUFNLENBQUMsY0FBTSxDQUFDLFNBQVMsQ0FBQywwQkFBMEIsQ0FBQyxDQUFDLENBQUMsaUJBQWlCLEVBQUUsQ0FBQztJQUMzRSxDQUFDLENBQUMsQ0FBQztBQUNMLENBQUMsQ0FBQyxDQUFDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9Vc2Vycy8zaS1hMS0yMDIxLTAxNy9Eb2N1bWVudHMvcXVlc3QvRGVza3RvcC9xdWVzdC90ZXN0cy9hcHAucmVuZGVyLnRlc3QudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCAnQHRlc3RpbmctbGlicmFyeS9qZXN0LWRvbSc7XG5pbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgcmVuZGVyLCBzY3JlZW4gfSBmcm9tICdAdGVzdGluZy1saWJyYXJ5L3JlYWN0JztcbmltcG9ydCBBcHAgZnJvbSAnLi4vc3JjL3JlbmRlcmVyL2FwcC9BcHAnO1xuXG5kZXNjcmliZSgnQXBwIOugjOuNlOungSBzbW9rZSB0ZXN0JywgKCkgPT4ge1xuICBpdCgn7LWc7IaM7ZWc7J2YIFVJ6rCAIOugjOuNlOungeuQnOuLpCcsICgpID0+IHtcbiAgICByZW5kZXIoPEFwcCAvPik7XG4gICAgLy8g642UIOq1rOyytOyggeyduCDthY3siqTtirgg6rKA7IOJ7Jy866GcIOuzgOqyvVxuICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdRdWVzdCDroZzqt7jsnbgnKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgn7YWM7Iqk7Yq4IOq0gOumrCDsi5zsiqTthZzsl5Ag7Jik7IugIOqyg+ydhCDtmZjsmIHtlanri4jri6QuJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gIH0pO1xufSk7ICJdLCJ2ZXJzaW9uIjozfQ==
